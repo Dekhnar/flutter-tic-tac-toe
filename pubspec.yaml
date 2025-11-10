@@ -1,0 +1,74 @@
+name: tic_tac_toe_app
+description: A new Flutter project.
+
+publish_to: "none"
+
+version: 1.0.1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Remote Storage
+  firebase_core: ^4.2.0
+  cloud_firestore: ^6.0.3
+
+  # Traductions
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+
+  # State Management
+  hooks_riverpod: ^2.6.1
+  flutter_hooks: ^0.21.2
+  riverpod_annotation: ^2.6.1
+
+  #Routing
+  auto_route: 10.0.1
+
+  #UI
+  google_fonts: ^6.3.1
+
+  freezed_annotation: ^3.1.0
+  built_value: ^8.10.1
+  built_collection: ^5.1.1
+
+  uuid: ^4.5.2
+  fake_cloud_firestore: ^4.0.0
+  clock: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.5.4
+  source_gen: ^2.0.0
+  auto_route_generator: 10.0.1
+  custom_lint: ^0.7.5
+  riverpod_generator: ^2.6.5
+  riverpod_lint: ^2.6.5
+  json_serializable: ^6.7.1
+  freezed: ^3.1.0
+  built_value_generator: ^8.10.1
+  mocktail: ^1.0.4
+  golden_toolkit: ^0.15.0
+  meta: ^1.16.0
+
+dependency_overrides:
+  analyzer_plugin: ^0.13.4 # compatible analyzer ^7.5.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/google_fonts/
+
+flutter_intl:
+  enabled: true
+  class_name: I18n
+  arb_dir: lib/l10n
+  output_dir: lib/generated

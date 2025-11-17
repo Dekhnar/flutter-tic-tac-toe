@@ -130,7 +130,7 @@ class GameNotifier extends _$GameNotifier with NotifierMounted, MessageHandler {
   }
 
   void _runWithGlobalLock(AsyncCallback action) async {
-    if (_isActionRunning && !mounted) return;
+    if (_isActionRunning || !mounted) return;
     _isActionRunning = true;
     try {
       await action();

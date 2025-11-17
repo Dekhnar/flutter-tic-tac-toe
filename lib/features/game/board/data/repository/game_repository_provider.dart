@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:built_collection/built_collection.dart';
+import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 part 'game_repository_provider.g.dart';
@@ -19,9 +21,18 @@ final class GameRepository extends GameRepositoryInterface {
   final FirebaseFirestore _firestore;
   final AsyncCallback? _beforeMakeMove;
 
-  const GameRepository({required FirebaseFirestore firestore, @visibleForTesting AsyncCallback? beforeMakeMove})
-    : _firestore = firestore,
-      _beforeMakeMove = beforeMakeMove;
+  const GameRepository({
+    required FirebaseFirestore firestore,
+    @visibleForTesting AsyncCallback? beforeMakeMove,
+    @visibleForTesting Clock clock = const Clock(),
+    @visibleForTesting GameRules rules = const GameRules(),
+  }) : _firestore = firestore,
+       _beforeMakeMove = beforeMakeMove,
+       _clock = clock,
+       _rules = rules;
+
+  final GameRules _rules;
+  final Clock _clock;
 
   Future<Game> createGame({required String authorUid, required String shareLink}) async {
     final ref = await _firestore
@@ -120,22 +131,20 @@ final class GameRepository extends GameRepositoryInterface {
       final moveSnap = await tx.get(moveRef);
       if (moveSnap.exists) throw MoveCellAlreadyTakenException();
 
-      final (opponentId, sign, mark) =
+      final updatedGame = _rules.applyMove(
+        game: game,
+        playerId: playerId,
+        row: row,
+        col: col,
+        currentDate: _clock.now(),
+      );
+
+      if (updatedGame == null) return;
+
+      final (opponentId, mark) =
           (playerId == currentGame.fromId)
-              ? (currentGame.toId, 1, CellMark.X.name)
-              : (currentGame.fromId, -1, CellMark.O.name);
-
-      final nextRow = List<int>.of(currentGame.boardState.row, growable: false);
-      final nextCol = List<int>.of(currentGame.boardState.col, growable: false);
-      nextRow[row] = nextRow[row] + sign;
-      nextCol[col] = nextCol[col] + sign;
-
-      final nextDiag = (row == col) ? (currentGame.boardState.diag + sign) : currentGame.boardState.diag;
-      final nextAnti = (row + col == 2) ? (currentGame.boardState.anti + sign) : currentGame.boardState.anti;
-      final nextMoveCount = currentGame.boardState.moveCount + 1;
-
-      final win = nextRow[row].abs() == 3 || nextCol[col].abs() == 3 || nextDiag.abs() == 3 || nextAnti.abs() == 3;
-      final draw = !win && nextMoveCount == 9;
+              ? (currentGame.toId, CellMark.X.name)
+              : (currentGame.fromId, CellMark.O.name);
 
       tx.set(
         moveRef,
@@ -151,16 +160,16 @@ final class GameRepository extends GameRepositoryInterface {
       final patchCmd = GamePatchCommand(
         (b) =>
             b
-              ..boardStateRow = ListBuilder<int>(nextRow)
-              ..boardStateCol = ListBuilder<int>(nextCol)
-              ..boardStateDiag = nextDiag
-              ..boardStateAnti = nextAnti
-              ..boardStateMoveCount = nextMoveCount
-              ..status = (win || draw) ? GameStatus.finished.name : GameStatus.playing.name
-              ..currentWinnerId = win ? playerId : null
-              ..currentPlayerId = (win || draw) ? null : opponentId
-              ..fromWins = win && playerId == currentGame.fromId
-              ..toWins = win && playerId == currentGame.toId
+              ..boardStateRow = ListBuilder<int>(updatedGame.boardState.row)
+              ..boardStateCol = ListBuilder<int>(updatedGame.boardState.col)
+              ..boardStateDiag = updatedGame.boardState.diag
+              ..boardStateAnti = updatedGame.boardState.anti
+              ..boardStateMoveCount = updatedGame.boardState.moveCount
+              ..status = updatedGame.status.name
+              ..currentWinnerId = updatedGame.currentWinnerId
+              ..currentPlayerId = updatedGame.currentPlayerId
+              ..fromWins = game.fromWinCount != updatedGame.fromWinCount
+              ..toWins = game.toWinCount != updatedGame.toWinCount
               ..hasMoved = true,
       );
 

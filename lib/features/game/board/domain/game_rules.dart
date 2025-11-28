@@ -31,8 +31,8 @@ final class GameRules {
 
     nextRow[row] += sign;
     nextCol[col] += sign;
-    if (row == col) nextDiag += sign;
-    if ((row + col) == 2) nextAnti += sign;
+    if (row == col) nextDiag += sign; // ex: (0,0), (1,1), (2,2)
+    if ((row + col) == 2) nextAnti += sign; // ex: (2,0), (1,1), (0,2)
 
     String? winnerId;
     final hasLine = nextRow[row].abs() == 3 || nextCol[col].abs() == 3 || nextDiag.abs() == 3 || nextAnti.abs() == 3;

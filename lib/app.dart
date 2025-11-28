@@ -26,6 +26,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bootstrapState = ref.watch(bootstrapServiceProvider);
     final boostrapData = bootstrapState.valueOrNull;
+    final appRouter = ref.watch(appRouterProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: localizationsDelegates,
@@ -34,8 +35,8 @@ class App extends ConsumerWidget {
       theme: boostrapData?.theme,
       darkTheme: boostrapData?.darkTheme,
       themeMode: boostrapData?.themeMode,
-      routerDelegate: ref.watch(appRouterProvider).delegate(navigatorObservers: () => [AutoRouteObserver()]),
-      routeInformationParser: ref.watch(appRouterProvider).defaultRouteParser(),
+      routerDelegate: appRouter.delegate(navigatorObservers: () => [AutoRouteObserver()]),
+      routeInformationParser: appRouter.defaultRouteParser(),
       builder: (context, child) {
         return switch (bootstrapState) {
           final state when state.isLoading => Scaffold(

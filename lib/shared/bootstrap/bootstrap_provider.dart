@@ -8,11 +8,11 @@ part 'bootstrap_provider.g.dart';
 
 class BootstrapData {
   final Locale locale;
-  final ThemeData? theme;
-  final ThemeData? darkTheme;
-  final ThemeMode? themeMode;
+  final ThemeData theme;
+  final ThemeData darkTheme;
+  final ThemeMode themeMode;
 
-  BootstrapData({required this.locale, this.theme, this.darkTheme, this.themeMode});
+  const BootstrapData({required this.locale, required this.theme, required this.darkTheme, required this.themeMode});
 }
 
 @Riverpod(keepAlive: true)
@@ -26,10 +26,17 @@ Future<BootstrapData> bootstrapService(Ref ref) async {
 
   final deviceBrightness = platformDispatcher.platformBrightness;
 
-  final isDark = switch (deviceBrightness) {
-    Brightness.dark => true,
-    Brightness.light => false,
+  final (isDark, themeMode) = switch (deviceBrightness) {
+    Brightness.dark => (true, ThemeMode.dark),
+    Brightness.light => (false, ThemeMode.light),
   };
 
-  return BootstrapData(locale: appLocale, theme: ThemeBuilder.buildTheme(isDark: isDark));
+  final theme = ThemeBuilder.buildTheme(isDark: isDark);
+
+  return BootstrapData(
+    locale: appLocale,
+    theme: theme,
+    themeMode: themeMode,
+    darkTheme: isDark ? theme : ThemeBuilder.buildTheme(isDark: true),
+  );
 }

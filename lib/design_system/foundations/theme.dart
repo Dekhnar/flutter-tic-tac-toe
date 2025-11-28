@@ -7,10 +7,11 @@ final class ThemeBuilder {
   static ThemeData buildDarkThemeData() => buildTheme(isDark: true);
 
   static ThemeData buildTheme({required bool isDark}) {
-    final baseTheme = isDark ? ThemeData.dark(useMaterial3: true) : ThemeData(useMaterial3: true);
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+    final baseTheme = ThemeData(brightness: brightness, useMaterial3: true);
 
     final colorScheme = ColorScheme(
-      brightness: isDark ? Brightness.dark : Brightness.light,
+      brightness: baseTheme.brightness,
 
       primary: const Color(0xFF00BB31),
       onPrimary: Colors.white,

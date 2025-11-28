@@ -478,7 +478,6 @@ class _FireStoreTestHarness {
     });
   }
 
-  /// reconstruit un boardState minimal compatible avec ton modèle
   static Map<String, dynamic> _recomputeBoardState(List<Map<String, dynamic>> moves) {
     final rows = [0, 0, 0];
     final cols = [0, 0, 0];

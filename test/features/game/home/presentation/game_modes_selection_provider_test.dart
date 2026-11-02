@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 

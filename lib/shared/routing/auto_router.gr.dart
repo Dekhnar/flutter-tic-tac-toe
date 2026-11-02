@@ -11,7 +11,7 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:auto_route/auto_route.dart' as _i6;
 import 'package:flutter/material.dart' as _i7;
-import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart'
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart'
     as _i8;
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart'
     as _i2;

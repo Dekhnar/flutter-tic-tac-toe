@@ -2,12 +2,13 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/creation/presentation/player_name_field.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:uuid/uuid.dart';
 
+/// Creates an online game, whose code the board then shows to share, or joins one with the code received.
 @RoutePage()
 class GameCreateOnlineDialog extends StatefulWidget {
   const GameCreateOnlineDialog({super.key});
@@ -17,50 +18,43 @@ class GameCreateOnlineDialog extends StatefulWidget {
 }
 
 class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
-  late final TextEditingController _shareLinkCtrl;
-  final _shareLink = const Uuid().v4();
-
+  final _codeController = TextEditingController();
+  final _codeFocus = FocusNode();
   final _formKey = GlobalKey<FormState>();
-  final _labelCtrl = TextEditingController();
-  final _labelFocus = FocusNode();
-  final _linkFocus = FocusNode();
+  final _nameController = TextEditingController();
 
   bool _isCreate = true;
 
   @override
-  void initState() {
-    super.initState();
-    _shareLinkCtrl = TextEditingController(text: _shareLink);
-  }
-
-  @override
   void dispose() {
-    _labelCtrl.dispose();
-    _shareLinkCtrl.dispose();
-    _labelFocus.dispose();
-    _linkFocus.dispose();
+    _codeController.dispose();
+    _codeFocus.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
   void _submit(BuildContext context) {
     if (_formKey.currentState?.validate() != true) return;
 
-    final label = _labelCtrl.text.trim();
-    final link = _shareLinkCtrl.text.trim();
-
+    final name = _nameController.text.trim();
     context.router.pop(switch (_isCreate) {
-      true => GameCreateInput.createOnlineLobby(gameId: GameId(link), hostName: label),
-      false => GameCreateInput.joinOnlineLobby(gameId: GameId(link), guestName: label),
+      true => GameCreateInput.createOnlineLobby(hostName: name),
+      false => GameCreateInput.joinOnlineLobby(
+        gameId: GameId(_codeController.text.trim().toUpperCase()),
+        guestName: name,
+      ),
     });
   }
 
-  void _switchForm(bool isCreate) {
-    if (!isCreate) {
-      _shareLinkCtrl.text = "";
-    } else {
-      _shareLinkCtrl.text = _shareLink;
+  Future<void> _pasteCode(BuildContext context) async {
+    final code = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
+    if (!context.mounted) return;
+
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).emptyClipboard)));
+      return;
     }
-    setState(() => _isCreate = isCreate);
+    _codeController.text = code;
   }
 
   @override
@@ -68,77 +62,53 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
     final i18n = I18n.of(context);
 
     return AlertDialog(
+      // Title, fields and actions scroll together when the keyboard leaves little room, as in landscape.
+      scrollable: true,
       title: Text(i18n.onlineGame),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(value: true, label: Text(i18n.create)),
-                    ButtonSegment(value: false, label: Text(i18n.join)),
-                  ],
-                  selected: {_isCreate},
-                  onSelectionChanged: (s) => _switchForm(s.first),
-                ),
-              ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(value: true, label: Text(i18n.create)),
+                ButtonSegment(value: false, label: Text(i18n.join)),
+              ],
+              selected: {_isCreate},
+              onSelectionChanged: (selection) => setState(() => _isCreate = selection.first),
+            ),
+            const SizedBox(height: Dimens.standardSpacing),
+            PlayerNameField(
+              controller: _nameController,
+              label: i18n.playerFirstName,
+              mark: _isCreate ? CellMark.X : CellMark.O,
+              textInputAction: _isCreate ? TextInputAction.done : TextInputAction.next,
+              onSubmitted: _isCreate ? () => _submit(context) : _codeFocus.requestFocus,
+            ),
+            if (!_isCreate) ...[
+              const SizedBox(height: Dimens.halfSpacing),
               TextFormField(
-                controller: _labelCtrl,
-                focusNode: _labelFocus,
-                textInputAction: TextInputAction.next,
+                controller: _codeController,
+                focusNode: _codeFocus,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
-                  labelText: i18n.playerFirstName,
-                  prefixText: '${_isCreate ? CellMark.X.name : CellMark.O.name}: ',
+                  labelText: i18n.gameCode,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.paste),
+                    tooltip: i18n.paste,
+                    onPressed: () => _pasteCode(context),
+                  ),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? i18n.pleaseEnterFirstName : null,
-                onFieldSubmitted: (_) => _linkFocus.requestFocus(),
-                maxLength: 20,
-                inputFormatters: [LengthLimitingTextInputFormatter(20)],
-              ),
-              const SizedBox(height: Dimens.halfPadding),
-              TextFormField(
-                controller: _shareLinkCtrl,
-                focusNode: _linkFocus,
-                readOnly: _isCreate,
-                decoration: InputDecoration(
-                  labelText: _isCreate ? i18n.shareLinkToShare : i18n.shareLinkToPaste,
-                  suffixIcon: switch (_isCreate) {
-                    true => IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: i18n.copy,
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: _shareLinkCtrl.text));
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(i18n.linkCopied)));
-                      },
-                    ),
-                    false => IconButton(
-                      icon: const Icon(Icons.paste),
-                      tooltip: i18n.paste,
-                      onPressed: () async {
-                        final data = await Clipboard.getData('text/plain');
-                        final value = (data?.text ?? '').trim();
-                        if (value.isEmpty) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(i18n.emptyClipboard)));
-                          return;
-                        }
-                        _shareLinkCtrl.text = value;
-                      },
-                    ),
-                  },
-                ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? i18n.pleaseProvideLink : null,
+                validator: (value) => (value?.trim() ?? '').isEmpty ? i18n.pleaseEnterGameCode : null,
+                onFieldSubmitted: (_) => _submit(context),
               ),
             ],
-          ),
+          ],
         ),
       ),
-      actions: [FilledButton(child: Text(_isCreate ? i18n.createGame : i18n.join), onPressed: () => _submit(context))],
+      actions: [FilledButton(onPressed: () => _submit(context), child: Text(_isCreate ? i18n.createGame : i18n.join))],
     );
   }
 }

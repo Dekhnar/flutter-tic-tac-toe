@@ -18,9 +18,6 @@
   "roundIsOver": "La manche est terminée.",
   "gameNotStartedYet": "La partie n'a pas encore commencé.",
   "startGame": "Lancer la partie",
-  "linkCopied": "Lien copié",
-  "shareLinkToPaste": "Lien de partage à coller",
-  "shareLinkToShare": "Lien de partage à partager",
   "onlineGame": "Partie en ligne",
   "gameNotFound": "Partie introuvable.",
   "emptyClipboard": "Presse-papiers vide",
@@ -31,7 +28,6 @@
   "playAgain": "Rejouer",
   "soloVsAi": "Solo vs IA",
   "opponentMustJoin": "Un adversaire doit rejoindre la partie.",
-  "pleaseProvideLink": "Veuillez fournir un lien",
   "pleaseEnterFirstName": "Veuillez saisir un prénom",
   "draw": "Égalité",
   "pleaseRetry": "Veuillez réessayer",
@@ -49,5 +45,13 @@
   "playerWithMark": "{name} ({mark})",
   "gameCodeValue": "Code de la partie : {code}",
   "playerWins": "Victoire de {player}",
-  "yourTurn": "À toi de jouer"
+  "yourTurn": "À toi de jouer",
+  "codeCopied": "Code copié",
+  "gameCode": "Code de la partie",
+  "pleaseEnterGameCode": "Veuillez saisir le code de la partie",
+  "nameTooLong": "{max} caractères au maximum",
+  "share": "Partager",
+  "shareInvitation": "Rejoins ma partie de morpion avec le code {code}",
+  "opponentLeft": "Ton adversaire a quitté la partie.",
+  "gameAbandoned": "Cette partie est terminée : un joueur l’a quittée."
 }

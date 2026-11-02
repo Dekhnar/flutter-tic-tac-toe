@@ -10,8 +10,8 @@ import 'devices.dart';
 
 final _semanticsLabelStyle = GoogleFonts.raleway(color: Colors.black, fontSize: 10, height: 0.8);
 
-/// Renders [scenario] on every [GoldenScreen] (`goldens/<fileName>.<screen>.png`) and checks that every tap target
-/// carries a label for screen readers.
+/// Renders [scenario] on every [GoldenScreen] (`goldens/<fileName>.<screen>.png`) and checks it against the
+/// accessibility guidelines: labelled tap targets of the minimum size on both platforms, and readable text contrast.
 void screenTestGolden(
   String scenario, {
   required ValueGetter<Widget> builder,
@@ -37,16 +37,22 @@ void screenTestGolden(
       );
     }
 
-    testWidgets('labels every tap target for screen readers', (tester) async {
-      final semanticsHandle = tester.ensureSemantics();
-      try {
-        await tester.pumpWidget(MaterialGolden(child: builder()));
-        await tester.pumpAndSettle();
-        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-      } finally {
-        semanticsHandle.dispose();
-      }
-    });
+    for (final themeMode in [ThemeMode.light, ThemeMode.dark]) {
+      testWidgets('meets the accessibility guidelines in ${themeMode.name} mode', (tester) async {
+        final semanticsHandle = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(MaterialGolden(themeMode: themeMode, child: builder()));
+          await tester.pumpAndSettle();
+          await whilePerforming?.call(tester);
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+        } finally {
+          semanticsHandle.dispose();
+        }
+      });
+    }
   });
 }
 

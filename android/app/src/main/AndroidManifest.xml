@@ -3,6 +3,10 @@
         android:label="tic_tac_toe_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Crashlytics collects nothing until the app enables it: release builds on a real project only. -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

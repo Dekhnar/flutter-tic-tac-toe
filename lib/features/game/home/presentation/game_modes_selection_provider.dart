@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_session_starter.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session_starter.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 
 part 'game_modes_selection_provider.g.dart';
 

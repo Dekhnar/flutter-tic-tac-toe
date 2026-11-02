@@ -7,20 +7,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/player_identity.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 import '../../../../shared/fakes/pending_local_game_repository.dart';
 import '../../../../shared/golden_test_utils/devices.dart';
 
-const _gameId = GameId('ABCDEF');
 const _luigi = PlayerId('luigi-uid');
 
 void main() {
@@ -29,6 +29,55 @@ void main() {
   setUp(() {
     games = InMemoryGameRepository();
     addTearDown(games.dispose);
+  });
+
+  for (final brightness in Brightness.values) {
+    testWidgets('the home screen and its dialogs meet the accessibility guidelines in ${brightness.name} mode', (
+      tester,
+    ) async {
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      final semantics = tester.ensureSemantics();
+      final robot = _HomeRobot(tester);
+      await robot.launch(
+        localRepository: games,
+        online: [playerIdentityProvider.overrideWithValue(const _SignedIn(_luigi))],
+      );
+
+      Future<void> expectAccessible() async {
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(textContrastGuideline));
+      }
+
+      await expectAccessible();
+      for (final mode in [I18n.current.local1v1, I18n.current.online1v1]) {
+        await robot.chooseMode(mode);
+        await expectAccessible();
+        await tester.tapAt(const Offset(4, 4));
+        await tester.pumpAndSettle();
+      }
+      semantics.dispose();
+    });
+  }
+
+  testWidgets('the creation dialogs fit a landscape phone with its keyboard open', (tester) async {
+    final robot = _HomeRobot(tester);
+    await robot.launch(
+      localRepository: games,
+      online: [playerIdentityProvider.overrideWithValue(const _SignedIn(_luigi))],
+    );
+    tester.view.physicalSize = const Size(844, 390);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 160);
+    await tester.pumpAndSettle();
+
+    for (final mode in [I18n.current.local1v1, I18n.current.online1v1]) {
+      await robot.chooseMode(mode);
+      expect(tester.takeException(), isNull, reason: mode);
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('the app opened on the address of a board, like a reloaded web page, shows the home screen', (
@@ -105,11 +154,24 @@ void main() {
     expect(find.text('Jessy (X)'), findsOneWidget);
   });
 
+  testWidgets('a name the server would refuse is refused in the form, before anything is created', (tester) async {
+    final robot = _HomeRobot(tester);
+    await robot.launch(localRepository: games);
+    await robot.chooseMode(I18n.current.local1v1);
+
+    // Six flags are six characters on screen, but 24 UTF-16 code units for the server.
+    await robot.enterNames(['🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷', 'Mario']);
+    await robot.tapText(I18n.current.start);
+
+    expect(find.text(I18n.current.nameTooLong(PlayerName.maxLength)), findsOneWidget);
+    expect(find.text(I18n.current.startGame), findsNothing);
+  });
+
   testWidgets('joining a game that already has two players says so and stays on the home screen', (tester) async {
     final firestore = FakeFirebaseFirestore();
     final server = FirestoreGameRepository(firestore: firestore);
-    await server.createGame(_gameId, host: const PlayerId('jessy-uid'), hostName: 'Jessy');
-    await server.joinGame(_gameId, guest: const PlayerId('wario-uid'), guestName: 'Wario');
+    final gameId = await server.createGame(host: const PlayerId('jessy-uid'), hostName: 'Jessy');
+    await server.joinGame(gameId, guest: const PlayerId('wario-uid'), guestName: 'Wario');
     final robot = _HomeRobot(tester);
     await robot.launch(
       localRepository: games,
@@ -119,7 +181,8 @@ void main() {
       ],
     );
 
-    await robot.joinOnlineGame(_gameId, guestName: 'Luigi');
+    // Codes are case-insensitive for the player.
+    await robot.joinOnlineGame(GameId(gameId.value.toLowerCase()), guestName: 'Luigi');
 
     robot.expectSnackBar(I18n.current.gameAlreadyFull);
     expect(find.text(I18n.current.local1v1), findsOneWidget);
@@ -153,8 +216,9 @@ class _HomeRobot {
   Future<void> chooseMode(String title) => tapText(title);
 
   Future<void> enterNames(List<String> names) async {
+    final labels = [I18n.current.playerOneFirstName, I18n.current.playerTwoFirstName];
     for (final (index, name) in names.indexed) {
-      await tester.enterText(find.byType(TextFormField).at(index), name);
+      await tester.enterText(find.widgetWithText(TextFormField, labels[index]), name);
     }
     await tester.pumpAndSettle();
   }
@@ -162,8 +226,8 @@ class _HomeRobot {
   Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
     await chooseMode(I18n.current.online1v1);
     await tapText(I18n.current.join);
-    await tester.enterText(find.byType(TextFormField).first, guestName);
-    await tester.enterText(find.byType(TextFormField).last, gameId.value);
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), guestName);
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.gameCode), gameId.value);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, I18n.current.join));
     await tester.pumpAndSettle();

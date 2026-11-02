@@ -147,21 +147,6 @@ class I18n {
     return Intl.message('Start the game', name: 'startGame', desc: '', args: []);
   }
 
-  /// `Link copied`
-  String get linkCopied {
-    return Intl.message('Link copied', name: 'linkCopied', desc: '', args: []);
-  }
-
-  /// `Share link to paste`
-  String get shareLinkToPaste {
-    return Intl.message('Share link to paste', name: 'shareLinkToPaste', desc: '', args: []);
-  }
-
-  /// `Shareable link`
-  String get shareLinkToShare {
-    return Intl.message('Shareable link', name: 'shareLinkToShare', desc: '', args: []);
-  }
-
   /// `Online game`
   String get onlineGame {
     return Intl.message('Online game', name: 'onlineGame', desc: '', args: []);
@@ -212,11 +197,6 @@ class I18n {
     return Intl.message('An opponent must join the game.', name: 'opponentMustJoin', desc: '', args: []);
   }
 
-  /// `Please provide a link`
-  String get pleaseProvideLink {
-    return Intl.message('Please provide a link', name: 'pleaseProvideLink', desc: '', args: []);
-  }
-
   /// `Please enter a first name`
   String get pleaseEnterFirstName {
     return Intl.message('Please enter a first name', name: 'pleaseEnterFirstName', desc: '', args: []);
@@ -242,9 +222,9 @@ class I18n {
     return Intl.message('An error occurred, please try again later.', name: 'errorRetryLater', desc: '', args: []);
   }
 
-  /// `Close`
+  /// `Quit`
   String get quit {
-    return Intl.message('Close', name: 'quit', desc: '', args: []);
+    return Intl.message('Quit', name: 'quit', desc: '', args: []);
   }
 
   /// `Cell {row} {column} empty`
@@ -305,6 +285,51 @@ class I18n {
   /// `Your turn`
   String get yourTurn {
     return Intl.message('Your turn', name: 'yourTurn', desc: '', args: []);
+  }
+
+  /// `Code copied`
+  String get codeCopied {
+    return Intl.message('Code copied', name: 'codeCopied', desc: '', args: []);
+  }
+
+  /// `Game code`
+  String get gameCode {
+    return Intl.message('Game code', name: 'gameCode', desc: '', args: []);
+  }
+
+  /// `Please enter the game code`
+  String get pleaseEnterGameCode {
+    return Intl.message('Please enter the game code', name: 'pleaseEnterGameCode', desc: '', args: []);
+  }
+
+  /// `{max} characters at most`
+  String nameTooLong(Object max) {
+    return Intl.message('$max characters at most', name: 'nameTooLong', desc: '', args: [max]);
+  }
+
+  /// `Share`
+  String get share {
+    return Intl.message('Share', name: 'share', desc: '', args: []);
+  }
+
+  /// `Join my tic-tac-toe game with the code {code}`
+  String shareInvitation(Object code) {
+    return Intl.message(
+      'Join my tic-tac-toe game with the code $code',
+      name: 'shareInvitation',
+      desc: '',
+      args: [code],
+    );
+  }
+
+  /// `Your opponent left the game.`
+  String get opponentLeft {
+    return Intl.message('Your opponent left the game.', name: 'opponentLeft', desc: '', args: []);
+  }
+
+  /// `This game is over: a player left it.`
+  String get gameAbandoned {
+    return Intl.message('This game is over: a player left it.', name: 'gameAbandoned', desc: '', args: []);
   }
 }
 

@@ -1,8 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/creation/presentation/player_name_field.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 @RoutePage()
@@ -46,50 +47,37 @@ class _GameCreateOfflineDialogState extends State<GameCreateOfflineDialog> {
     });
   }
 
-  String? _requiredNameValidator(BuildContext context, String? value) {
-    return (value?.trim() ?? '').isEmpty ? I18n.of(context).pleaseEnterFirstName : null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      // Title, fields and actions scroll together when the keyboard leaves little room, as in landscape.
+      scrollable: true,
       title: Text(_isVsAi ? I18n.of(context).soloVsAi : I18n.of(context).local1v1),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _fromNameController,
-                focusNode: _fromFocusNode,
-                textInputAction: _isVsAi ? TextInputAction.done : TextInputAction.next,
-                decoration: InputDecoration(labelText: I18n.of(context).playerOneFirstName, prefixText: 'X: '),
-                validator: (v) => _requiredNameValidator(context, v),
-                onFieldSubmitted: (_) {
-                  if (_isVsAi) {
-                    _handleSubmit(context);
-                  } else {
-                    _toFocusNode.requestFocus();
-                  }
-                },
-                maxLength: 20,
-                inputFormatters: [LengthLimitingTextInputFormatter(20)],
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PlayerNameField(
+              controller: _fromNameController,
+              focusNode: _fromFocusNode,
+              label: I18n.of(context).playerOneFirstName,
+              mark: CellMark.X,
+              textInputAction: _isVsAi ? TextInputAction.done : TextInputAction.next,
+              onSubmitted: _isVsAi ? () => _handleSubmit(context) : _toFocusNode.requestFocus,
+            ),
+            if (!_isVsAi) ...[
+              const SizedBox(height: Dimens.halfSpacing),
+              PlayerNameField(
+                controller: _toNameController,
+                focusNode: _toFocusNode,
+                label: I18n.of(context).playerTwoFirstName,
+                mark: CellMark.O,
+                textInputAction: TextInputAction.done,
+                onSubmitted: () => _handleSubmit(context),
               ),
-              if (!_isVsAi) const SizedBox(height: Dimens.halfSpacing),
-              if (!_isVsAi)
-                TextFormField(
-                  controller: _toNameController,
-                  focusNode: _toFocusNode,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(labelText: I18n.of(context).playerTwoFirstName, prefixText: 'O: '),
-                  validator: (v) => _requiredNameValidator(context, v),
-                  onFieldSubmitted: (_) => _handleSubmit(context),
-                  maxLength: 20,
-                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
-                ),
             ],
-          ),
+          ],
         ),
       ),
       actions: [FilledButton(onPressed: () => _handleSubmit(context), child: Text(I18n.of(context).start))],

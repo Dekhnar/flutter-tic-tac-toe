@@ -8,8 +8,6 @@ class Dimens {
   static const double largeRadius = 32;
   static const double standardRadius = 14;
 
-  static const double standardAssetSize = 16;
-
   static const double boardMaxWidth = 480;
 
   static const double sliderWidth = 600;

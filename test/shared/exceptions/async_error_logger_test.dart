@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
@@ -24,7 +25,7 @@ void main() {
     container = ProviderContainer(
       observers: [const AsyncErrorLogger()],
       overrides: [
-        errorLoggerServiceProvider.overrideWithValue(logger),
+        errorLoggerProvider.overrideWithValue(logger),
         isOnlineAvailableProvider.overrideWithValue(false),
         localGameRepositoryProvider.overrideWithValue(games),
       ],
@@ -33,7 +34,7 @@ void main() {
   });
 
   test('a move the game refuses is reported once', () async {
-    final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy', vsAi: false);
+    final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy');
     await games.startGame(gameId: gameId);
     final session = GameSession.local(gameId: gameId);
     container.listen(gameProvider(session), (_, _) {});
@@ -41,7 +42,7 @@ void main() {
     await container.read(gameProvider(session).future);
     final actions = container.read(gameActionsProvider(session).notifier);
 
-    await actions.makeMove(0, 5);
+    await actions.makeMove(const Cell(9));
 
     expect(logger.errors, [isA<MoveCellIndexInvalidException>()]);
   });
@@ -66,7 +67,7 @@ void main() {
   });
 }
 
-final class _RecordingLogger implements ErrorLoggerService {
+final class _RecordingLogger implements ErrorLogger {
   final errors = <Object>[];
 
   @override

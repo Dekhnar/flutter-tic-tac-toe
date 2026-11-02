@@ -28,11 +28,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m3(code) => "Game code: ${code}";
 
-  static String m4(player) => "${player} wins";
+  static String m4(max) => "${max} characters at most";
 
-  static String m5(name, mark) => "${name} (${mark})";
+  static String m5(player) => "${player} wins";
 
-  static String m6(player) => "Turn: ${player}";
+  static String m6(name, mark) => "${name} (${mark})";
+
+  static String m7(code) => "Join my tic-tac-toe game with the code ${code}";
+
+  static String m8(player) => "Turn: ${player}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -41,6 +45,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "boardCellCross": m1,
     "boardCellEmpty": m2,
     "cellAlreadyTaken": MessageLookupByLibrary.simpleMessage("This cell is already taken."),
+    "codeCopied": MessageLookupByLibrary.simpleMessage("Code copied"),
     "copy": MessageLookupByLibrary.simpleMessage("Copy"),
     "create": MessageLookupByLibrary.simpleMessage("Create"),
     "createGame": MessageLookupByLibrary.simpleMessage("Create game"),
@@ -48,19 +53,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "emptyClipboard": MessageLookupByLibrary.simpleMessage("Clipboard is empty"),
     "errorRetryLater": MessageLookupByLibrary.simpleMessage("An error occurred, please try again later."),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
+    "gameAbandoned": MessageLookupByLibrary.simpleMessage("This game is over: a player left it."),
     "gameAlreadyFull": MessageLookupByLibrary.simpleMessage("This game already has two players."),
+    "gameCode": MessageLookupByLibrary.simpleMessage("Game code"),
     "gameCodeValue": m3,
     "gameNotFound": MessageLookupByLibrary.simpleMessage("Game not found."),
     "gameNotStartedYet": MessageLookupByLibrary.simpleMessage("The game has not started yet."),
     "invalidCellIndex": MessageLookupByLibrary.simpleMessage("Invalid cell index."),
     "join": MessageLookupByLibrary.simpleMessage("Join"),
-    "linkCopied": MessageLookupByLibrary.simpleMessage("Link copied"),
     "loading": MessageLookupByLibrary.simpleMessage("Loading"),
     "local1v1": MessageLookupByLibrary.simpleMessage("Local 1v1"),
+    "nameTooLong": m4,
     "notYourTurn": MessageLookupByLibrary.simpleMessage("It\'s not your turn."),
     "online1v1": MessageLookupByLibrary.simpleMessage("Online 1v1"),
     "onlineGame": MessageLookupByLibrary.simpleMessage("Online game"),
     "onlineUnavailable": MessageLookupByLibrary.simpleMessage("Online mode is unavailable in this build."),
+    "opponentLeft": MessageLookupByLibrary.simpleMessage("Your opponent left the game."),
     "opponentMustJoin": MessageLookupByLibrary.simpleMessage("An opponent must join the game."),
     "paste": MessageLookupByLibrary.simpleMessage("Paste"),
     "play": MessageLookupByLibrary.simpleMessage("Play"),
@@ -71,20 +79,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "playerFirstName": MessageLookupByLibrary.simpleMessage("Player first name"),
     "playerOneFirstName": MessageLookupByLibrary.simpleMessage("Player 1 first name"),
     "playerTwoFirstName": MessageLookupByLibrary.simpleMessage("Player 2 first name"),
-    "playerWins": m4,
-    "playerWithMark": m5,
+    "playerWins": m5,
+    "playerWithMark": m6,
     "pleaseEnterFirstName": MessageLookupByLibrary.simpleMessage("Please enter a first name"),
-    "pleaseProvideLink": MessageLookupByLibrary.simpleMessage("Please provide a link"),
+    "pleaseEnterGameCode": MessageLookupByLibrary.simpleMessage("Please enter the game code"),
     "pleaseRetry": MessageLookupByLibrary.simpleMessage("Please retry"),
-    "quit": MessageLookupByLibrary.simpleMessage("Close"),
+    "quit": MessageLookupByLibrary.simpleMessage("Quit"),
     "retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "roundIsOver": MessageLookupByLibrary.simpleMessage("The round is over."),
-    "shareLinkToPaste": MessageLookupByLibrary.simpleMessage("Share link to paste"),
-    "shareLinkToShare": MessageLookupByLibrary.simpleMessage("Shareable link"),
+    "share": MessageLookupByLibrary.simpleMessage("Share"),
+    "shareInvitation": m7,
     "soloVsAi": MessageLookupByLibrary.simpleMessage("Solo vs AI"),
     "start": MessageLookupByLibrary.simpleMessage("Start"),
     "startGame": MessageLookupByLibrary.simpleMessage("Start the game"),
-    "turnOf": m6,
+    "turnOf": m8,
     "waitingForOpponent": MessageLookupByLibrary.simpleMessage("Waiting for an opponent…"),
     "yourTurn": MessageLookupByLibrary.simpleMessage("Your turn"),
   };

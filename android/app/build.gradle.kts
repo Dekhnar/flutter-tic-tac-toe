@@ -1,6 +1,9 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    id("com.google.firebase.crashlytics")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -35,6 +38,8 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Uploading the R8 mapping needs google-services.json, which this project replaces with dart-defines.
+            configure<CrashlyticsExtension> { mappingFileUploadEnabled = false }
         }
     }
 }

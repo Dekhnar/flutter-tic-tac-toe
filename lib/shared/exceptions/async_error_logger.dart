@@ -8,6 +8,6 @@ final class AsyncErrorLogger extends ProviderObserver {
 
   @override
   void providerDidFail(ProviderObserverContext context, Object error, StackTrace stackTrace) {
-    context.container.read(errorLoggerServiceProvider).log(error, stackTrace);
+    context.container.read(errorLoggerProvider).log(error, stackTrace);
   }
 }

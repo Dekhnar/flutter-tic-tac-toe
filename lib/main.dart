@@ -1,59 +1,21 @@
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/composition.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
-import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const errorLoggerService = ErrorLoggerService();
-  final container = await createAppContainer(errorLogger: errorLoggerService);
-
-  _registerErrorHandlers(errorLoggerService);
+  final container = await createAppContainer();
+  _registerErrorHandlers(container.read(errorLoggerProvider));
   runApp(UncontrolledProviderScope(container: container, child: const App()));
 }
 
-/// The providers wired as `main` runs the app, minus the global error handlers: integration tests use it as is.
-Future<ProviderContainer> createAppContainer({ErrorLoggerService errorLogger = const ErrorLoggerService()}) async {
-  GoogleFonts.config.allowRuntimeFetching = false;
-
-  final isOnlineAvailable = await _initializeFirebase(errorLogger);
-
-  final container = ProviderContainer(
-    overrides: bindGameProviders(isOnlineAvailable: isOnlineAvailable),
-    observers: [const AsyncErrorLogger()],
-  );
-  try {
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  } catch (error, stackTrace) {
-    errorLogger.log(error, stackTrace);
-  }
-
-  return container;
-}
-
-Future<bool> _initializeFirebase(ErrorLoggerService errorLogger) async {
-  final options = FirebaseEnvironment.currentPlatform;
-  if (options == null) return false;
-
-  try {
-    await FirebaseEnvironment.initialize(options);
-    return true;
-  } catch (error, stackTrace) {
-    errorLogger.log(error, stackTrace);
-    return false;
-  }
-}
-
-void _registerErrorHandlers(ErrorLoggerService errorLogger) {
+void _registerErrorHandlers(ErrorLogger errorLogger) {
   // * Register error handlers. For more info, see:
   // * https://docs.flutter.dev/testing/errors
 
@@ -80,7 +42,7 @@ class _BrokenWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final message = kReleaseMode ? I18n.maybeOf(context)?.errorRetryLater ?? 'An error occurred.' : details.toString();
+    final message = kDebugMode ? details.toString() : I18n.maybeOf(context)?.errorRetryLater ?? 'An error occurred.';
 
     return Material(
       color: colors.error,

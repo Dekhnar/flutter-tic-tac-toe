@@ -9,16 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/dto/game_document.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
@@ -92,7 +92,7 @@ void main() {
       await robot.pumpOnlineGameAsHost();
 
       robot.expectText(I18n.current.waitingForOpponent);
-      robot.expectText(I18n.current.gameCodeValue(_gameId.value));
+      robot.expectText(I18n.current.gameCodeValue(harness.gameId.value));
 
       await harness.opponentJoins();
       await tester.pumpAndSettle();
@@ -117,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
       robot.expectCellEmpty(1);
 
-      await harness.opponent.makeMove(gameId: _gameId, playerId: _luigi, row: 1, col: 1);
+      await harness.opponent.makeMove(gameId: harness.gameId, playerId: _luigi, cell: const Cell(4));
       await tester.pumpAndSettle();
       robot.expectCellHasMark(4, 'O');
 
@@ -186,6 +186,36 @@ void main() {
       robot.expectCellEmpty(1);
       robot.expectText(I18n.current.turnOf('Luigi (O)'));
       expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('an opponent who leaves ends the game: the board says so and takes no more moves', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+
+      await harness.opponentLeaves();
+      await tester.pumpAndSettle();
+      await robot.tapCell(0);
+      await tester.pumpAndSettle();
+
+      robot.expectText(I18n.current.opponentLeft);
+      robot.expectCellEmpty(0);
+    });
+
+    testWidgets('closing the board leaves the game, which the opponent then sees abandoned', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      final stored = await tester.runAsync(
+        () => harness.host
+            .watchGame(harness.gameId)
+            .firstWhere((game) => game.status == GameStatus.abandoned)
+            .timeout(const Duration(seconds: 1)),
+      );
+      expect(stored?.status, GameStatus.abandoned);
     });
 
     testWidgets('a game deleted while being played shows a blocking error that only offers to leave', (tester) async {
@@ -284,8 +314,8 @@ class _GameBoardScreenRobot {
   final localRepository = InMemoryGameRepository();
 
   Future<GameSession> pumpLocalGame({String guestName = '', required String hostName, bool vsAi = false}) async {
-    final gameId = await localRepository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
-    final session = GameSession.local(gameId: gameId);
+    final gameId = await localRepository.createGame(guestName: guestName, hostName: hostName);
+    final session = GameSession.local(gameId: gameId, vsAi: vsAi);
 
     await tester.pumpScreen(
       ProviderScope(
@@ -298,11 +328,11 @@ class _GameBoardScreenRobot {
   }
 
   Future<void> pumpOnlineGameAsHost() async {
-    await _harness.host.createGame(_gameId, host: _jessy, hostName: 'Jessy');
+    _harness.gameId = await _harness.host.createGame(host: _jessy, hostName: 'Jessy');
     await tester.pumpScreen(
       ProviderScope(
         overrides: [onlineGameRepositoryProvider.overrideWithValue(_harness.appRepository)],
-        child: const GameBoardScreen(session: _onlineSession),
+        child: GameBoardScreen(session: GameSession.online(gameId: _harness.gameId, me: _jessy)),
       ),
     );
     await tester.pumpAndSettle();
@@ -332,12 +362,12 @@ class _GameBoardScreenRobot {
   void expectTextNotPresent(String text) => expect(find.text(text), findsNothing);
 
   void expectCellHasMark(int index, String mark) {
-    final cell = find.byType(BaseCardButton).at(index);
+    final cell = find.byKey(Key('cell_$index'));
     expect(find.descendant(of: cell, matching: find.text(mark)), findsOneWidget);
   }
 
   void expectCellEmpty(int index) {
-    final cell = find.byType(BaseCardButton).at(index);
+    final cell = find.byKey(Key('cell_$index'));
     expect(find.descendant(of: cell, matching: find.text('X')), findsNothing);
     expect(find.descendant(of: cell, matching: find.text('O')), findsNothing);
   }
@@ -393,13 +423,18 @@ class _FirestoreTestHarness {
   /// The repository of the board under test.
   late final appRepository = _AppRepository(FirestoreGameRepository(firestore: firestore));
 
-  Future<void> opponentJoins() => opponent.joinGame(_gameId, guest: _luigi, guestName: 'Luigi');
+  /// The game the host created.
+  late GameId gameId;
 
-  Future<void> deleteGame() => firestore.collection('games').doc(_gameId.value).delete();
+  Future<void> opponentJoins() => opponent.joinGame(gameId, guest: _luigi, guestName: 'Luigi');
+
+  Future<void> opponentLeaves() => opponent.leaveGame(gameId);
+
+  Future<void> deleteGame() => firestore.collection('games').doc(gameId.value).delete();
 
   /// Puts the stored game in the state the server would refuse a move for.
   Future<void> seedForRefusal(GameException refusal) async {
-    final gameRef = firestore.collection('games').doc(_gameId.value);
+    final gameRef = firestore.collection('games').doc(gameId.value);
 
     switch (refusal) {
       case MoveGameFinishedException():
@@ -430,22 +465,20 @@ final class _AppRepository implements OnlineGameRepositoryInterface {
   AsyncCallback? beforeMakeMove;
 
   @override
-  Future<void> createGame(GameId gameId, {required PlayerId host, required String hostName}) =>
-      _repository.createGame(gameId, host: host, hostName: hostName);
+  Future<GameId> createGame({required PlayerId host, required String hostName}) =>
+      _repository.createGame(host: host, hostName: hostName);
+
+  @override
+  Future<void> leaveGame(GameId gameId) => _repository.leaveGame(gameId);
 
   @override
   Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName}) =>
       _repository.joinGame(gameId, guest: guest, guestName: guestName);
 
   @override
-  Future<void> makeMove({
-    required GameId gameId,
-    required PlayerId playerId,
-    required int row,
-    required int col,
-  }) async {
+  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async {
     await beforeMakeMove?.call();
-    await _repository.makeMove(gameId: gameId, playerId: playerId, row: row, col: col);
+    await _repository.makeMove(gameId: gameId, playerId: playerId, cell: cell);
   }
 
   @override
@@ -486,6 +519,6 @@ Game _buildFinishedGame() => Game(
 );
 
 Board _board({required List<int> x, required List<int> o}) => [
-  for (final cell in x) (cell, CellMark.X),
-  for (final cell in o) (cell, CellMark.O),
+  for (final cell in x) (Cell(cell), CellMark.X),
+  for (final cell in o) (Cell(cell), CellMark.O),
 ].fold(Board.empty, (board, move) => board.play(move.$1, move.$2));

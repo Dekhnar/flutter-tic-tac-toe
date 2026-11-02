@@ -6,15 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/dto/game_document.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/composition.dart';
+import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
+import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/main.dart' as app;
 import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
-import 'package:uuid/uuid.dart';
 
 /// Runs the real app on a device. The online scenarios need the emulators (see README):
 /// `flutter test integration_test --dart-define-from-file=firebase_emulator.json`.
@@ -85,7 +84,7 @@ void main() {
       for (final (mine, theirs) in [(0, 3), (1, 4)]) {
         await robot.play([mine]);
         await robot.waitFor(find.text(I18n.current.turnOf('Luigi (O)')));
-        await opponent.repository.makeMove(gameId: gameId, playerId: opponent.id, row: theirs ~/ 3, col: theirs % 3);
+        await opponent.repository.makeMove(gameId: gameId, playerId: opponent.id, cell: Cell(theirs));
         await robot.waitFor(find.text(I18n.current.yourTurn));
       }
       await robot.play([2]);
@@ -106,8 +105,7 @@ void main() {
     }
 
     testWidgets('joining a game that already has two players stays on the home screen and says so', (tester) async {
-      final gameId = GameId(const Uuid().v4());
-      await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+      final gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
       await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
       final robot = _AppRobot(tester);
       await robot.launch();
@@ -118,14 +116,13 @@ void main() {
     }, skip: !online);
 
     test('both players pressing the same button at once start the game, then the next round, once each', () async {
-      final gameId = GameId(const Uuid().v4());
-      await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+      final gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
       await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
 
       await Future.wait([opponent.repository.startGame(gameId: gameId), cheater.repository.startGame(gameId: gameId)]);
       for (final (turn, cell) in [0, 3, 1, 4, 2].indexed) {
         final device = turn.isEven ? opponent : cheater;
-        await device.repository.makeMove(gameId: gameId, playerId: device.id, row: cell ~/ 3, col: cell % 3);
+        await device.repository.makeMove(gameId: gameId, playerId: device.id, cell: Cell(cell));
       }
       await Future.wait([
         opponent.repository.startNewRound(gameId: gameId),
@@ -137,8 +134,7 @@ void main() {
     }, skip: !online);
 
     test('two players joining at once: one takes the seat, the other is told the game is full', () async {
-      final gameId = GameId(const Uuid().v4());
-      await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+      final gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
 
       Future<Object?> join(_Device device, String name) => device.repository
           .joinGame(gameId, guest: device.id, guestName: name)
@@ -156,8 +152,7 @@ void main() {
       setUp(() async {
         if (!online) return;
 
-        gameId = GameId(const Uuid().v4());
-        await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+        gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
       });
 
       Future<void> expectDenied(Future<void> write) =>
@@ -171,6 +166,46 @@ void main() {
         await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
 
         await expectDenied(opponent.gameRef(gameId).update({'toId': opponent.id.value, 'toName': 'Luigi'}));
+      }, skip: !online);
+
+      test('a name longer than 20 UTF-16 code units, which a few flags reach', () async {
+        await expectDenied(
+          cheater.repository.joinGame(gameId, guest: cheater.id, guestName: '🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷'),
+        );
+      }, skip: !online);
+
+      test('leaving a game one does not play, and leaving a game twice', () async {
+        await expectDenied(cheater.repository.leaveGame(gameId));
+
+        // The host leaves: the refusal above comes from the stranger, not the write.
+        await opponent.repository.leaveGame(gameId);
+        await expectDenied(
+          opponent.gameRef(gameId).update({
+            GameField.status.name: GameStatus.abandoned.name,
+            GameField.updatedAt.name: FieldValue.serverTimestamp(),
+          }),
+        );
+      }, skip: !online);
+
+      test('a write that forges its time', () async {
+        await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
+        await opponent.repository.startGame(gameId: gameId);
+
+        await expectDenied(
+          opponent.play(gameId, _board(x: [0]), {
+            GameField.currentPlayerId: cheater.id.value,
+            GameField.updatedAt: 'now',
+          }),
+        );
+        await expectDenied(
+          opponent.play(gameId, _board(x: [0]), {
+            GameField.currentPlayerId: cheater.id.value,
+            GameField.lastPlayAt: Timestamp.fromDate(DateTime.utc(2000)),
+          }),
+        );
+
+        // The same move with the server's time goes through.
+        await opponent.play(gameId, _board(x: [0]), {GameField.currentPlayerId: cheater.id.value});
       }, skip: !online);
 
       test('a move out of turn, a fake victory, an overwritten cell and an inflated score', () async {
@@ -213,13 +248,11 @@ void main() {
         );
         final forever = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 3650)));
 
-        await expectDenied(cheater.gameRef(GameId(const Uuid().v4())).set({...created, 'vsAi': true}));
-        await expectDenied(
-          cheater.gameRef(GameId(const Uuid().v4())).set({...created, GameField.expiresAt.name: forever}),
-        );
+        await expectDenied(cheater.gameRef(_freshGameId()).set({...created, 'vsAi': true}));
+        await expectDenied(cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: forever}));
 
         // The game as the app writes it goes through: the refusals above come from the extra field and the expiry.
-        await cheater.gameRef(GameId(const Uuid().v4())).set(created);
+        await cheater.gameRef(_freshGameId()).set(created);
       }, skip: !online);
 
       test('deleting a game', () async {
@@ -228,6 +261,9 @@ void main() {
     });
   });
 }
+
+/// A game id nobody uses yet, for a cheater writing the document directly.
+GameId _freshGameId() => GameId('CHEAT-${DateTime.timestamp().microsecondsSinceEpoch}');
 
 /// A board as the rules read it, with X and O on the given cells.
 List<String> _board({List<int> x = const [], List<int> o = const []}) => [
@@ -252,9 +288,12 @@ final class _Device {
 
   DocumentReference<Map<String, dynamic>> gameRef(GameId gameId) => firestore.collection('games').doc(gameId.value);
 
-  /// Writes a move as the app would, without the app's checks: the board after it, and what it changes in the game.
+  /// Writes a move as the app would, without the app's checks: the board after it, the server's time, and what [outcome]
+  /// changes in the game (or overrides).
   Future<void> play(GameId gameId, List<String> board, Map<GameField, Object?> outcome) => gameRef(gameId).update({
     GameField.board.name: board,
+    GameField.lastPlayAt.name: FieldValue.serverTimestamp(),
+    GameField.updatedAt.name: FieldValue.serverTimestamp(),
     for (final MapEntry(key: field, :value) in outcome.entries) field.name: value,
   });
 }
@@ -265,32 +304,36 @@ class _AppRobot {
   final WidgetTester tester;
 
   Future<void> launch() async {
-    await tester.pumpWidget(UncontrolledProviderScope(container: await app.createAppContainer(), child: const App()));
+    await tester.pumpWidget(UncontrolledProviderScope(container: await createAppContainer(), child: const App()));
     await tester.pumpAndSettle();
   }
 
   Future<void> chooseMode(String title) => tapText(title);
 
   Future<void> enterNames(List<String> names) async {
+    final labels = [I18n.current.playerOneFirstName, I18n.current.playerTwoFirstName];
     for (final (index, name) in names.indexed) {
-      await tester.enterText(find.byType(TextFormField).at(index), name);
+      await tester.enterText(find.widgetWithText(TextFormField, labels[index]), name);
     }
     await tester.pumpAndSettle();
   }
 
+  /// Creates a game from the app, and reads its code where the board shows it to share.
   Future<GameId> createOnlineGame({required String hostName}) async {
     await chooseMode(I18n.current.online1v1);
-    await tester.enterText(find.byType(TextFormField).first, hostName);
-    final gameId = GameId(tester.widget<TextFormField>(find.byType(TextFormField).last).controller?.text ?? '');
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), hostName);
     await tapText(I18n.current.createGame);
-    return gameId;
+
+    final codeLabel = I18n.current.gameCodeValue('');
+    await waitFor(find.textContaining(codeLabel));
+    return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
   }
 
   Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
     await chooseMode(I18n.current.online1v1);
     await tapText(I18n.current.join);
-    await tester.enterText(find.byType(TextFormField).first, guestName);
-    await tester.enterText(find.byType(TextFormField).last, gameId.value);
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), guestName);
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.gameCode), gameId.value);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, I18n.current.join));
     await tester.pumpAndSettle();

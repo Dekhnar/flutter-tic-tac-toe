@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tic_tac_toe_app/design_system/components/lists/right_side_slider.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/features/game/board/presentation/game_error_message.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
-import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_state.dart';
+import 'package:tic_tac_toe_app/features/game/home/presentation/game_mode.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
@@ -21,7 +21,6 @@ class GameModeSelectionScreen extends ConsumerWidget {
       if (next case AsyncError(:final error)) _showMessage(context, I18n.of(context).gameError(error));
     });
     final i18n = I18n.of(context);
-    final gameModes = GameMode.values.map((mode) => mode.getPane(i18n)).toList();
 
     return Scaffold(
       body: SafeArea(
@@ -31,10 +30,10 @@ class GameModeSelectionScreen extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: Dimens.sliderWidth),
-                child: RightSideSlider(
-                  items: gameModes,
+                child: RightSideSlider<GameMode>(
                   ctaLabel: i18n.play,
-                  onPaneTap: (index) => _play(context, ref, gameModes[index].value),
+                  items: [for (final mode in GameMode.values) mode.toSliderItem(i18n)],
+                  onSelected: (mode) => _play(context, ref, mode),
                 ),
               ),
             ),

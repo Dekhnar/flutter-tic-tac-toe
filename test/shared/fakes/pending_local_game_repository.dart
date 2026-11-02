@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 
 /// Local games that are created only once [created] completes, or never when it fails.
-final class PendingLocalGameRepository implements LocalGameRepositoryInterface {
+final class PendingLocalGameRepository implements LocalGameRepository {
   PendingLocalGameRepository(this._repository);
 
   final InMemoryGameRepository _repository;

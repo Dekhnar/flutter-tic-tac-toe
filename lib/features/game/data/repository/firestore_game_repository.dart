@@ -7,12 +7,12 @@ import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_rules.dart';
 
 /// Stores online games in Firestore. Every write applies [GameRules] to the game as the server has it, in a
 /// transaction, and `firestore.rules` check the result again on the server.
-final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
+final class FirestoreGameRepository implements OnlineGameRepository {
   FirestoreGameRepository({
     @visibleForTesting Clock clock = const Clock(),
     required FirebaseFirestore firestore,
@@ -43,7 +43,12 @@ final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
       final gameRef = _gameRef(gameId);
       if ((await transaction.get(gameRef)).exists) continue;
 
-      final game = Game(currentPlayerId: host, hostId: host, hostName: hostName, id: gameId, status: GameStatus.setup);
+      final game = Game(
+        currentPlayerId: host,
+        host: Player(id: host, name: hostName),
+        id: gameId,
+        status: GameStatus.setup,
+      );
       transaction.set(gameRef, GameDocument.write(GameWrite.create, game, expiresAt: _clock.now().add(lifetime)));
       return gameId;
     }
@@ -58,8 +63,15 @@ final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
     await _update(gameId, GameWrite.join, (game) => _rules.join(game, guest: guest, guestName: guestName));
   }
 
+  /// Leaving a game the server no longer has changes nothing.
   @override
-  Future<void> leaveGame(GameId gameId) => _update(gameId, GameWrite.leave, _rules.leave);
+  Future<void> leaveGame(GameId gameId) async {
+    try {
+      await _update(gameId, GameWrite.leave, _rules.leave);
+    } on GameNotFoundException {
+      return;
+    }
+  }
 
   /// Offline, a game missing from the cache is not known to be missing: the stream waits for the server instead.
   @override

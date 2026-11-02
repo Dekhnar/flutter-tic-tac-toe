@@ -12,9 +12,8 @@ part of 'game_provider.dart';
 @ProviderFor(sessionGameRepository)
 const sessionGameRepositoryProvider = SessionGameRepositoryFamily._();
 
-final class SessionGameRepositoryProvider
-    extends $FunctionalProvider<GameRepositoryInterface, GameRepositoryInterface, GameRepositoryInterface>
-    with $Provider<GameRepositoryInterface> {
+final class SessionGameRepositoryProvider extends $FunctionalProvider<GameRepository, GameRepository, GameRepository>
+    with $Provider<GameRepository> {
   const SessionGameRepositoryProvider._({
     required SessionGameRepositoryFamily super.from,
     required GameSession super.argument,
@@ -38,17 +37,17 @@ final class SessionGameRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<GameRepositoryInterface> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<GameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
-  GameRepositoryInterface create(Ref ref) {
+  GameRepository create(Ref ref) {
     final argument = this.argument as GameSession;
     return sessionGameRepository(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GameRepositoryInterface value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GameRepositoryInterface>(value));
+  Override overrideWithValue(GameRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GameRepository>(value));
   }
 
   @override
@@ -62,10 +61,9 @@ final class SessionGameRepositoryProvider
   }
 }
 
-String _$sessionGameRepositoryHash() => r'4d66c29ea71c96861f678602907a4eccab63025e';
+String _$sessionGameRepositoryHash() => r'c7cc9425e3866630f3f24dc1075743200e4f2975';
 
-final class SessionGameRepositoryFamily extends $Family
-    with $FunctionalFamilyOverride<GameRepositoryInterface, GameSession> {
+final class SessionGameRepositoryFamily extends $Family with $FunctionalFamilyOverride<GameRepository, GameSession> {
   const SessionGameRepositoryFamily._()
     : super(
         retry: null,
@@ -145,6 +143,90 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
   String toString() => r'gameProvider';
 }
 
+/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+/// since nothing is left to leave.
+
+@ProviderFor(leaveNeedsConfirmation)
+const leaveNeedsConfirmationProvider = LeaveNeedsConfirmationFamily._();
+
+/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+/// since nothing is left to leave.
+
+final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
+  /// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+  /// since nothing is left to leave.
+  const LeaveNeedsConfirmationProvider._({
+    required LeaveNeedsConfirmationFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: null,
+         name: r'leaveNeedsConfirmationProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$leaveNeedsConfirmationHash();
+
+  @override
+  String toString() {
+    return r'leaveNeedsConfirmationProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    final argument = this.argument as GameSession;
+    return leaveNeedsConfirmation(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<bool>(value));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LeaveNeedsConfirmationProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$leaveNeedsConfirmationHash() => r'8f5ef7ffcc88713493f50f879a90a83c3b6227cc';
+
+/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+/// since nothing is left to leave.
+
+final class LeaveNeedsConfirmationFamily extends $Family with $FunctionalFamilyOverride<bool, GameSession> {
+  const LeaveNeedsConfirmationFamily._()
+    : super(
+        retry: null,
+        name: r'leaveNeedsConfirmationProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+  /// since nothing is left to leave.
+
+  LeaveNeedsConfirmationProvider call(GameSession session) =>
+      LeaveNeedsConfirmationProvider._(argument: session, from: this);
+
+  @override
+  String toString() => r'leaveNeedsConfirmationProvider';
+}
+
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 
 @ProviderFor(GameActions)
@@ -187,7 +269,7 @@ final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void
   }
 }
 
-String _$gameActionsHash() => r'63159fa20d1096191bdc841e844a13c1acdc9c24';
+String _$gameActionsHash() => r'99d68d540c4fef8dfd5601f1ca22eb17be063f7d';
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 

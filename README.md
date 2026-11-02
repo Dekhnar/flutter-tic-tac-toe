@@ -77,13 +77,13 @@ lib/
  ├─ shared/                 # Firebase environment, routing, error logging
  ├─ design_system/          # foundations (theme, dimensions, typography) and components
  └─ features/game/
-     ├─ domain/             # Game, Board, Cell, GameRules, TicTacToeAI, GameException, repository and identity contracts
+     ├─ domain/             # Game, Player, Board, Cell, GameRules, TicTacToeAI, GameException, repository contracts
      ├─ data/               # Firestore and in-memory repositories, the Firestore game document, anonymous identity
-     ├─ application/        # GameSession, GameSessionStarter, the game, its lifetime, the actions on it, the AI opponent
-     ├─ presentation/       # what the screens share: the message for each refusal
-     ├─ home/               # game mode selection: creates or joins the game, then opens the board
-     ├─ creation/           # create / join dialogs, the player name field
-     └─ board/              # board screen: header, grid, round actions; portrait and landscape
+     ├─ application/        # GameSession and its rules, GameSessionStarter, the game and the actions on it, the AI
+     └─ presentation/       # the message for each refusal, then one folder per screen:
+         ├─ home/           #   game mode selection: creates or joins the game, then opens the board
+         ├─ creation/       #   create / join dialogs, the player name field
+         └─ board/          #   board screen: header, grid, round actions; portrait and landscape
 ```
 
 - **`GameRules`** is the single source of truth for every change a game goes through — joining, starting, a move, the next round, leaving — on a `Game` that only holds game concepts (players, board, scores, round). A refusal throws the `GameException` that says why. Both repositories only store what it returns, and the security rules check the same rules on the server.
@@ -92,14 +92,15 @@ lib/
 - **On the board, `gameProvider` only watches the game** and **`GameActions` acts on it**: loading while the repository handles a move, a start or a new round — the board takes no other action meanwhile — and the error when it refused, shown as a message.
 - **The AI is a player of the application layer**: `aiOpponentProvider` watches the game and, on the AI's turn, plays the move `TicTacToeAI` picks through `GameActions`, after a thinking time. It stops when the board closes. Which seat the AI plays belongs to the `GameSession`, not to the game.
 - **Leaving the board leaves the game**, however the player goes back: a local game is forgotten, and the opponent of an online one sees it abandoned — so the board asks first while an opponent is seated. Leaving is an explicit action (`GameActions.leave`), never a side effect of a provider being disposed. A device that is killed or loses its network does not leave: that would take a presence heartbeat.
-- **Repositories** implement `LocalGameRepositoryInterface` (in memory) and `OnlineGameRepositoryInterface` (Firestore) and only store. Every online write applies `GameRules` to the game read in a transaction.
-- **Players** are `PlayerId`s — the anonymous Firebase uid online, a fixed seat on a local game — and their names are stored apart from their ids.
+- **Repositories** implement `LocalGameRepository` (in memory) and `OnlineGameRepository` (Firestore) and only store. Every online write applies `GameRules` to the game read in a transaction.
+- **Players** sit in a game's two seats, host (X) and guest (O): a `Player` is a `PlayerId` — the anonymous Firebase uid online, a fixed seat on a local game — with a name and a win count. The Firestore document stores the seats flat, as the rules read them.
+- **Navigation:** screens are auto_route routes; dialogs are not, screens open them with `showDialog` and await their result.
 
 ### Online data model and security rules
 
 One document per game, `games/{gameId}`: the game id is the code players share, six characters without the ones read alike (0/O, 1/I); the creation picks one no other game uses. It holds the players (`hostId` plays X, `guestId` plays O) and their names, the status, the scores, the current round and player, the board as nine cells (`'X'`, `'O'` or `''`), and what only the server needs: when it was written and `expiresAt`.
 
-[`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write the app makes is a `GameWrite` listing the fields it changes — the same lists [`firestore.rules`](firestore.rules) allow, write by write — and the rules refuse anything else; a test reads `firestore.rules` to keep the two lists equal, and checks that the server pins every time a write carries. Games can be read with their code but never listed. Names count at most 20 UTF-16 code units, as the rules count them. A move must come from the signed-in player whose turn it is, and is checked against the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and only the winner scores. The integration tests exercise these rules on the emulator, including a cheating client.
+[`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write the app makes is a `GameWrite` listing the fields it changes — the same lists [`firestore.rules`](firestore.rules) allow, write by write — and the rules refuse anything else; a test reads `firestore.rules` to keep the two lists equal, and checks that the server pins every time a write carries. Games can be read with their code but never listed. Names count at most 20 UTF-16 code units, as the rules count them; so do the name field's counter and limit. A move must come from the signed-in player whose turn it is, and is checked against the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and only the winner scores. The integration tests exercise these rules on the emulator, including a cheating client.
 
 ---
 
@@ -124,7 +125,7 @@ dart run build_runner build
 # Translations: edit lib/l10n/intl_*.arb (intl_en.arb declares the placeholders), then
 flutter gen-l10n   # also run by flutter pub get, run and build; writes lib/generated
 
-# Static analysis, including riverpod_lint
+# Static analysis: strict casts, inference and raw types, plus riverpod_lint
 flutter analyze
 dart run custom_lint
 ```

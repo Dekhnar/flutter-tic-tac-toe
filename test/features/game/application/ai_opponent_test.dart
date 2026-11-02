@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/application/ai_opponent.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 
 const _almostDoneThinking = Duration(milliseconds: 999);
 const _lastMillisecond = Duration(milliseconds: 1);
@@ -19,7 +21,7 @@ void main() {
     final container = ProviderContainer(overrides: [localGameRepositoryProvider.overrideWithValue(games)]);
 
     late GameId gameId;
-    games.createGame(guestName: 'Mario', hostName: 'Jessy').then((id) => gameId = id);
+    unawaited(games.createGame(guestName: 'Mario', hostName: 'Jessy').then((id) => gameId = id));
     time.flushMicrotasks();
     final session = GameSession.local(gameId: gameId, vsAi: vsAi);
     container.listen(gameProvider(session), (_, _) {});

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,20 +21,22 @@ void screenTestGolden(
 }) {
   group(scenario, () {
     for (final screen in GoldenScreen.values) {
-      goldenTest(
-        'renders on the ${screen.name} screen',
-        fileName: '$fileName.${screen.name}',
-        textScaleFactor: screen.textScaleFactor,
-        pumpWidget: (tester, goldenTree) => _pumpOnScreen(tester, screen, goldenTree),
-        whilePerforming: switch (screen.showSemantics) {
-          true => _thenRepaintSemantics(whilePerforming),
-          false => whilePerforming,
-        },
-        builder:
-            () => _AutoHeightScreen(
-              size: screen.size,
-              child: MaterialGolden(themeMode: screen.themeMode, child: builder()),
-            ),
+      unawaited(
+        goldenTest(
+          'renders on the ${screen.name} screen',
+          fileName: '$fileName.${screen.name}',
+          textScaleFactor: screen.textScaleFactor,
+          pumpWidget: (tester, goldenTree) => _pumpOnScreen(tester, screen, goldenTree),
+          whilePerforming: switch (screen.showSemantics) {
+            true => _thenRepaintSemantics(whilePerforming),
+            false => whilePerforming,
+          },
+          builder:
+              () => _AutoHeightScreen(
+                size: screen.size,
+                child: MaterialGolden(themeMode: screen.themeMode, child: builder()),
+              ),
+        ),
       );
     }
 

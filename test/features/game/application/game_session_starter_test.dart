@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session_starter.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
@@ -61,7 +61,7 @@ void main() {
 
     final game = await localRepository.watchGame(session.gameId).first;
     expect(session, isA<LocalGameSession>());
-    expect((game.hostName, game.guestName), ('Jessy', 'Mario'));
+    expect((game.host.name, game.guest?.name), ('Jessy', 'Mario'));
     expect(session, const GameSession.local(gameId: GameId('local-1')));
   });
 
@@ -86,7 +86,7 @@ void main() {
 
     final game = await onlineGame(session.gameId);
     expect(session, GameSession.online(gameId: game.id, me: _jessy));
-    expect((game.hostId, game.hostName, game.status), (_jessy, 'Jessy', GameStatus.setup));
+    expect((game.host.id, game.host.name, game.status), (_jessy, 'Jessy', GameStatus.setup));
   });
 
   test('joining an online game seats the signed-in player as the guest', () async {
@@ -97,9 +97,9 @@ void main() {
         .read(gameSessionStarterProvider)
         .start(GameCreateInput.joinOnlineLobby(gameId: gameId, guestName: 'Luigi'));
 
-    final game = await onlineGame(gameId, where: (game) => game.guestId != null);
+    final game = await onlineGame(gameId, where: (game) => game.guest?.id != null);
     expect(session, GameSession.online(gameId: gameId, me: _luigi));
-    expect((game.guestId, game.guestName), (_luigi, 'Luigi'));
+    expect((game.guest?.id, game.guest?.name), (_luigi, 'Luigi'));
   });
 
   test('an online game cannot be started without Firebase, and nothing is written', () async {
@@ -125,7 +125,7 @@ void main() {
 
     final created = await session;
     expect(created.me, _jessy);
-    expect((await onlineGame(created.gameId)).hostId, _jessy);
+    expect((await onlineGame(created.gameId)).host.id, _jessy);
   });
 }
 

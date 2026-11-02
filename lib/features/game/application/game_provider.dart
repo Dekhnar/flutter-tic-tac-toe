@@ -1,16 +1,16 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
 part 'game_provider.g.dart';
 
 @riverpod
-GameRepositoryInterface sessionGameRepository(Ref ref, GameSession session) => switch (session) {
+GameRepository sessionGameRepository(Ref ref, GameSession session) => switch (session) {
   LocalGameSession() => ref.watch(localGameRepositoryProvider),
   OnlineGameSession() => ref.watch(onlineGameRepositoryProvider),
 };
@@ -21,6 +21,14 @@ Duration? _noRetry(int retryCount, Object error) => null;
 @Riverpod(retry: _noRetry)
 Stream<Game> game(Ref ref, GameSession session) =>
     ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
+
+/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
+/// since nothing is left to leave.
+@riverpod
+bool leaveNeedsConfirmation(Ref ref, GameSession session) => switch (ref.watch(gameProvider(session))) {
+  AsyncData(:final value) => session.leaveEndsGameForOpponent(value),
+  _ => false,
+};
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 @riverpod
@@ -44,7 +52,7 @@ class GameActions extends _$GameActions {
     return ref.read(sessionGameRepositoryProvider(session)).leaveGame(session.gameId).onError(errorLogger.log);
   }
 
-  Future<void> _run(Future<void> Function(GameRepositoryInterface repository) action) async {
+  Future<void> _run(Future<void> Function(GameRepository repository) action) async {
     // The board disables its controls while an action runs.
     if (state.isLoading) return;
 

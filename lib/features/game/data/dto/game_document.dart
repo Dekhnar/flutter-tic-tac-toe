@@ -87,24 +87,33 @@ abstract final class GameDocument {
       final T value => value,
       final value => throw FormatException('${field.name} of game ${snapshot.id} is not a $T', value),
     };
-    PlayerId? player(GameField seat) => switch (field<String?>(seat)) {
+    PlayerId? playerId(GameField idField) => switch (field<String?>(idField)) {
       final id? => PlayerId(id),
       null => null,
     };
+    final guestId = playerId(GameField.guestId);
 
+    // The document stores each seat flat, as the rules read it.
     return Game(
       board: Board(cells: List.unmodifiable(field<List<Object?>>(GameField.board).map(_markOf))),
       currentPlayerId: PlayerId(field<String>(GameField.currentPlayerId)),
       currentRoundIndex: field<int>(GameField.currentRoundIndex),
-      currentWinnerId: player(GameField.currentWinnerId),
-      hostId: PlayerId(field<String>(GameField.hostId)),
-      hostName: field<String>(GameField.hostName),
-      hostWinCount: field<int>(GameField.hostWinCount),
+      currentWinnerId: playerId(GameField.currentWinnerId),
+      guest: switch (guestId) {
+        final id? => Player(
+          id: id,
+          name: field<String>(GameField.guestName),
+          wins: field<int>(GameField.guestWinCount),
+        ),
+        null => null,
+      },
+      host: Player(
+        id: PlayerId(field<String>(GameField.hostId)),
+        name: field<String>(GameField.hostName),
+        wins: field<int>(GameField.hostWinCount),
+      ),
       id: GameId(snapshot.id),
       status: GameStatus.values.byName(field<String>(GameField.status)),
-      guestId: player(GameField.guestId),
-      guestName: field<String?>(GameField.guestName),
-      guestWinCount: field<int>(GameField.guestWinCount),
     );
   }
 
@@ -115,13 +124,13 @@ abstract final class GameDocument {
     GameField.currentRoundIndex => game.currentRoundIndex,
     GameField.currentWinnerId => game.currentWinnerId?.value,
     GameField.expiresAt => Timestamp.fromDate(expiresAt ?? (throw ArgumentError.notNull('expiresAt'))),
-    GameField.hostId => game.hostId.value,
-    GameField.hostName => game.hostName,
-    GameField.hostWinCount => game.hostWinCount,
+    GameField.guestId => game.guest?.id.value,
+    GameField.guestName => game.guest?.name,
+    GameField.guestWinCount => game.guest?.wins ?? 0,
+    GameField.hostId => game.host.id.value,
+    GameField.hostName => game.host.name,
+    GameField.hostWinCount => game.host.wins,
     GameField.status => game.status.name,
-    GameField.guestId => game.guestId?.value,
-    GameField.guestName => game.guestName,
-    GameField.guestWinCount => game.guestWinCount,
   };
 
   // The rules compare cells to strings: an empty one is an empty string rather than null.

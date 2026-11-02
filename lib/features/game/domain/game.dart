@@ -15,12 +15,8 @@ final class Game with _$Game {
     required this.currentPlayerId,
     this.currentRoundIndex = 0,
     this.currentWinnerId,
-    this.guestId,
-    this.guestName,
-    this.guestWinCount = 0,
-    required this.hostId,
-    required this.hostName,
-    this.hostWinCount = 0,
+    this.guest,
+    required this.host,
     required this.id,
     required this.status,
   });
@@ -40,23 +36,11 @@ final class Game with _$Game {
 
   /// The player who joined, and plays O; null until someone joins.
   @override
-  final PlayerId? guestId;
-
-  @override
-  final String? guestName;
-
-  @override
-  final int guestWinCount;
+  final Player? guest;
 
   /// The player who created the game, and plays X.
   @override
-  final PlayerId hostId;
-
-  @override
-  final String hostName;
-
-  @override
-  final int hostWinCount;
+  final Player host;
 
   @override
   final GameId id;
@@ -67,9 +51,24 @@ final class Game with _$Game {
 
 extension GamePlayers on Game {
   /// The game creator plays X, the opponent plays O.
-  CellMark markOf(PlayerId playerId) => playerId == hostId ? CellMark.X : CellMark.O;
+  CellMark markOf(PlayerId playerId) => playerId == host.id ? CellMark.X : CellMark.O;
 
-  String nameOf(PlayerId playerId) => playerId == hostId ? hostName : guestName ?? '';
+  String nameOf(PlayerId playerId) => (playerId == host.id ? host : guest)?.name ?? '';
+}
+
+/// A seat at the table: who sits there, under which name, and how many rounds they won.
+@freezed
+final class Player with _$Player {
+  const Player({required this.id, required this.name, this.wins = 0});
+
+  @override
+  final PlayerId id;
+
+  @override
+  final String name;
+
+  @override
+  final int wins;
 }
 
 /// A cell of the board, numbered row by row from 0 to 8.

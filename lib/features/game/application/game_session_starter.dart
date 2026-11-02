@@ -1,10 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
@@ -13,15 +13,15 @@ part 'game_session_starter.g.dart';
 /// Creates or joins the game the player chose; the board then only watches it.
 final class GameSessionStarter {
   const GameSessionStarter({
-    required LocalGameRepositoryInterface localRepository,
-    OnlineGameRepositoryInterface? onlineRepository,
+    required LocalGameRepository localRepository,
+    OnlineGameRepository? onlineRepository,
     PlayerIdentity? playerIdentity,
   }) : _localRepository = localRepository,
        _onlineRepository = onlineRepository,
        _playerIdentity = playerIdentity;
 
-  final LocalGameRepositoryInterface _localRepository;
-  final OnlineGameRepositoryInterface? _onlineRepository;
+  final LocalGameRepository _localRepository;
+  final OnlineGameRepository? _onlineRepository;
   final PlayerIdentity? _playerIdentity;
 
   Future<GameSession> start(GameCreateInput input) async {
@@ -43,7 +43,7 @@ final class GameSessionStarter {
     }
   }
 
-  Future<(OnlineGameRepositoryInterface, PlayerId)> _signInOnline() async {
+  Future<(OnlineGameRepository, PlayerId)> _signInOnline() async {
     final (repository, identity) = (_onlineRepository, _playerIdentity);
     if (repository == null || identity == null) throw OnlineUnavailableException();
 

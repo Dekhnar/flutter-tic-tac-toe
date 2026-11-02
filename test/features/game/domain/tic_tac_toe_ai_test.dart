@@ -58,12 +58,10 @@ void main() {
       playEveryAnswer(
         Game(
           currentPlayerId: firstPlayer,
-          hostId: _player,
-          hostName: 'Jessy',
+          guest: const Player(id: _ai, name: ''),
+          host: const Player(id: _player, name: 'Jessy'),
           id: const GameId('game'),
           status: GameStatus.playing,
-          guestId: _ai,
-          guestName: '',
         ),
       );
 

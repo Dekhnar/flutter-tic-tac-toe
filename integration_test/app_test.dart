@@ -253,8 +253,7 @@ void main() {
           GameWrite.create,
           Game(
             currentPlayerId: cheater.id,
-            hostId: cheater.id,
-            hostName: 'Wario',
+            host: Player(id: cheater.id, name: 'Wario'),
             id: gameId,
             status: GameStatus.setup,
           ),
@@ -265,8 +264,11 @@ void main() {
         await expectDenied(cheater.gameRef(_freshGameId()).set({...created, 'vsAi': true}));
         await expectDenied(cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: forever}));
 
-        // The game as the app writes it goes through: the refusals above come from the extra field and the expiry.
+        // The game as the app writes it goes through: the refusals above come from the extra field and the expiry. So
+        // does the game of a device whose clock runs days ahead.
         await cheater.gameRef(_freshGameId()).set(created);
+        final daysAhead = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 33)));
+        await cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: daysAhead});
       }, skip: !online);
 
       test('deleting a game', () async {
@@ -318,7 +320,9 @@ class _AppRobot {
   final WidgetTester tester;
 
   Future<void> launch() async {
-    await tester.pumpWidget(UncontrolledProviderScope(container: await createAppContainer(), child: const App()));
+    final container = await createAppContainer();
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const App()));
     await tester.pumpAndSettle();
     i18n = I18n.of(tester.element(find.byType(Scaffold).first));
   }

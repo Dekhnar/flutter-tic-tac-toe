@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/home/game_mode_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 import '../../../../shared/fakes/pending_local_game_repository.dart';
@@ -27,19 +27,19 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
-    container.listen(gameModesSelectionProvider, (_, _) {});
+    container.listen(gameModeSelectionProvider, (_, _) {});
   });
 
-  GameModesSelectionNotifier launch() => container.read(gameModesSelectionProvider.notifier);
+  GameModeSelectionNotifier launch() => container.read(gameModeSelectionProvider.notifier);
 
   test('a game being created shows as loading until its session is ready', () async {
     final session = launch().startSession(localGame);
-    expect(container.read(gameModesSelectionProvider).isLoading, isTrue);
+    expect(container.read(gameModeSelectionProvider).isLoading, isTrue);
 
     localRepository.created.complete();
 
     expect(await session, isA<LocalGameSession>());
-    expect(container.read(gameModesSelectionProvider), const AsyncData<void>(null));
+    expect(container.read(gameModeSelectionProvider), const AsyncData<void>(null));
   });
 
   test('a game that cannot start leaves the reason to show, and no session', () async {
@@ -48,7 +48,7 @@ void main() {
     );
 
     expect(await session, isNull);
-    expect(container.read(gameModesSelectionProvider).error, isA<OnlineUnavailableException>());
+    expect(container.read(gameModeSelectionProvider).error, isA<OnlineUnavailableException>());
   });
 
   test('a second game cannot start while the first one is being created', () async {
@@ -66,6 +66,6 @@ void main() {
     localRepository.created.complete();
 
     expect(await launch().startSession(localGame), isA<LocalGameSession>());
-    expect(container.read(gameModesSelectionProvider).hasError, isFalse);
+    expect(container.read(gameModeSelectionProvider).hasError, isFalse);
   });
 }

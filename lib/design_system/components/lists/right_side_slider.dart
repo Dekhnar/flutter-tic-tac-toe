@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe_app/design_system/components/lists/slider_pane.dart';
@@ -65,7 +67,7 @@ class _RightSideSliderState<T> extends State<RightSideSlider<T>> with SingleTick
     if (distance.abs() < _swipeDistance && velocity.abs() < _swipeVelocity) return;
 
     setState(() => _swipesUp = (distance.abs() >= _swipeDistance ? distance : velocity) < 0);
-    _swipe.forward(from: 0);
+    unawaited(_swipe.forward(from: 0));
   }
 
   @override

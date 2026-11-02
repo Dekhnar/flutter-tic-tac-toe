@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
-import 'package:tic_tac_toe_app/shared/routing/dialog_route.dart';
 
+/// The app's screens. Dialogs are not routes: screens open them with `showDialog` and await their result.
 @AutoRouterConfig(replaceInRouteName: null)
 class AppRouter extends RootStackRouter {
   static const boardPath = '/game';
@@ -13,16 +13,7 @@ class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
-    AutoRoute(
-      initial: true,
-      path: '/home',
-      page: EmptyRouter.page,
-      children: [
-        AutoRoute(initial: true, page: GameModeSelectionScreenRoute.page),
-        CustomDialogRoute(page: GameCreateOnlineDialogRoute.page, path: 'create/online', barrierDismissible: true),
-        CustomDialogRoute(page: GameCreateOfflineDialogRoute.page, path: 'create/offline', barrierDismissible: true),
-      ],
-    ),
+    AutoRoute(initial: true, path: '/', page: GameModeSelectionScreenRoute.page),
     AutoRoute(path: boardPath, page: GameBoardScreenRoute.page),
   ];
 }

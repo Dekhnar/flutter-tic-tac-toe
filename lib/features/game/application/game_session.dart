@@ -23,7 +23,7 @@ extension GameSessionPlayers on GameSession {
 
   /// Whether the AI plays [player]: the guest of a local game against the AI.
   bool isAi(Game game, PlayerId player) => switch (this) {
-    LocalGameSession(vsAi: true) => player == game.guestId,
+    LocalGameSession(vsAi: true) => player == game.guest?.id,
     _ => false,
   };
 
@@ -32,4 +32,10 @@ extension GameSessionPlayers on GameSession {
   /// Whether a player of this device may play now: on a local game, whoever's turn it is, except the AI.
   bool canPlay(Game game) =>
       game.status == GameStatus.playing && !isAiTurn(game) && (me == null || game.currentPlayerId == me);
+
+  /// Whether leaving ends the game for someone else: an online game an opponent sits in, and that is not over.
+  bool leaveEndsGameForOpponent(Game game) => switch (this) {
+    OnlineGameSession() => game.guest != null && game.status != GameStatus.abandoned,
+    LocalGameSession() => false,
+  };
 }

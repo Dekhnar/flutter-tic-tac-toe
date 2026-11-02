@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'game_modes_selection_provider.dart';
+part of 'game_mode_selection_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -10,36 +10,36 @@ part of 'game_modes_selection_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
 
-@ProviderFor(GameModesSelectionNotifier)
-const gameModesSelectionProvider = GameModesSelectionNotifierProvider._();
+@ProviderFor(GameModeSelectionNotifier)
+const gameModeSelectionProvider = GameModeSelectionNotifierProvider._();
 
 /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
-final class GameModesSelectionNotifierProvider extends $AsyncNotifierProvider<GameModesSelectionNotifier, void> {
+final class GameModeSelectionNotifierProvider extends $AsyncNotifierProvider<GameModeSelectionNotifier, void> {
   /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
-  const GameModesSelectionNotifierProvider._()
+  const GameModeSelectionNotifierProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'gameModesSelectionProvider',
+        name: r'gameModeSelectionProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$gameModesSelectionNotifierHash();
+  String debugGetCreateSourceHash() => _$gameModeSelectionNotifierHash();
 
   @$internal
   @override
-  GameModesSelectionNotifier create() => GameModesSelectionNotifier();
+  GameModeSelectionNotifier create() => GameModeSelectionNotifier();
 }
 
-String _$gameModesSelectionNotifierHash() => r'b6adec7948fc495ca71afc2cc9b801591e3f34f4';
+String _$gameModeSelectionNotifierHash() => r'c6bf374499b19b3e28d96161021100c63f18084d';
 
 /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
 
-abstract class _$GameModesSelectionNotifier extends $AsyncNotifier<void> {
+abstract class _$GameModeSelectionNotifier extends $AsyncNotifier<void> {
   FutureOr<void> build();
   @$mustCallSuper
   @override

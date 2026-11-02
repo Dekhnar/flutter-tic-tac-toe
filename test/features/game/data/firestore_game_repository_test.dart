@@ -7,8 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
@@ -62,9 +62,9 @@ void main() {
 
       final game = await host
           .watchGame(gameId)
-          .firstWhere((game) => game.guestId != null)
+          .firstWhere((game) => game.guest?.id != null)
           .timeout(const Duration(seconds: 1));
-      expect((game.guestId, game.guestName, game.markOf(_luigi)), (_luigi, 'Luigi', CellMark.O));
+      expect((game.guest?.id, game.guest?.name, game.markOf(_luigi)), (_luigi, 'Luigi', CellMark.O));
     });
 
     test('fails when nobody created a game with this code', () {
@@ -82,7 +82,7 @@ void main() {
         FirestoreGameRepository(firestore: firestore).joinGame(gameId, guest: _mario, guestName: 'Mario'),
         throwsA(isA<GameAlreadyFullException>()),
       );
-      expect((await storedGame()).guestId, _luigi);
+      expect((await storedGame()).guest?.id, _luigi);
     });
 
     test('again, from the same device, comes back to the same seat', () async {
@@ -90,7 +90,7 @@ void main() {
 
       await guest.joinGame(gameId, guest: _luigi, guestName: 'Luigi');
 
-      expect((await storedGame()).guestId, _luigi);
+      expect((await storedGame()).guest?.id, _luigi);
     });
   });
 
@@ -105,6 +105,10 @@ void main() {
           .firstWhere((game) => game.status == GameStatus.abandoned)
           .timeout(const Duration(seconds: 1));
       expect(game.status, GameStatus.abandoned);
+    });
+
+    test('the server no longer has changes nothing', () async {
+      await expectLater(host.leaveGame(const GameId('GONE00')), completes);
     });
 
     test('that nobody joined yet leaves no game to join', () async {
@@ -209,7 +213,7 @@ void main() {
       final stored = await storedGame(marks: 5);
       expect(stored.status, GameStatus.finished);
       expect(stored.currentWinnerId, _jessy);
-      expect((stored.hostWinCount, stored.guestWinCount), (1, 0));
+      expect((stored.host.wins, stored.guest?.wins), (1, 0));
     });
   });
 

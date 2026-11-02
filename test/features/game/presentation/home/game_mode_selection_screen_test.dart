@@ -7,15 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
+import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
@@ -191,6 +191,20 @@ void main() {
       expect((await seenByOpponent(tester, gameId))?.status, GameStatus.abandoned);
     });
 
+    testWidgets('gone from the server takes no more action, and Quit closes it without asking', (tester) async {
+      final gameId = await openBoard(tester, joined: true);
+
+      await tester.runAsync(() => firestore.collection('games').doc(gameId.value).delete());
+      await tester.pumpAndSettle();
+      expect(find.text(i18n.gameNotFound), findsOneWidget);
+      expect(find.text(i18n.startGame), findsNothing);
+
+      await robot.tapText(i18n.quit);
+
+      expect(find.text(i18n.leaveGameTitle), findsNothing);
+      expect(find.text(i18n.local1v1), findsOneWidget);
+    });
+
     testWidgets('nobody joined yet needs no confirmation, and nobody can join it any more', (tester) async {
       final gameId = await openBoard(tester, joined: false);
 
@@ -222,17 +236,17 @@ void main() {
     expect(find.text('Jessy (X)'), findsOneWidget);
   });
 
-  testWidgets('a name the server would refuse is refused in the form, before anything is created', (tester) async {
+  testWidgets('a name stops where the server would refuse it, counting as the server does', (tester) async {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
     await robot.chooseMode(i18n.local1v1);
 
-    // Six flags are six characters on screen, but 24 UTF-16 code units for the server.
+    // Six flags are six characters on screen, but 24 UTF-16 code units for the server: five fit, in 20.
     await robot.enterNames(['🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷', 'Mario']);
-    await robot.tapText(i18n.start);
 
-    expect(find.text(i18n.nameTooLong(PlayerName.maxLength)), findsOneWidget);
-    expect(find.text('Mario (O)'), findsNothing);
+    expect(find.text('20/${PlayerName.maxLength}'), findsOneWidget);
+    await robot.tapText(i18n.start);
+    expect(find.text('🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷 (X)'), findsOneWidget);
   });
 
   testWidgets('joining a game that already has two players says so and stays on the home screen', (tester) async {
@@ -263,7 +277,7 @@ class _HomeRobot {
 
   final WidgetTester tester;
 
-  Future<void> launch({required LocalGameRepositoryInterface localRepository, List<Override> online = const []}) async {
+  Future<void> launch({required LocalGameRepository localRepository, List<Override> online = const []}) async {
     tester.view.physicalSize = GoldenScreen.iphone11.size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

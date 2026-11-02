@@ -6,11 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/data/auth/firebase_player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
@@ -19,7 +19,7 @@ import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 /// The services online play needs, available once Firebase is initialized.
-typedef OnlineServices = ({OnlineGameRepositoryInterface repository, PlayerIdentity identity});
+typedef OnlineServices = ({OnlineGameRepository repository, PlayerIdentity identity});
 
 /// Everything the app needs before its first frame, and the one place that picks the implementation behind each
 /// contract. Integration tests start the app from it too.
@@ -45,7 +45,7 @@ Future<ProviderContainer> createAppContainer() async {
   );
 }
 
-/// Binds the contracts of `game_providers.dart`. Without [online] services, the online ones stay unbound and the
+/// Binds the contracts of `game_dependencies.dart`. Without [online] services, the online ones stay unbound and the
 /// online mode tells the player it is unavailable.
 List<Override> bindGameProviders({required OnlineServices? online}) => [
   isOnlineAvailableProvider.overrideWithValue(online != null),

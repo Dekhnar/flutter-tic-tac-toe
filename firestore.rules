@@ -55,8 +55,8 @@ service cloud.firestore {
         return ['', '', '', '', '', '', '', '', ''];
       }
 
-      // A TTL policy deletes the game at `expiresAt` (see README): the app sets it 30 days ahead, a day of clock skew
-      // allowed.
+      // A TTL policy deletes the game at `expiresAt` (see README). The app sets it 30 days ahead by the device's clock: the
+      // window lets a clock a month off create games, and still refuses a game that would never expire.
       function isCreatedByHost() {
         let game = request.resource.data;
         return signedIn()
@@ -68,7 +68,7 @@ service cloud.firestore {
           && game.updatedAt == request.time
           && game.expiresAt is timestamp
           && game.expiresAt > request.time
-          && game.expiresAt <= request.time + duration.value(31, 'd')
+          && game.expiresAt <= request.time + duration.value(60, 'd')
           && game.hostId == request.auth.uid
           && isValidName(game.hostName)
           && game.guestId == null

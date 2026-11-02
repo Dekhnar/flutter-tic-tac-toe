@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 
 part 'game_dependencies.g.dart';
@@ -9,11 +9,11 @@ part 'game_dependencies.g.dart';
 
 /// Kept alive: it is the database of the local games, created on the home screen and played on the board.
 @Riverpod(keepAlive: true)
-LocalGameRepositoryInterface localGameRepository(Ref ref) =>
+LocalGameRepository localGameRepository(Ref ref) =>
     throw UnimplementedError('localGameRepositoryProvider is bound in composition');
 
 @riverpod
-OnlineGameRepositoryInterface onlineGameRepository(Ref ref) =>
+OnlineGameRepository onlineGameRepository(Ref ref) =>
     throw UnimplementedError('onlineGameRepositoryProvider is bound in composition when Firebase is available');
 
 @riverpod

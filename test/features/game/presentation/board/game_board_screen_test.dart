@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
@@ -17,9 +18,8 @@ import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
-import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_screen.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 import '../../../../shared/golden_test_utils/material_golden.dart';
@@ -427,10 +427,10 @@ class _FirestoreTestHarness {
 }
 
 /// The app's repository, on a device whose game may change on the server between the tap and the write.
-final class _AppRepository implements OnlineGameRepositoryInterface {
+final class _AppRepository implements OnlineGameRepository {
   _AppRepository(this._repository);
 
-  final OnlineGameRepositoryInterface _repository;
+  final OnlineGameRepository _repository;
 
   /// Runs once the player tapped a cell, before the move reaches the server.
   AsyncCallback? beforeMakeMove;
@@ -462,31 +462,29 @@ final class _AppRepository implements OnlineGameRepositoryInterface {
   Stream<Game> watchGame(GameId gameId) => _repository.watchGame(gameId);
 }
 
+const _jessyHosting = Player(id: _jessy, name: 'Jessy');
+const _luigiJoined = Player(id: _luigi, name: 'Luigi');
+
 Game _buildSetupGame() =>
-    const Game(currentPlayerId: _jessy, hostId: _jessy, hostName: 'Jessy', id: _gameId, status: GameStatus.setup);
+    const Game(currentPlayerId: _jessy, host: _jessyHosting, id: _gameId, status: GameStatus.setup);
 
 Game _buildPlayingGame() => Game(
   board: _board(x: [0], o: [4]),
   currentPlayerId: _jessy,
-  hostId: _jessy,
-  hostName: 'Jessy',
+  guest: _luigiJoined,
+  host: _jessyHosting,
   id: _gameId,
   status: GameStatus.playing,
-  guestId: _luigi,
-  guestName: 'Luigi',
 );
 
 Game _buildFinishedGame() => Game(
   board: _board(x: [0, 1, 2], o: [3, 4]),
   currentPlayerId: _jessy,
   currentWinnerId: _jessy,
-  hostId: _jessy,
-  hostName: 'Jessy',
-  hostWinCount: 1,
+  guest: _luigiJoined,
+  host: _jessyHosting.copyWith(wins: 1),
   id: _gameId,
   status: GameStatus.finished,
-  guestId: _luigi,
-  guestName: 'Luigi',
 );
 
 Board _board({required List<int> x, required List<int> o}) => [

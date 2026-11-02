@@ -28,7 +28,6 @@ class GameHeader extends ConsumerWidget {
     final colors = theme.colorScheme;
     final nameStyle = theme.textTheme.headlineMedium?.copyWith(color: colors.onInverseSurface);
     final scoreStyle = theme.textTheme.headlineMedium?.copyWith(color: colors.inversePrimary);
-    final opponentId = game.guestId;
 
     String playerLabel(PlayerId player) =>
         i18n.playerWithMark(session.isAi(game, player) ? i18n.ai : game.nameOf(player), game.markOf(player).name);
@@ -44,29 +43,23 @@ class GameHeader extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(playerLabel(game.hostId), style: nameStyle, overflow: TextOverflow.ellipsis),
-                      Text(score(game.hostWinCount), style: scoreStyle),
-                    ],
-                  ),
-                ),
-                if (opponentId != null)
+                for (final (player, alignment) in [
+                  (game.host, CrossAxisAlignment.start),
+                  if (game.guest case final guest?) (guest, CrossAxisAlignment.end),
+                ])
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: alignment,
                       children: [
-                        Text(playerLabel(opponentId), style: nameStyle, overflow: TextOverflow.ellipsis),
-                        Text(score(game.guestWinCount), style: scoreStyle),
+                        Text(playerLabel(player.id), style: nameStyle, overflow: TextOverflow.ellipsis),
+                        Text(score(player.wins), style: scoreStyle),
                       ],
                     ),
                   ),
               ],
             ),
             switch (game.status) {
-              GameStatus.setup when opponentId == null => _WaitingForOpponent(gameId: game.id),
+              GameStatus.setup when game.guest == null => _WaitingForOpponent(gameId: game.id),
               GameStatus.setup => const SizedBox.shrink(),
               GameStatus.playing => Text(
                 game.currentPlayerId == session.me ? i18n.yourTurn : i18n.turnOf(playerLabel(game.currentPlayerId)),

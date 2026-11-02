@@ -1,12 +1,12 @@
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
 
 /// Stores the games played on this device, for as long as the app runs.
-final class InMemoryGameRepository implements LocalGameRepositoryInterface {
+final class InMemoryGameRepository implements LocalGameRepository {
   static const guestId = PlayerId('guest');
   static const hostId = PlayerId('host');
 
@@ -26,10 +26,8 @@ final class InMemoryGameRepository implements LocalGameRepositoryInterface {
     final gameId = GameId('local-${++_createdGames}');
     final seated = Game(
       currentPlayerId: hostId,
-      guestId: guestId,
-      guestName: guestName,
-      hostId: hostId,
-      hostName: hostName,
+      guest: Player(id: guestId, name: guestName),
+      host: Player(id: hostId, name: hostName),
       id: gameId,
       status: GameStatus.setup,
     );

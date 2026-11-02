@@ -5,7 +5,7 @@ class InMemoryStore<T> {
     _stream = Stream<T>.multi((multi) {
       multi.add(_value);
       final sub = _controller.stream.listen(multi.add, onError: multi.addError, onDone: multi.close);
-      multi.onCancel = () => sub.cancel();
+      multi.onCancel = sub.cancel;
     }, isBroadcast: true);
   }
 

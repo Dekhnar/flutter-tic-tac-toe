@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session_starter.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 
-part 'game_modes_selection_provider.g.dart';
+part 'game_mode_selection_provider.g.dart';
 
 /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
 @riverpod
-final class GameModesSelectionNotifier extends _$GameModesSelectionNotifier {
+final class GameModeSelectionNotifier extends _$GameModeSelectionNotifier {
   @override
   FutureOr<void> build() {}
 

@@ -16,9 +16,8 @@ const localGameRepositoryProvider = LocalGameRepositoryProvider._();
 /// Kept alive: it is the database of the local games, created on the home screen and played on the board.
 
 final class LocalGameRepositoryProvider
-    extends
-        $FunctionalProvider<LocalGameRepositoryInterface, LocalGameRepositoryInterface, LocalGameRepositoryInterface>
-    with $Provider<LocalGameRepositoryInterface> {
+    extends $FunctionalProvider<LocalGameRepository, LocalGameRepository, LocalGameRepository>
+    with $Provider<LocalGameRepository> {
   /// Kept alive: it is the database of the local games, created on the home screen and played on the board.
   const LocalGameRepositoryProvider._()
     : super(
@@ -36,28 +35,27 @@ final class LocalGameRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<LocalGameRepositoryInterface> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<LocalGameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
-  LocalGameRepositoryInterface create(Ref ref) {
+  LocalGameRepository create(Ref ref) {
     return localGameRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(LocalGameRepositoryInterface value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<LocalGameRepositoryInterface>(value));
+  Override overrideWithValue(LocalGameRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<LocalGameRepository>(value));
   }
 }
 
-String _$localGameRepositoryHash() => r'652b9e948abe448fea918a9a43e2262b50e6826f';
+String _$localGameRepositoryHash() => r'8d5367fbdaef26cd03bfa281fc3d973ef6f7cb27';
 
 @ProviderFor(onlineGameRepository)
 const onlineGameRepositoryProvider = OnlineGameRepositoryProvider._();
 
 final class OnlineGameRepositoryProvider
-    extends
-        $FunctionalProvider<OnlineGameRepositoryInterface, OnlineGameRepositoryInterface, OnlineGameRepositoryInterface>
-    with $Provider<OnlineGameRepositoryInterface> {
+    extends $FunctionalProvider<OnlineGameRepository, OnlineGameRepository, OnlineGameRepository>
+    with $Provider<OnlineGameRepository> {
   const OnlineGameRepositoryProvider._()
     : super(
         from: null,
@@ -74,20 +72,20 @@ final class OnlineGameRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<OnlineGameRepositoryInterface> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<OnlineGameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
-  OnlineGameRepositoryInterface create(Ref ref) {
+  OnlineGameRepository create(Ref ref) {
     return onlineGameRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(OnlineGameRepositoryInterface value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlineGameRepositoryInterface>(value));
+  Override overrideWithValue(OnlineGameRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlineGameRepository>(value));
   }
 }
 
-String _$onlineGameRepositoryHash() => r'bee552f70f4e5c57c1d0f2a152a56d5b148c0e88';
+String _$onlineGameRepositoryHash() => r'c60364aa8e785c6b56032665c7e152d54fdaae41';
 
 @ProviderFor(playerIdentity)
 const playerIdentityProvider = PlayerIdentityProvider._();

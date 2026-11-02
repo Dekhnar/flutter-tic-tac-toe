@@ -36,9 +36,13 @@ class _GameCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final (mark, playable) = ref.watch(
       gameProvider(session).select((asyncGame) {
-        final game = asyncGame.value;
-        final mark = game?.board[cell];
-        return (mark, mark == null && game != null && session.canPlay(game));
+        final mark = asyncGame.value?.board[cell];
+        // A game that failed to load keeps showing its last board, but takes no move.
+        final playable = switch (asyncGame) {
+          AsyncData(value: final game) => mark == null && session.canPlay(game),
+          _ => false,
+        };
+        return (mark, playable);
       }),
     );
     final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));

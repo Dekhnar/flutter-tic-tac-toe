@@ -3,16 +3,14 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/application/ai_opponent.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/game_board_grid.dart';
-import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/game_header.dart';
-import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/round_actions.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_board_grid.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_header.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/round_actions.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
@@ -32,7 +30,7 @@ class GameBoardScreen extends ConsumerWidget {
       // Invalidating the game to retry reports the error again, flagged as loading.
       if (next case AsyncError(:final error, isLoading: false)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) _showBlockingErrorDialog(context, ref, error);
+          if (context.mounted) unawaited(_showBlockingErrorDialog(context, ref, error));
         });
       }
     });
@@ -86,10 +84,11 @@ class GameBoardScreen extends ConsumerWidget {
                   },
                   child: Text(i18n.retry),
                 ),
+              // Closes the board for sure: nothing is left to confirm leaving.
               TextButton(
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
-                  context.router.maybePop();
+                  Navigator.of(context).pop();
                 },
                 child: Text(i18n.quit),
               ),
@@ -111,17 +110,8 @@ class _LeaveGuard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final endsForOpponent = ref.watch(
-      gameProvider(session).select(
-        (asyncGame) => switch ((session, asyncGame.value)) {
-          (OnlineGameSession(), Game(guestId: _?, :final status)) => status != GameStatus.abandoned,
-          _ => false,
-        },
-      ),
-    );
-
     return PopScope(
-      canPop: !endsForOpponent,
+      canPop: !ref.watch(leaveNeedsConfirmationProvider(session)),
       // Called for every pop, the one that follows a confirmation included: that is where the game is left.
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) {

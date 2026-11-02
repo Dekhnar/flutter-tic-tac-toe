@@ -1,15 +1,13 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
-import 'package:tic_tac_toe_app/features/game/creation/presentation/player_name_field.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/creation/player_name_field.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 /// Creates an online game, whose code the board then shows to share, or joins one with the code received.
-@RoutePage()
 class GameCreateOnlineDialog extends StatefulWidget {
   const GameCreateOnlineDialog({super.key});
 
@@ -37,7 +35,7 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
     if (_formKey.currentState?.validate() != true) return;
 
     final name = _nameController.text.trim();
-    context.router.pop(switch (_isCreate) {
+    Navigator.of(context).pop(switch (_isCreate) {
       true => GameCreateInput.createOnlineLobby(hostName: name),
       false => GameCreateInput.joinOnlineLobby(
         gameId: GameId(_codeController.text.trim().toUpperCase()),

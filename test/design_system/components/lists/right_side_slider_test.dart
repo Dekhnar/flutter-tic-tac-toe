@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/design_system/components/lists/right_side_slider.dart';
+import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 
 import '../../../shared/golden_test_utils/material_golden.dart';
 import '../../../shared/tic_tac_toe_widget_test_wrapper.dart';

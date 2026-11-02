@@ -2,14 +2,6 @@ import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 
 extension GameState on Game {
-  List<CellMark?> get board {
-    final board = List<CellMark?>.filled(9, null);
-    for (final m in moves) {
-      board[m.index] = m.mark;
-    }
-    return board;
-  }
-
   String _counterIndicator(int count) => count > 999 ? "999+" : count.toString();
 
   String get fromWinCounterIndicator => _counterIndicator(fromWinCount);

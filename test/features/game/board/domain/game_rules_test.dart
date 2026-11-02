@@ -6,25 +6,61 @@ import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart'
 
 const _x = PlayerId('jessy');
 const _o = PlayerId('mario');
-final _now = DateTime(2025, 1, 1);
 
 void main() {
   const rules = GameRules();
 
   Game play(Game game, List<int> cells) => cells.fold(
     game,
-    (game, cell) =>
-        rules.applyMove(game: game, playerId: game.currentPlayerId, row: cell ~/ 3, col: cell % 3, currentDate: _now),
+    (game, cell) => rules.applyMove(game: game, playerId: game.currentPlayerId, row: cell ~/ 3, col: cell % 3),
   );
 
   Game Function() move(Game game, {required PlayerId playerId, required int row, required int col}) =>
-      () => rules.applyMove(game: game, playerId: playerId, row: row, col: col, currentDate: _now);
+      () => rules.applyMove(game: game, playerId: playerId, row: row, col: col);
+
+  group('Joining', () {
+    final waiting = _startedGame().copyWith(status: GameStatus.setup, toId: null, toName: null);
+
+    test('seats the guest in the free seat, by name', () {
+      final joined = rules.join(waiting, guest: _o, guestName: 'Mario');
+
+      expect((joined?.toId, joined?.toName), (_o, 'Mario'));
+    });
+
+    test('again, or as the host, changes nothing', () {
+      expect(rules.join(_startedGame(), guest: _o, guestName: 'Mario'), isNull);
+      expect(rules.join(waiting, guest: _x, guestName: 'Jessy'), isNull);
+    });
+
+    test('is refused once both seats are taken', () {
+      expect(
+        () => rules.join(_startedGame(), guest: const PlayerId('luigi'), guestName: 'Luigi'),
+        throwsA(isA<GameAlreadyFullException>()),
+      );
+    });
+  });
+
+  group('Starting the game', () {
+    test('lets the players play', () {
+      expect(rules.start(_startedGame().copyWith(status: GameStatus.setup))?.status, GameStatus.playing);
+    });
+
+    test('again changes nothing', () {
+      expect(rules.start(_startedGame()), isNull);
+    });
+
+    test('is refused while no opponent has joined', () {
+      final alone = _startedGame().copyWith(status: GameStatus.setup, toId: null);
+
+      expect(() => rules.start(alone), throwsA(isA<MoveOpponentMissingException>()));
+    });
+  });
 
   group('A move', () {
     test('marks the cell with the player mark and passes the turn', () {
       final game = play(_startedGame(), [4]);
 
-      expect(game.moves.single, const Move(index: 4, mark: CellMark.X, playerId: _x, round: 0, turn: 0));
+      expect(game.board, Board.empty.play(4, CellMark.X));
       expect(game.currentPlayerId, _o);
       expect(game.status, GameStatus.playing);
     });
@@ -93,27 +129,25 @@ void main() {
     test('clears the board, keeps the scores and lets the other player start', () {
       final finished = play(_startedGame(), [0, 3, 1, 4, 2]);
 
-      final next = rules.startNewRound(game: finished, currentDate: _now);
+      final next = rules.startNewRound(finished);
 
       expect(next?.status, GameStatus.playing);
       expect(next?.currentRoundIndex, 1);
       expect(next?.currentPlayerId, _o);
       expect(next?.currentWinnerId, isNull);
-      expect(next?.moves, isEmpty);
-      expect(next?.boardState, const BoardState());
+      expect(next?.board, Board.empty);
       expect((next?.fromWinCount, next?.toWinCount), (1, 0));
     });
 
     test('cannot start while the round is still being played', () {
       final playing = play(_startedGame(), [0]);
 
-      expect(rules.startNewRound(game: playing, currentDate: _now), isNull);
+      expect(rules.startNewRound(playing), isNull);
     });
   });
 }
 
 Game _startedGame() => Game(
-  createdAt: _now,
   currentPlayerId: _x,
   fromId: _x,
   fromName: 'Jessy',
@@ -121,5 +155,4 @@ Game _startedGame() => Game(
   status: GameStatus.playing,
   toId: _o,
   toName: 'Mario',
-  updatedAt: _now,
 );

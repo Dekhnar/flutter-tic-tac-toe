@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
@@ -26,7 +27,7 @@ void main() {
   late InMemoryGameRepository games;
 
   setUp(() {
-    games = InMemoryGameRepository(stores: {});
+    games = InMemoryGameRepository();
     addTearDown(games.dispose);
   });
 
@@ -64,6 +65,24 @@ void main() {
     expect(find.text('Jessy (X)'), findsOneWidget);
     expect(find.text('Mario (O)'), findsOneWidget);
     expect(find.text(I18n.current.startGame), findsOneWidget);
+  });
+
+  testWidgets('leaving the board of a local game forgets the game', (tester) async {
+    final robot = _HomeRobot(tester);
+    final recorded = PendingLocalGameRepository(games)..created.complete();
+    await robot.launch(localRepository: recorded);
+    await robot.chooseMode(I18n.current.local1v1);
+    await robot.enterNames(['Jessy', 'Mario']);
+    await robot.tapText(I18n.current.start);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text(I18n.current.local1v1), findsOneWidget);
+    // The game streams run on real time: the test clock would never deliver a game that is still there.
+    await tester.runAsync(
+      () => expectLater(games.watchGame(recorded.createdGames.single).first, throwsA(isA<GameNotFoundException>())),
+    );
   });
 
   testWidgets('the modes stay covered while the game is being created', (tester) async {

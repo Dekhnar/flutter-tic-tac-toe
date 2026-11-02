@@ -35,7 +35,7 @@ final class GameModesSelectionNotifierProvider extends $AsyncNotifierProvider<Ga
   GameModesSelectionNotifier create() => GameModesSelectionNotifier();
 }
 
-String _$gameModesSelectionNotifierHash() => r'5a0fee7ef3333e4e1a335da7618d2d1abcb472f8';
+String _$gameModesSelectionNotifierHash() => r'b6adec7948fc495ca71afc2cc9b801591e3f34f4';
 
 /// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
 

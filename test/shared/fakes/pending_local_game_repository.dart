@@ -15,11 +15,15 @@ final class PendingLocalGameRepository implements LocalGameRepositoryInterface {
 
   int creations = 0;
 
+  final createdGames = <GameId>[];
+
   @override
   Future<GameId> createGame({required String guestName, required String hostName, required bool vsAi}) async {
     creations++;
     await created.future;
-    return _repository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
+    final gameId = await _repository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
+    createdGames.add(gameId);
+    return gameId;
   }
 
   @override

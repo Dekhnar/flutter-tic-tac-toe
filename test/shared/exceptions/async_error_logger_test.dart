@@ -19,7 +19,7 @@ void main() {
 
   setUp(() {
     logger = _RecordingLogger();
-    games = InMemoryGameRepository(stores: {});
+    games = InMemoryGameRepository();
     addTearDown(games.dispose);
     container = ProviderContainer(
       observers: [const AsyncErrorLogger()],

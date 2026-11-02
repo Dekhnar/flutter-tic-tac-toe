@@ -2,41 +2,32 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 
 part 'game.freezed.dart';
-part 'game.g.dart';
 
 enum CellMark { O, X }
 
 enum GameStatus { setup, playing, finished }
 
 @freezed
-@JsonSerializable(explicitToJson: true, converters: [GameIdConverter(), PlayerIdConverter()])
 final class Game with _$Game {
   const Game({
-    this.boardState = const BoardState(),
-    required this.createdAt,
+    this.board = Board.empty,
     required this.currentPlayerId,
     this.currentRoundIndex = 0,
     this.currentWinnerId,
-    this.expiresAt,
     required this.fromId,
     required this.fromName,
     this.fromWinCount = 0,
     required this.id,
-    this.lastPlayAt,
-    this.moves = const [],
     required this.status,
     this.toId,
     this.toName,
     this.toWinCount = 0,
-    required this.updatedAt,
     this.vsAi = false,
   });
 
+  /// The board of the current round.
   @override
-  final BoardState boardState;
-
-  @override
-  final DateTime createdAt;
+  final Board board;
 
   @override
   final PlayerId currentPlayerId;
@@ -46,10 +37,6 @@ final class Game with _$Game {
 
   @override
   final PlayerId? currentWinnerId;
-
-  /// When the server deletes an online game; local games never expire.
-  @override
-  final DateTime? expiresAt;
 
   @override
   final PlayerId fromId;
@@ -64,12 +51,6 @@ final class Game with _$Game {
   final GameId id;
 
   @override
-  final DateTime? lastPlayAt;
-
-  @override
-  final List<Move> moves;
-
-  @override
   final GameStatus status;
 
   @override
@@ -82,13 +63,7 @@ final class Game with _$Game {
   final int toWinCount;
 
   @override
-  final DateTime updatedAt;
-
-  @override
   final bool vsAi;
-
-  factory Game.fromJson(Map<String, Object?> json) => _$GameFromJson(json);
-  Map<String, Object?> toJson() => _$GameToJson(this);
 }
 
 extension GamePlayers on Game {
@@ -104,56 +79,32 @@ extension GamePlayers on Game {
       status == GameStatus.playing && !isAiTurn && (player == null || currentPlayerId == player);
 }
 
-@freezed
-@JsonSerializable(converters: [PlayerIdConverter()])
-final class Move with _$Move {
-  const Move({
-    required this.index,
-    required this.mark,
-    required this.playerId,
-    required this.round,
-    required this.turn,
-  });
+/// The 3×3 grid, its cells numbered row by row from 0 to 8.
+@Freezed(copyWith: false)
+final class Board with _$Board {
+  const Board({this.cells = _emptyCells});
+
+  static const size = 3;
+  static const cellCount = size * size;
+  static const empty = Board();
+
+  /// Every row, column and diagonal, as cell numbers.
+  static const lines = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+    [0, 4, 8], [2, 4, 6], // diagonals
+  ];
+
+  static const _emptyCells = <CellMark?>[null, null, null, null, null, null, null, null, null];
 
   @override
-  final int index;
-  @override
-  final CellMark mark;
-  @override
-  final PlayerId playerId;
-  @override
-  final int round;
-  @override
-  final int turn;
+  final List<CellMark?> cells;
 
-  factory Move.fromJson(Map<String, Object?> json) => _$MoveFromJson(json);
-  Map<String, Object?> toJson() => _$MoveToJson(this);
-}
+  CellMark? operator [](int cell) => cells[cell];
 
-/// Per line, the X marks minus the O marks: a line holds three of a kind at ±3. The moves are what the board shows;
-/// these counters are what the Firestore rules check, which cannot loop over the moves.
-@freezed
-@JsonSerializable()
-final class BoardState with _$BoardState {
-  const BoardState({
-    this.anti = 0,
-    this.col = const [0, 0, 0],
-    this.diag = 0,
-    this.moveCount = 0,
-    this.row = const [0, 0, 0],
-  });
+  bool get isFull => !cells.contains(null);
 
-  @override
-  final int anti;
-  @override
-  final List<int> col;
-  @override
-  final int diag;
-  @override
-  final int moveCount;
-  @override
-  final List<int> row;
+  bool hasLine(CellMark mark) => lines.any((line) => line.every((cell) => cells[cell] == mark));
 
-  factory BoardState.fromJson(Map<String, Object?> json) => _$BoardStateFromJson(json);
-  Map<String, Object?> toJson() => _$BoardStateToJson(this);
+  Board play(int cell, CellMark mark) => Board(cells: List.unmodifiable([...cells]..[cell] = mark));
 }

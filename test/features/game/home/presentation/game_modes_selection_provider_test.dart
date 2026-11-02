@@ -17,7 +17,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
-    final games = InMemoryGameRepository(stores: {});
+    final games = InMemoryGameRepository();
     addTearDown(games.dispose);
     localRepository = PendingLocalGameRepository(games);
     container = ProviderContainer(

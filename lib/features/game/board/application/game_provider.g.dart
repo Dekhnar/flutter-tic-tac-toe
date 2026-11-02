@@ -127,7 +127,7 @@ final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Str
   }
 }
 
-String _$gameHash() => r'5732a176b245e7add54ef3c36ed63dbe2500f862';
+String _$gameHash() => r'dc560d098e185fe79394b8c6421996240bc26b07';
 
 final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Game>, GameSession> {
   const GameFamily._()
@@ -143,6 +143,87 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
 
   @override
   String toString() => r'gameProvider';
+}
+
+/// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+/// game watches it again in the same rebuild, which keeps it.
+
+@ProviderFor(localGameLifetime)
+const localGameLifetimeProvider = LocalGameLifetimeFamily._();
+
+/// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+/// game watches it again in the same rebuild, which keeps it.
+
+final class LocalGameLifetimeProvider extends $FunctionalProvider<void, void, void> with $Provider<void> {
+  /// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+  /// game watches it again in the same rebuild, which keeps it.
+  const LocalGameLifetimeProvider._({required LocalGameLifetimeFamily super.from, required GameId super.argument})
+    : super(
+        retry: null,
+        name: r'localGameLifetimeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$localGameLifetimeHash();
+
+  @override
+  String toString() {
+    return r'localGameLifetimeProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    final argument = this.argument as GameId;
+    return localGameLifetime(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<void>(value));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LocalGameLifetimeProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$localGameLifetimeHash() => r'9b6a5200feea9b64920530b0e0227f89eeb780be';
+
+/// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+/// game watches it again in the same rebuild, which keeps it.
+
+final class LocalGameLifetimeFamily extends $Family with $FunctionalFamilyOverride<void, GameId> {
+  const LocalGameLifetimeFamily._()
+    : super(
+        retry: null,
+        name: r'localGameLifetimeProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+  /// game watches it again in the same rebuild, which keeps it.
+
+  LocalGameLifetimeProvider call(GameId gameId) => LocalGameLifetimeProvider._(argument: gameId, from: this);
+
+  @override
+  String toString() => r'localGameLifetimeProvider';
 }
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
@@ -187,7 +268,7 @@ final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void
   }
 }
 
-String _$gameActionsHash() => r'ffed9b780a0513694082719eaa1adc190db4160e';
+String _$gameActionsHash() => r'161434bc5e0d7893efab8d7768a29661dfa4b2b7';
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 

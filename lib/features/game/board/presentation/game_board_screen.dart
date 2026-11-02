@@ -5,56 +5,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/ai_opponent.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
-import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// Shows the game of [session]. A local game lives as long as its board: closing the board forgets it.
+/// Shows the game of [session] while the board is open; against the AI, the AI plays meanwhile.
 @RoutePage()
-class GameBoardScreen extends ConsumerStatefulWidget {
+class GameBoardScreen extends ConsumerWidget {
   const GameBoardScreen({super.key, required this.session});
 
   final GameSession session;
 
   @override
-  ConsumerState<GameBoardScreen> createState() => _GameBoardScreenState();
-}
-
-class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
-  // Read up front: `ref` cannot be used any more once `dispose` runs.
-  late final LocalGameRepositoryInterface? _localRepository;
-
-  @override
-  void initState() {
-    super.initState();
-    _localRepository = switch (widget.session) {
-      LocalGameSession() => ref.read(localGameRepositoryProvider),
-      OnlineGameSession() => null,
-    };
-  }
-
-  @override
-  void dispose() {
-    _localRepository?.endGame(widget.session.gameId);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final session = widget.session;
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(aiOpponentProvider(session));
     final provider = gameProvider(session);
     ref.listen(provider, (_, next) {
       // Invalidating the game to retry reports the error again, flagged as loading.
       if (next case AsyncError(:final error, isLoading: false)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(error));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) _showBlockingErrorDialog(context, ref, error);
+        });
       }
     });
     ref.listen(gameActionsProvider(session), (_, next) {
@@ -95,9 +72,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
   }
 
   /// The board cannot show a game it failed to load: the dialog blocks the screen, offering to retry when it may help.
-  Future<void> _showBlockingErrorDialog(Object error) {
-    if (!mounted) return Future.value();
-
+  Future<void> _showBlockingErrorDialog(BuildContext context, WidgetRef ref, Object error) {
     final i18n = I18n.of(context);
     final gameIsGone = error is GameNotFoundException;
     return showDialog<void>(
@@ -114,7 +89,7 @@ class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    ref.invalidate(gameProvider(widget.session));
+                    ref.invalidate(gameProvider(session));
                   },
                   child: Text(i18n.retry),
                 ),
@@ -250,19 +225,17 @@ class _GameBoardGrid extends StatelessWidget {
 
   final GameSession session;
 
-  static const _cellCount = GameRules.boardSize * GameRules.boardSize;
-
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: GameRules.boardSize,
+        crossAxisCount: Board.size,
         crossAxisSpacing: Dimens.halfSpacing,
         mainAxisSpacing: Dimens.halfSpacing,
       ),
-      itemCount: _cellCount,
+      itemCount: Board.cellCount,
       itemBuilder: (_, index) => _GameCell(key: Key('cell_$index'), index: index, session: session),
     );
   }
@@ -279,14 +252,14 @@ class _GameCell extends ConsumerWidget {
     final (mark, playable) = ref.watch(
       gameProvider(session).select((asyncGame) {
         final game = asyncGame.value;
-        final mark = game?.moves.where((move) => move.index == index).firstOrNull?.mark;
+        final mark = game?.board[index];
         return (mark, mark == null && (game?.isPlayableBy(session.me) ?? false));
       }),
     );
     final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
 
-    final row = index ~/ GameRules.boardSize;
-    final col = index % GameRules.boardSize;
+    final row = index ~/ Board.size;
+    final col = index % Board.size;
     final onTap = playable && !busy ? () => ref.read(gameActionsProvider(session).notifier).makeMove(row, col) : null;
     final i18n = I18n.of(context);
 

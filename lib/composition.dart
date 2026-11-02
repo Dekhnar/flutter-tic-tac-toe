@@ -12,7 +12,7 @@ import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dar
 List<Override> bindGameProviders({required bool isOnlineAvailable}) => [
   isOnlineAvailableProvider.overrideWithValue(isOnlineAvailable),
   localGameRepositoryProvider.overrideWith((ref) {
-    final repository = InMemoryGameRepository(stores: {});
+    final repository = InMemoryGameRepository();
     ref.onDispose(repository.dispose);
     return repository;
   }),

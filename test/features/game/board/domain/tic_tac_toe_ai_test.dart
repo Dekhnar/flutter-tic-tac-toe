@@ -45,13 +45,8 @@ void main() {
       const rules = GameRules();
       final finishedGames = <Game>[];
 
-      Game play(Game game, PlayerId player, int cell) => rules.applyMove(
-        game: game,
-        playerId: player,
-        row: cell ~/ GameRules.boardSize,
-        col: cell % GameRules.boardSize,
-        currentDate: DateTime(2025, 1, 1),
-      );
+      Game play(Game game, PlayerId player, int cell) =>
+          rules.applyMove(game: game, playerId: player, row: cell ~/ Board.size, col: cell % Board.size);
 
       void playEveryAnswer(Game game) {
         if (game.status == GameStatus.finished) {
@@ -59,12 +54,11 @@ void main() {
           return;
         }
         if (game.isAiTurn) {
-          final cell = ai.nextMove(game) ?? (throw TestFailure('The AI passed its turn on ${game.moves}'));
+          final cell = ai.nextMove(game) ?? (throw TestFailure('The AI passed its turn on ${game.board}'));
           return playEveryAnswer(play(game, _ai, cell));
         }
 
-        final takenCells = {for (final move in game.moves) move.index};
-        for (final cell in Iterable.generate(9).where((cell) => !takenCells.contains(cell))) {
+        for (final cell in Iterable.generate(Board.cellCount).where((cell) => game.board[cell] == null)) {
           playEveryAnswer(play(game, _player, cell));
         }
       }
@@ -78,21 +72,22 @@ void main() {
 }
 
 Game _game({required List<int> xCells, required List<int> oCells, required PlayerId currentPlayerId}) {
-  final moves = [
-    for (final cell in xCells) Move(index: cell, mark: CellMark.X, playerId: _player, round: 0, turn: 0),
-    for (final cell in oCells) Move(index: cell, mark: CellMark.O, playerId: _ai, round: 0, turn: 0),
-  ];
+  var board = Board.empty;
+  for (final cell in xCells) {
+    board = board.play(cell, CellMark.X);
+  }
+  for (final cell in oCells) {
+    board = board.play(cell, CellMark.O);
+  }
   return Game(
-    createdAt: DateTime(2025, 1, 1),
+    board: board,
     currentPlayerId: currentPlayerId,
     fromId: _player,
     fromName: 'Jessy',
     id: const GameId('game'),
-    moves: moves,
     status: GameStatus.playing,
     toId: _ai,
     toName: '',
-    updatedAt: DateTime(2025, 1, 1),
     vsAi: true,
   );
 }

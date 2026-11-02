@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 
@@ -18,8 +19,19 @@ GameRepositoryInterface sessionGameRepository(Ref ref, GameSession session) => s
 Duration? _noRetry(int retryCount, Object error) => null;
 
 @Riverpod(retry: _noRetry)
-Stream<Game> game(Ref ref, GameSession session) =>
-    ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
+Stream<Game> game(Ref ref, GameSession session) {
+  if (session case LocalGameSession(:final gameId)) ref.watch(localGameLifetimeProvider(gameId));
+
+  return ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
+}
+
+/// A local game lives as long as something watches it: once its board closes, the game is forgotten. Retrying the
+/// game watches it again in the same rebuild, which keeps it.
+@riverpod
+void localGameLifetime(Ref ref, GameId gameId) {
+  final repository = ref.watch(localGameRepositoryProvider);
+  ref.onDispose(() => repository.endGame(gameId));
+}
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 @riverpod

@@ -25,7 +25,7 @@ void main() {
 
   setUp(() {
     firestore = FakeFirebaseFirestore();
-    localRepository = InMemoryGameRepository(stores: {});
+    localRepository = InMemoryGameRepository();
     addTearDown(localRepository.dispose);
   });
 

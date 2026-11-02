@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
@@ -28,7 +29,6 @@ const _gameId = GameId('ABCDEF');
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
 const _onlineSession = GameSession.online(gameId: _gameId, me: _jessy);
-final _now = DateTime(2025, 1, 1);
 
 void main() {
   setUpAll(() async => I18n.load(const Locale('fr')));
@@ -78,7 +78,9 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
 
-      expect(robot.localRepository.watchGame(session.gameId), emitsError(isA<GameNotFoundException>()));
+      await tester.runAsync(
+        () => expectLater(robot.localRepository.watchGame(session.gameId).first, throwsA(isA<GameNotFoundException>())),
+      );
     });
   });
 
@@ -279,7 +281,7 @@ class _GameBoardScreenRobot {
 
   _FirestoreTestHarness get _harness => harness ?? (throw StateError('Online scenarios need a Firestore harness'));
 
-  final localRepository = InMemoryGameRepository(stores: {}, aiMoveDelay: Duration.zero);
+  final localRepository = InMemoryGameRepository();
 
   Future<GameSession> pumpLocalGame({String guestName = '', required String hostName, bool vsAi = false}) async {
     final gameId = await localRepository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
@@ -401,20 +403,16 @@ class _FirestoreTestHarness {
 
     switch (refusal) {
       case MoveGameFinishedException():
-        await gameRef.update({'status': GameStatus.finished.name});
+        await gameRef.update({GameField.status.name: GameStatus.finished.name});
       case MoveGameNotStartedException():
-        await gameRef.update({'status': GameStatus.setup.name});
+        await gameRef.update({GameField.status.name: GameStatus.setup.name});
       case MoveOpponentMissingException():
-        await gameRef.update({'toId': null});
+        await gameRef.update({GameField.toId.name: null});
       case MoveNotYourTurnException():
-        await gameRef.update({'currentPlayerId': _luigi.value});
+        await gameRef.update({GameField.currentPlayerId.name: _luigi.value});
       case MoveCellAlreadyTakenException():
-        await gameRef.collection('moves').doc('0:0').set({
-          'index': 0,
-          'mark': CellMark.O.name,
-          'playerId': _luigi.value,
-          'round': 0,
-          'turn': 0,
+        await gameRef.update({
+          GameField.board.name: [CellMark.O.name, '', '', '', '', '', '', '', ''],
         });
       default:
         throw UnsupportedError('No seed for $refusal');
@@ -460,51 +458,34 @@ final class _AppRepository implements OnlineGameRepositoryInterface {
   Stream<Game> watchGame(GameId gameId) => _repository.watchGame(gameId);
 }
 
-Game _buildSetupGame() => Game(
-  createdAt: _now,
-  currentPlayerId: _jessy,
-  fromId: _jessy,
-  fromName: 'Jessy',
-  id: _gameId,
-  status: GameStatus.setup,
-  updatedAt: _now,
-);
+Game _buildSetupGame() =>
+    const Game(currentPlayerId: _jessy, fromId: _jessy, fromName: 'Jessy', id: _gameId, status: GameStatus.setup);
 
 Game _buildPlayingGame() => Game(
-  boardState: const BoardState(anti: -1, col: [1, -1, 0], diag: 0, moveCount: 2, row: [1, -1, 0]),
-  createdAt: _now,
+  board: _board(x: [0], o: [4]),
   currentPlayerId: _jessy,
   fromId: _jessy,
   fromName: 'Jessy',
   id: _gameId,
-  moves: const [
-    Move(index: 0, mark: CellMark.X, playerId: _jessy, round: 0, turn: 0),
-    Move(index: 4, mark: CellMark.O, playerId: _luigi, round: 0, turn: 1),
-  ],
   status: GameStatus.playing,
   toId: _luigi,
   toName: 'Luigi',
-  updatedAt: _now,
 );
 
 Game _buildFinishedGame() => Game(
-  boardState: const BoardState(anti: 0, col: [0, 0, 1], diag: 0, moveCount: 5, row: [3, -2, 0]),
-  createdAt: _now,
+  board: _board(x: [0, 1, 2], o: [3, 4]),
   currentPlayerId: _jessy,
   currentWinnerId: _jessy,
   fromId: _jessy,
   fromName: 'Jessy',
   fromWinCount: 1,
   id: _gameId,
-  moves: const [
-    Move(index: 0, mark: CellMark.X, playerId: _jessy, round: 0, turn: 0),
-    Move(index: 3, mark: CellMark.O, playerId: _luigi, round: 0, turn: 1),
-    Move(index: 1, mark: CellMark.X, playerId: _jessy, round: 0, turn: 2),
-    Move(index: 4, mark: CellMark.O, playerId: _luigi, round: 0, turn: 3),
-    Move(index: 2, mark: CellMark.X, playerId: _jessy, round: 0, turn: 4),
-  ],
   status: GameStatus.finished,
   toId: _luigi,
   toName: 'Luigi',
-  updatedAt: _now,
 );
+
+Board _board({required List<int> x, required List<int> o}) => [
+  for (final cell in x) (cell, CellMark.X),
+  for (final cell in o) (cell, CellMark.O),
+].fold(Board.empty, (board, move) => board.play(move.$1, move.$2));

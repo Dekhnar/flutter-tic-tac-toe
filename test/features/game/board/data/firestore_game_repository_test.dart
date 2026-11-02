@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
@@ -36,9 +37,12 @@ void main() {
     }
   }
 
-  /// The game as the players see it, once the moves of the current round are loaded.
-  Future<Game> storedGame({int moveCount = 0}) =>
-      host.watchGame(_gameId).firstWhere((game) => game.moves.length == moveCount).timeout(const Duration(seconds: 1));
+  /// The game as the players see it, once it holds [marks] marks. The fake database applies a transaction just after
+  /// it completes.
+  Future<Game> storedGame({int marks = 0}) => host
+      .watchGame(_gameId)
+      .firstWhere((game) => game.board.cells.nonNulls.length == marks)
+      .timeout(const Duration(seconds: 1));
 
   group('Joining a game', () {
     test('seats the guest as O, by name', () async {
@@ -83,19 +87,24 @@ void main() {
     expect(guest.createGame(_gameId, host: _mario, hostName: 'Mario'), throwsA(isA<StateError>()));
   });
 
-  test('a game and its moves are deleted by the server thirty days after the creation', () async {
+  test('a game is deleted by the server thirty days after its creation', () async {
     final createdAt = DateTime.utc(2026, 11, 2, 10);
     final repository = FirestoreGameRepository(clock: Clock.fixed(createdAt), firestore: firestore);
+
     await repository.createGame(_gameId, host: _jessy, hostName: 'Jessy');
-    await guest.joinGame(_gameId, guest: _luigi, guestName: 'Luigi');
-    await repository.startGame(gameId: _gameId);
 
-    await repository.makeMove(gameId: _gameId, playerId: _jessy, row: 0, col: 0);
+    final document = await firestore.collection('games').doc(_gameId.value).get();
+    expect(document.data()?[GameField.expiresAt.name], Timestamp.fromDate(DateTime.utc(2026, 12, 2, 10)));
+  });
 
-    final expiresAt = Timestamp.fromDate(DateTime.utc(2026, 12, 2, 10));
-    final gameRef = firestore.collection('games').doc(_gameId.value);
-    expect((await gameRef.get()).data()?['expiresAt'], expiresAt);
-    expect((await gameRef.collection('moves').get()).docs.single.data()['expiresAt'], expiresAt);
+  test('a game stored in a shape the app cannot read ends its stream in an error', () async {
+    await host.createGame(_gameId, host: _jessy, hostName: 'Jessy');
+    await Future<void>.delayed(Duration.zero);
+
+    final reading = expectLater(host.watchGame(_gameId), emitsThrough(emitsError(isA<FormatException>())));
+    await firestore.collection('games').doc(_gameId.value).update({GameField.board.name: 'X........'});
+
+    await reading;
   });
 
   test('watching a game deleted from the server ends in an error', () async {
@@ -113,10 +122,11 @@ void main() {
 
       await host.makeMove(gameId: _gameId, playerId: _jessy, row: 1, col: 1);
 
-      final stored = await storedGame(moveCount: 1);
-      expect(stored.moves.single, const Move(index: 4, mark: CellMark.X, playerId: _jessy, round: 0, turn: 0));
-      expect(stored.boardState, const BoardState(anti: 1, col: [0, 1, 0], diag: 1, moveCount: 1, row: [0, 1, 0]));
+      final stored = await storedGame(marks: 1);
+      final document = await firestore.collection('games').doc(_gameId.value).get();
+      expect(stored.board, Board.empty.play(4, CellMark.X));
       expect(stored.currentPlayerId, _luigi);
+      expect(document.data()?[GameField.board.name], ['', '', '', '', 'X', '', '', '', '']);
     });
 
     test('is refused when it is the opponent turn', () async {
@@ -152,7 +162,7 @@ void main() {
 
       await play([0, 3, 1, 4, 2]);
 
-      final stored = await storedGame(moveCount: 5);
+      final stored = await storedGame(marks: 5);
       expect(stored.status, GameStatus.finished);
       expect(stored.currentWinnerId, _jessy);
       expect((stored.fromWinCount, stored.toWinCount), (1, 0));
@@ -174,24 +184,19 @@ void main() {
 
       await guest.startNewRound(gameId: _gameId);
 
-      final stored = await storedGame(moveCount: 1);
+      final stored = await storedGame(marks: 1);
       expect(stored.currentRoundIndex, 0);
       expect(stored.currentPlayerId, _luigi);
     });
 
-    test('a new round never shows the moves of the previous one', () async {
+    test('a new round starts on an empty board, the other player first', () async {
       await startedGame();
-      final updates = <Game>[];
-      final subscription = host.watchGame(_gameId).listen(updates.add);
       await play([0, 3, 1, 4, 2]);
 
       await guest.startNewRound(gameId: _gameId);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      await subscription.cancel();
 
-      expect(updates.last.currentRoundIndex, 1);
-      expect(updates.where((game) => game.moves.length != game.boardState.moveCount), isEmpty);
-      expect(updates.where((game) => game.moves.any((move) => move.round != game.currentRoundIndex)), isEmpty);
+      final next = await host.watchGame(_gameId).firstWhere((game) => game.currentRoundIndex == 1);
+      expect((next.board, next.status, next.currentPlayerId), (Board.empty, GameStatus.playing, _luigi));
     });
   });
 }

@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
@@ -172,50 +173,50 @@ void main() {
         await expectDenied(opponent.gameRef(gameId).update({'toId': opponent.id.value, 'toName': 'Luigi'}));
       }, skip: !online);
 
-      test('a move out of turn, a fake victory and an inflated score', () async {
+      test('a move out of turn, a fake victory, an overwritten cell and an inflated score', () async {
         await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
         await opponent.repository.startGame(gameId: gameId);
 
-        // The guest (O) writes a move while the host (X) is to play.
-        await expectDenied(cheater.writeMove(gameId, index: 4, mark: 'O', turn: 0, board: _boardAfter([(4, -1)])));
+        // The guest (O) plays while the host (X) is to play.
+        await expectDenied(cheater.play(gameId, _board(o: [4]), {GameField.currentPlayerId: opponent.id.value}));
 
         // The host claims a win on its first move.
         await expectDenied(
-          opponent.writeMove(
-            gameId,
-            index: 0,
-            mark: 'X',
-            turn: 0,
-            board: _boardAfter([(0, 1)]),
-            outcome: {'status': 'finished', 'currentWinnerId': opponent.id.value, 'fromWinCount': 1},
-          ),
+          opponent.play(gameId, _board(x: [0]), {
+            GameField.status: GameStatus.finished.name,
+            GameField.currentWinnerId: opponent.id.value,
+            GameField.fromWinCount: 1,
+          }),
         );
 
         // The same move without the claim goes through: the refusals above come from the cheats, not the write.
-        await opponent.writeMove(
-          gameId,
-          index: 0,
-          mark: 'X',
-          turn: 0,
-          board: _boardAfter([(0, 1)]),
-          outcome: {'currentPlayerId': cheater.id.value},
-        );
+        await opponent.play(gameId, _board(x: [0]), {GameField.currentPlayerId: cheater.id.value});
+
+        // The guest marks the host's cell instead of an empty one.
+        await expectDenied(cheater.play(gameId, _board(o: [0]), {GameField.currentPlayerId: opponent.id.value}));
 
         // A score edit outside any move is refused.
-        await expectDenied(opponent.gameRef(gameId).update({'fromWinCount': 5}));
+        await expectDenied(opponent.gameRef(gameId).update({GameField.fromWinCount.name: 5}));
       }, skip: !online);
 
       test('a game with a field the app never writes, or that would outlive its 30 days', () async {
-        final created =
-            CreateGameCommand(
-              expiresAt: DateTime.timestamp().add(FirestoreGameRepository.lifetime),
-              host: cheater.id,
-              hostName: 'Wario',
-            ).toFirestore();
+        final created = GameDocument.write(
+          GameWrite.create,
+          Game(
+            currentPlayerId: cheater.id,
+            fromId: cheater.id,
+            fromName: 'Wario',
+            id: gameId,
+            status: GameStatus.setup,
+          ),
+          expiresAt: DateTime.timestamp().add(FirestoreGameRepository.lifetime),
+        );
         final forever = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 3650)));
 
         await expectDenied(cheater.gameRef(GameId(const Uuid().v4())).set({...created, 'vsAi': true}));
-        await expectDenied(cheater.gameRef(GameId(const Uuid().v4())).set({...created, 'expiresAt': forever}));
+        await expectDenied(
+          cheater.gameRef(GameId(const Uuid().v4())).set({...created, GameField.expiresAt.name: forever}),
+        );
 
         // The game as the app writes it goes through: the refusals above come from the extra field and the expiry.
         await cheater.gameRef(GameId(const Uuid().v4())).set(created);
@@ -228,20 +229,10 @@ void main() {
   });
 }
 
-/// Board counters after the given (cell, sign) moves, as the rules compute them.
-Map<String, Object> _boardAfter(List<(int, int)> moves) {
-  final row = [0, 0, 0];
-  final col = [0, 0, 0];
-  var diag = 0;
-  var anti = 0;
-  for (final (cell, sign) in moves) {
-    row[cell ~/ 3] += sign;
-    col[cell % 3] += sign;
-    if (cell ~/ 3 == cell % 3) diag += sign;
-    if (cell ~/ 3 + cell % 3 == 2) anti += sign;
-  }
-  return {'anti': anti, 'col': col, 'diag': diag, 'moveCount': moves.length, 'row': row};
-}
+/// A board as the rules read it, with X and O on the given cells.
+List<String> _board({List<int> x = const [], List<int> o = const []}) => [
+  for (var cell = 0; cell < Board.cellCount; cell++) x.contains(cell) ? 'X' : (o.contains(cell) ? 'O' : ''),
+];
 
 /// Another device: its own Firebase app and anonymous account, on the same emulators.
 final class _Device {
@@ -261,29 +252,11 @@ final class _Device {
 
   DocumentReference<Map<String, dynamic>> gameRef(GameId gameId) => firestore.collection('games').doc(gameId.value);
 
-  /// Writes a move and its game update together, as the app does, without the app's checks.
-  Future<void> writeMove(
-    GameId gameId, {
-    required int index,
-    required String mark,
-    required int turn,
-    required Map<String, Object> board,
-    Map<String, Object?> outcome = const {},
-  }) async {
-    final game = await gameRef(gameId).get();
-    final batch = firestore.batch();
-    batch.set(gameRef(gameId).collection('moves').doc('0:$index'), {
-      'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt': game.data()?['expiresAt'],
-      'index': index,
-      'mark': mark,
-      'playerId': id.value,
-      'round': 0,
-      'turn': turn,
-    });
-    batch.update(gameRef(gameId), {'boardState': board, 'lastMoveIndex': index, ...outcome});
-    return batch.commit();
-  }
+  /// Writes a move as the app would, without the app's checks: the board after it, and what it changes in the game.
+  Future<void> play(GameId gameId, List<String> board, Map<GameField, Object?> outcome) => gameRef(gameId).update({
+    GameField.board.name: board,
+    for (final MapEntry(key: field, :value) in outcome.entries) field.name: value,
+  });
 }
 
 class _AppRobot {

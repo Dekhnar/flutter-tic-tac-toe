@@ -92,15 +92,17 @@ void main() {
       await robot.waitFor(find.text(I18n.current.playerWins('Jessy (X)')));
     }, skip: !online);
 
-    testWidgets('joining a game that does not exist stays on the home screen and says so', (tester) async {
-      final robot = _AppRobot(tester);
-      await robot.launch();
+    for (final code in ['no-such-game', 'no/such/game']) {
+      testWidgets('joining a game that does not exist ($code) stays on the home screen and says so', (tester) async {
+        final robot = _AppRobot(tester);
+        await robot.launch();
 
-      await robot.joinOnlineGame(const GameId('no-such-game'), guestName: 'Luigi');
+        await robot.joinOnlineGame(GameId(code), guestName: 'Luigi');
 
-      await robot.waitFor(find.text(I18n.current.gameNotFound));
-      expect(find.text(I18n.current.local1v1), findsOneWidget);
-    }, skip: !online);
+        await robot.waitFor(find.text(I18n.current.gameNotFound));
+        expect(find.text(I18n.current.local1v1), findsOneWidget);
+      }, skip: !online);
+    }
 
     testWidgets('joining a game that already has two players stays on the home screen and says so', (tester) async {
       final gameId = GameId(const Uuid().v4());

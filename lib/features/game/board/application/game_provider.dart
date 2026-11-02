@@ -5,7 +5,6 @@ import 'package:tic_tac_toe_app/features/game/board/application/game_session.dar
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
 part 'game_provider.g.dart';
 
@@ -44,11 +43,6 @@ class GameActions extends _$GameActions {
     final repository = ref.read(sessionGameRepositoryProvider(session));
     state = const AsyncLoading();
     final result = await AsyncValue.guard(() => action(repository));
-    if (!ref.mounted) return;
-
-    if (result case AsyncError(:final error, :final stackTrace)) {
-      ref.read(errorLoggerServiceProvider).log(error, stackTrace);
-    }
-    state = result;
+    if (ref.mounted) state = result;
   }
 }

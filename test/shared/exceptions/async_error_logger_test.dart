@@ -1,0 +1,74 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
+import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
+
+void main() {
+  late _RecordingLogger logger;
+  late InMemoryGameRepository games;
+  late ProviderContainer container;
+
+  setUp(() {
+    logger = _RecordingLogger();
+    games = InMemoryGameRepository(stores: {});
+    addTearDown(games.dispose);
+    container = ProviderContainer(
+      observers: [const AsyncErrorLogger()],
+      overrides: [
+        errorLoggerServiceProvider.overrideWithValue(logger),
+        isOnlineAvailableProvider.overrideWithValue(false),
+        localGameRepositoryProvider.overrideWithValue(games),
+      ],
+    );
+    addTearDown(container.dispose);
+  });
+
+  test('a move the game refuses is reported once', () async {
+    final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy', vsAi: false);
+    await games.startGame(gameId: gameId);
+    final session = GameSession.local(gameId: gameId);
+    container.listen(gameProvider(session), (_, _) {});
+    container.listen(gameActionsProvider(session), (_, _) {});
+    await container.read(gameProvider(session).future);
+    final actions = container.read(gameActionsProvider(session).notifier);
+
+    await actions.makeMove(0, 5);
+
+    expect(logger.errors, [isA<MoveCellIndexInvalidException>()]);
+  });
+
+  test('a game that cannot be loaded is reported once', () async {
+    const session = GameSession.local(gameId: GameId('gone'));
+    container.listen(gameProvider(session), (_, _) {});
+
+    await expectLater(container.read(gameProvider(session).future), throwsA(isA<GameNotFoundException>()));
+
+    expect(logger.errors, [isA<GameNotFoundException>()]);
+  });
+
+  test('a game that cannot start from the home screen is reported once', () async {
+    container.listen(gameModesSelectionProvider, (_, _) {});
+
+    await container
+        .read(gameModesSelectionProvider.notifier)
+        .startSession(GameCreateInput.joinOnlineLobby(gameId: const GameId('ABCDEF'), guestName: 'Luigi'));
+
+    expect(logger.errors, [isA<OnlineUnavailableException>()]);
+  });
+}
+
+final class _RecordingLogger implements ErrorLoggerService {
+  final errors = <Object>[];
+
+  @override
+  void log(Object error, StackTrace? stackTrace) => errors.add(error);
+}

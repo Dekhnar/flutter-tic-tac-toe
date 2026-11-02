@@ -42,6 +42,9 @@ final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
 
   @override
   Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName}) async {
+    // The code is typed by the player: one that cannot be a document id names no game.
+    if (!_isDocumentId(gameId.value)) throw GameNotFoundException();
+
     final gameRef = _gameRef(gameId);
 
     await _runTransaction((transaction) async {
@@ -198,6 +201,14 @@ final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
       await _firestore.runTransaction(write);
     }
   }
+
+  static bool _isDocumentId(String id) =>
+      id.isNotEmpty &&
+      id.length <= 1500 &&
+      !id.contains('/') &&
+      id != '.' &&
+      id != '..' &&
+      !(id.startsWith('__') && id.endsWith('__'));
 
   Game _parseGame(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     return switch (snapshot.data()) {

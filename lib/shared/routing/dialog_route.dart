@@ -9,8 +9,6 @@ class CustomDialogRoute extends CustomRoute {
     List<AutoRoute> super.children = const [],
     Color barrierColor = const Color(0x8A000000),
     bool barrierDismissible = true,
-    super.fullscreenDialog = true,
-    super.opaque = false,
   }) : super(
          customRouteBuilder: <T>(context, child, settings) {
            return DialogRoute<T>(

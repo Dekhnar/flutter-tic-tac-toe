@@ -30,6 +30,17 @@ void main() {
     addTearDown(games.dispose);
   });
 
+  testWidgets('the app opened on the address of a board, like a reloaded web page, shows the home screen', (
+    tester,
+  ) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/game';
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+
+    await _HomeRobot(tester).launch(localRepository: games);
+
+    expect(find.text(I18n.current.local1v1), findsOneWidget);
+  });
+
   testWidgets('choosing to play online without Firebase says it is unavailable, without asking for a name', (
     tester,
   ) async {

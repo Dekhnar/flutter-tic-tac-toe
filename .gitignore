@@ -55,3 +55,5 @@ app.*.map.json
 firebase_options.json
 
 coverage/
+# Alchemist writes the images of failed goldens here
+**/failures/

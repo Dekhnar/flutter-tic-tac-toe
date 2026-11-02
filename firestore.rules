@@ -46,7 +46,7 @@ service cloud.firestore {
 
       // `size()` counts UTF-16 code units, as `PlayerName` does in the app.
       function isValidName(name) {
-        return name is string && name.size() > 0 && name.size() <= 20;
+        return name is string && name.trim().size() > 0 && name.size() <= 20;
       }
 
       // The cells, row by row: 'X', 'O', or '' when empty.
@@ -83,6 +83,7 @@ service cloud.firestore {
 
       function isJoin() {
         return signedIn()
+          && before().status == 'setup'
           && before().toId == null
           && request.auth.uid != before().fromId
           && after().toId == request.auth.uid

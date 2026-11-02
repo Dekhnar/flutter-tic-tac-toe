@@ -174,6 +174,19 @@ void main() {
         );
       }, skip: !online);
 
+      test('joining a game its host left, or under a blank name', () async {
+        await expectDenied(cheater.repository.joinGame(gameId, guest: cheater.id, guestName: '   '));
+
+        await opponent.repository.leaveGame(gameId);
+        await expectDenied(
+          cheater.gameRef(gameId).update({
+            GameField.toId.name: cheater.id.value,
+            GameField.toName.name: 'Wario',
+            GameField.updatedAt.name: FieldValue.serverTimestamp(),
+          }),
+        );
+      }, skip: !online);
+
       test('leaving a game one does not play, and leaving a game twice', () async {
         await expectDenied(cheater.repository.leaveGame(gameId));
 

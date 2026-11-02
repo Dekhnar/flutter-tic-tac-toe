@@ -105,7 +105,7 @@ flutter test --tags golden --update-goldens    # regenerate goldens after an int
 
 - **Unit tests** cover the rules, the AI, both repositories (Firestore through `fake_cloud_firestore`) and the game mode selection.
 - **Widget tests** drive the board screen through a robot (`_GameBoardScreenRobot`): scenarios read as player actions and selectors live in one place. Online scenarios play the opponent through a second `GameRepository` on the same fake database.
-- **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state in dark, light, large text and semantics views. They are CI goldens: text is drawn as blocks, so the images do not depend on the OS or the machine.
+- **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state in dark, light, large text and semantics views, with the real fonts. Text rasterization differs slightly between OSes: regenerate them on macOS.
 
 Coverage, without generated files (requires `lcov`):
 

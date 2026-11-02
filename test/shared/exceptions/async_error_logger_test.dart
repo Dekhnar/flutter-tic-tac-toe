@@ -71,5 +71,5 @@ final class _RecordingLogger implements ErrorLogger {
   final errors = <Object>[];
 
   @override
-  void log(Object error, StackTrace? stackTrace) => errors.add(error);
+  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => errors.add(error);
 }

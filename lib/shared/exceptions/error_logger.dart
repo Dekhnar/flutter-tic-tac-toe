@@ -8,7 +8,8 @@ part 'error_logger.g.dart';
 /// Where every error ends up: the global error handlers and the provider observer use the one instance the
 /// composition binds.
 abstract interface class ErrorLogger {
-  void log(Object error, StackTrace? stackTrace);
+  /// A [fatal] error is one nothing caught: the app may be in a broken state.
+  void log(Object error, StackTrace? stackTrace, {bool fatal = false});
 }
 
 /// Writes errors to the developer console, where debug builds show them: refusals the player was told about as
@@ -21,9 +22,15 @@ final class DeveloperErrorLogger implements ErrorLogger {
   static const _warning = 900;
 
   @override
-  void log(Object error, StackTrace? stackTrace) => switch (error) {
-    ExpectedException() => developer.log('$error', name: _name, level: _warning, error: error),
-    _ => developer.log('Unexpected error', name: _name, level: _severe, error: error, stackTrace: stackTrace),
+  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => switch (error) {
+    ExpectedException() when !fatal => developer.log('$error', name: _name, level: _warning, error: error),
+    _ => developer.log(
+      fatal ? 'Uncaught error' : 'Unexpected error',
+      name: _name,
+      level: _severe,
+      error: error,
+      stackTrace: stackTrace,
+    ),
   };
 }
 

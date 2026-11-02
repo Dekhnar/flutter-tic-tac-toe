@@ -6,7 +6,7 @@ part of 'game_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gameNotifierHash() => r'abe01324d8026022c7695c9c1dbb50205f4ec018';
+String _$gameNotifierHash() => r'4d3fc80b4a18bdd8c9bb95dd84e1d0060b3c6b90';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,10 +29,10 @@ class _SystemHash {
   }
 }
 
-abstract class _$GameNotifier extends BuildlessAutoDisposeAsyncNotifier<Game> {
+abstract class _$GameNotifier extends BuildlessAutoDisposeStreamNotifier<Game> {
   late final GameCreateInput gameCreateInput;
 
-  FutureOr<Game> build({required GameCreateInput gameCreateInput});
+  Stream<Game> build({required GameCreateInput gameCreateInput});
 }
 
 /// See also [GameNotifier].
@@ -73,7 +73,7 @@ class GameNotifierFamily extends Family<AsyncValue<Game>> {
 
 /// See also [GameNotifier].
 class GameNotifierProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<GameNotifier, Game> {
+    extends AutoDisposeStreamNotifierProviderImpl<GameNotifier, Game> {
   /// See also [GameNotifier].
   GameNotifierProvider({required GameCreateInput gameCreateInput})
     : this._internal(
@@ -103,7 +103,7 @@ class GameNotifierProvider
   final GameCreateInput gameCreateInput;
 
   @override
-  FutureOr<Game> runNotifierBuild(covariant GameNotifier notifier) {
+  Stream<Game> runNotifierBuild(covariant GameNotifier notifier) {
     return notifier.build(gameCreateInput: gameCreateInput);
   }
 
@@ -124,7 +124,7 @@ class GameNotifierProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<GameNotifier, Game> createElement() {
+  AutoDisposeStreamNotifierProviderElement<GameNotifier, Game> createElement() {
     return _GameNotifierProviderElement(this);
   }
 
@@ -145,13 +145,13 @@ class GameNotifierProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin GameNotifierRef on AutoDisposeAsyncNotifierProviderRef<Game> {
+mixin GameNotifierRef on AutoDisposeStreamNotifierProviderRef<Game> {
   /// The parameter `gameCreateInput` of this provider.
   GameCreateInput get gameCreateInput;
 }
 
 class _GameNotifierProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<GameNotifier, Game>
+    extends AutoDisposeStreamNotifierProviderElement<GameNotifier, Game>
     with GameNotifierRef {
   _GameNotifierProviderElement(super.provider);
 

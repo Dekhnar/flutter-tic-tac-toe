@@ -5,9 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
@@ -16,44 +16,43 @@ part 'game_repository_provider.g.dart';
 @riverpod
 GameRepository gameRepository(Ref ref) => GameRepository(firestore: FirebaseFirestore.instance);
 
-final class GameRepository extends GameRepositoryInterface {
-  final FirebaseFirestore _firestore;
-  final AsyncCallback? _beforeMakeMove;
-
+final class GameRepository implements GameRepositoryInterface {
   const GameRepository({
-    required FirebaseFirestore firestore,
     @visibleForTesting AsyncCallback? beforeMakeMove,
     @visibleForTesting Clock clock = const Clock(),
+    required FirebaseFirestore firestore,
     @visibleForTesting GameRules rules = const GameRules(),
-  }) : _firestore = firestore,
-       _beforeMakeMove = beforeMakeMove,
+  }) : _beforeMakeMove = beforeMakeMove,
        _clock = clock,
+       _firestore = firestore,
        _rules = rules;
 
-  final GameRules _rules;
+  final AsyncCallback? _beforeMakeMove;
   final Clock _clock;
+  final FirebaseFirestore _firestore;
+  final GameRules _rules;
 
   CollectionReference<Map<String, dynamic>> get _games => _firestore.collection('games');
 
   Future<Game> createGame({required String authorUid, required String shareLink}) async {
-    final ref = await _games.add(CreateGameCommand(fromId: authorUid, shareLink: shareLink).toFirestore());
-    final snapshot = await ref.get();
+    final gameRef = await _games.add(CreateGameCommand(fromId: authorUid, shareLink: shareLink).toFirestore());
+    final snapshot = await gameRef.get();
 
     return _parseGame(snapshot);
   }
 
   Future<Game> joinGame({required String shareLink, required String joinerUid}) async {
-    final qs = await _games.where('shareLink', isEqualTo: shareLink).limit(1).get();
-    if (qs.docs.isEmpty) {
+    final games = await _games.where('shareLink', isEqualTo: shareLink).limit(1).get();
+    if (games.docs.isEmpty) {
       throw GameNotFoundException();
     }
-    final gameRef = qs.docs.first.reference;
+    final gameRef = games.docs.first.reference;
 
-    await _firestore.runTransaction((tx) async {
-      final game = _parseGame(await tx.get(gameRef));
+    await _firestore.runTransaction((transaction) async {
+      final game = _parseGame(await transaction.get(gameRef));
       if (game.toId != null) throw GameAlreadyFullException();
 
-      tx.update(gameRef, JoinGameCommand(joinerUid: joinerUid).toFirestore());
+      transaction.update(gameRef, JoinGameCommand(joinerUid: joinerUid).toFirestore());
     });
 
     return _parseGame(await gameRef.get());
@@ -64,8 +63,8 @@ final class GameRepository extends GameRepositoryInterface {
     final gameRef = _games.doc(gameId);
 
     final controller = StreamController<Game>();
-    StreamSubscription? gameSub;
-    StreamSubscription? movesSub;
+    StreamSubscription? gameSubscription;
+    StreamSubscription? movesSubscription;
     Game? latestGame;
 
     List<Move> latestMoves = const [];
@@ -76,39 +75,55 @@ final class GameRepository extends GameRepositoryInterface {
       }
     }
 
-    void listenMoves(int round) {
-      movesSub?.cancel();
-
-      movesSub = gameRef.collection('moves').where('round', isEqualTo: round).snapshots().listen((qs) {
-        final moves = qs.docs.map((d) => Move.fromJson(d.data())).toList(growable: false)
-          ..sort((a, b) => a.turn.compareTo(b.turn)); // sorted client-side: `where` + `orderBy` needs a composite index
-        latestMoves = moves;
-        emit();
-      }, onError: controller.addError);
+    // A listener that throws would escape to the zone: the error goes to the game stream instead.
+    void forwardErrors(VoidCallback onSnapshot) {
+      try {
+        onSnapshot();
+      } catch (error, stackTrace) {
+        controller.addError(error, stackTrace);
+      }
     }
 
-    gameSub = gameRef.snapshots().listen(
-      (snap) {
-        if (!snap.exists) return;
+    void listenMoves(int round) {
+      movesSubscription?.cancel();
 
-        final game = _parseGame(snap);
-        final prevRound = latestGame?.currentRoundIndex;
+      movesSubscription = gameRef
+          .collection('moves')
+          .where('round', isEqualTo: round)
+          .snapshots()
+          .listen(
+            (movesSnapshot) => forwardErrors(() {
+              latestMoves = movesSnapshot.docs.map((move) => Move.fromJson(move.data())).toList(growable: false)..sort(
+                (a, b) => a.turn.compareTo(b.turn),
+              ); // sorted client-side: `where` + `orderBy` needs a composite index
+              emit();
+            }),
+            onError: controller.addError,
+          );
+    }
+
+    gameSubscription = gameRef.snapshots().listen(
+      (snapshot) => forwardErrors(() {
+        if (!snapshot.exists) throw GameNotFoundException();
+
+        final game = _parseGame(snapshot);
+        final previousRound = latestGame?.currentRoundIndex;
 
         latestGame = game;
 
-        if (prevRound != game.currentRoundIndex) {
+        if (previousRound != game.currentRoundIndex) {
           listenMoves(game.currentRoundIndex);
         }
 
         emit();
-      },
+      }),
       onError: controller.addError,
       onDone: controller.close,
     );
 
     controller.onCancel = () {
-      gameSub?.cancel();
-      movesSub?.cancel();
+      gameSubscription?.cancel();
+      movesSubscription?.cancel();
     };
 
     return controller.stream;
@@ -121,9 +136,9 @@ final class GameRepository extends GameRepositoryInterface {
 
     await _beforeMakeMove?.call();
 
-    await _firestore.runTransaction((tx) async {
+    await _firestore.runTransaction((transaction) async {
       final gameRef = _games.doc(gameId);
-      final currentGame = _parseGame(await tx.get(gameRef));
+      final currentGame = _parseGame(await transaction.get(gameRef));
 
       if (currentGame.status == GameStatus.finished) throw MoveGameFinishedException();
       if (currentGame.status == GameStatus.setup) throw MoveGameNotStartedException();
@@ -131,8 +146,8 @@ final class GameRepository extends GameRepositoryInterface {
       if (currentGame.currentPlayerId != playerId) throw MoveNotYourTurnException();
 
       final moveRef = gameRef.collection('moves').doc('${currentGame.currentRoundIndex}:$index');
-      final moveSnap = await tx.get(moveRef);
-      if (moveSnap.exists) throw MoveCellAlreadyTakenException();
+      final moveSnapshot = await transaction.get(moveRef);
+      if (moveSnapshot.exists) throw MoveCellAlreadyTakenException();
 
       final updatedGame = _rules.applyMove(
         game: currentGame,
@@ -144,35 +159,35 @@ final class GameRepository extends GameRepositoryInterface {
 
       if (updatedGame == null) throw StateError('Move rejected by the rules after passing every check');
 
-      tx.set(moveRef, MoveEventCommand(move: updatedGame.moves.last).toFirestore());
-      tx.update(gameRef, GameStateCommand(game: updatedGame).toFirestore());
+      transaction.set(moveRef, MoveEventCommand(move: updatedGame.moves.last).toFirestore());
+      transaction.update(gameRef, GameStateCommand(game: updatedGame).toFirestore());
     });
   }
 
   @override
   Future<void> startNewRound({required String gameId}) async {
-    await _firestore.runTransaction((tx) async {
+    await _firestore.runTransaction((transaction) async {
       final gameRef = _games.doc(gameId);
-      final currentGame = _parseGame(await tx.get(gameRef));
+      final currentGame = _parseGame(await transaction.get(gameRef));
 
       // Both players see "play again": the second request finds the round already started and does nothing.
       final nextRound = _rules.startNewRound(game: currentGame, currentDate: _clock.now());
       if (nextRound == null) return;
 
-      tx.update(gameRef, GameStateCommand(game: nextRound).toFirestore());
+      transaction.update(gameRef, GameStateCommand(game: nextRound).toFirestore());
     });
   }
 
   @override
   Future<void> startGame({required String gameId}) async {
-    await _firestore.runTransaction((tx) async {
+    await _firestore.runTransaction((transaction) async {
       final gameRef = _games.doc(gameId);
-      final currentGame = _parseGame(await tx.get(gameRef));
+      final currentGame = _parseGame(await transaction.get(gameRef));
 
       if (currentGame.status != GameStatus.setup) return;
       if (currentGame.toId == null) throw MoveOpponentMissingException();
 
-      tx.update(gameRef, const StartGameCommand().toFirestore());
+      transaction.update(gameRef, const StartGameCommand().toFirestore());
     });
   }
 

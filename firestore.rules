@@ -29,8 +29,8 @@ service cloud.firestore {
       function isGameUpdate() {
         return resource.data.toId != null
           && changedKeys().hasOnly([
-            'boardState', 'status', 'currentRoundIndex', 'currentPlayerId', 'currentWinnerId',
-            'fromWinCount', 'toWinCount', 'lastPlayAt', 'updatedAt'
+            'boardState', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'fromWinCount',
+            'lastPlayAt', 'status', 'toWinCount', 'updatedAt'
           ])
           && request.resource.data.currentPlayerId in [resource.data.fromId, resource.data.toId];
       }

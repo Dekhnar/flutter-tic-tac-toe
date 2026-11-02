@@ -13,7 +13,7 @@ void main() {
   });
 
   test('the AI does not play for a human opponent', () {
-    final game = _game(xCells: [0], oCells: [], currentPlayerId: _ai).copyWith(isOpponentAi: false);
+    final game = _game(xCells: [0], oCells: [], currentPlayerId: _ai).copyWith(vsAi: false);
 
     expect(ai.nextMove(game), isNull);
   });
@@ -51,7 +51,7 @@ Game _game({required List<int> xCells, required List<int> oCells, required Strin
     status: GameStatus.playing,
     moves: moves,
     currentPlayerId: currentPlayerId,
-    isOpponentAi: true,
+    vsAi: true,
     createdAt: DateTime(2025, 1, 1),
     updatedAt: DateTime(2025, 1, 1),
   );

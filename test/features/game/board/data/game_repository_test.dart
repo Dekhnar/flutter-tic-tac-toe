@@ -45,6 +45,15 @@ void main() {
     });
   });
 
+  test('watching a game deleted from the server ends in an error', () async {
+    final game = await host.createGame(authorUid: 'X:Jessy', shareLink: _shareLink);
+    final deletion = expectLater(host.watchGame(game.id), emitsThrough(emitsError(isA<GameNotFoundException>())));
+
+    await firestore.collection('games').doc(game.id).delete();
+
+    await deletion;
+  });
+
   group('A move', () {
     test('is stored with the board and passes the turn', () async {
       final game = await startedGame();

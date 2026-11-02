@@ -6,6 +6,10 @@ sealed class AppException implements Exception {
   String toString() => '$runtimeType($code)';
 }
 
+final class GameAlreadyFullException extends AppException {
+  GameAlreadyFullException() : super(code: "game_already_full");
+}
+
 final class GameCreationDataMissingException extends AppException {
   GameCreationDataMissingException() : super(code: "game_creation_data_missing_exception");
 }
@@ -14,8 +18,12 @@ final class GameNotFoundException extends AppException {
   GameNotFoundException() : super(code: "game_not_found");
 }
 
-final class GameAlreadyFullException extends AppException {
-  GameAlreadyFullException() : super(code: "game_already_full");
+final class MoveCellAlreadyTakenException extends AppException {
+  MoveCellAlreadyTakenException() : super(code: "move_cell_already_taken");
+}
+
+final class MoveCellIndexInvalidException extends AppException {
+  MoveCellIndexInvalidException() : super(code: "move_cell_index_invalid");
 }
 
 final class MoveGameFinishedException extends AppException {
@@ -32,12 +40,4 @@ final class MoveNotYourTurnException extends AppException {
 
 final class MoveOpponentMissingException extends AppException {
   MoveOpponentMissingException() : super(code: "move_opponent_missing");
-}
-
-final class MoveCellIndexInvalidException extends AppException {
-  MoveCellIndexInvalidException() : super(code: "move_cell_index_invalid");
-}
-
-final class MoveCellAlreadyTakenException extends AppException {
-  MoveCellAlreadyTakenException() : super(code: "move_cell_already_taken");
 }

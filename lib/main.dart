@@ -28,8 +28,8 @@ void main() async {
       container.read(bootstrapServiceProvider.future),
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]),
     ]);
-  } catch (e, st) {
-    errorLoggerService.logError(e, st);
+  } catch (error, stackTrace) {
+    errorLoggerService.logError(error, stackTrace);
   }
 
   _registerErrorHandlers(errorLoggerService);
@@ -43,8 +43,8 @@ Future<bool> _initializeFirebase(ErrorLoggerService errorLogger) async {
   try {
     await Firebase.initializeApp(options: options);
     return true;
-  } catch (e, st) {
-    errorLogger.logError(e, st);
+  } catch (error, stackTrace) {
+    errorLogger.logError(error, stackTrace);
     return false;
   }
 }

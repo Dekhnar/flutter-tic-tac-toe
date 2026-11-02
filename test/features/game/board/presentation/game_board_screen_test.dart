@@ -3,7 +3,6 @@
 
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,93 +29,93 @@ void main() {
 
   group('Local game', () {
     testWidgets('two players finish a round and start another one', (tester) async {
-      final r = _GameBoardScreenRobot(tester);
+      final robot = _GameBoardScreenRobot(tester);
 
-      await r.pumpOffline1v1(fromLabel: 'Jessy', toLabel: 'Mario');
+      await robot.pumpOffline1v1(fromLabel: 'Jessy', toLabel: 'Mario');
 
-      r.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Mario');
-      r.expectPlayerScore(0);
+      robot.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Mario');
+      robot.expectPlayerScore(0);
 
-      await r.tapStartGame();
+      await robot.tapStartGame();
 
       // X wins with the top row: 0, 3, 1, 4, 2
-      await r.tapCell(0);
-      await r.tapCell(3);
-      await r.tapCell(1);
-      await r.tapCell(4);
-      await r.tapCell(2);
+      await robot.tapCell(0);
+      await robot.tapCell(3);
+      await robot.tapCell(1);
+      await robot.tapCell(4);
+      await robot.tapCell(2);
 
-      r.expectText(I18n.current.playerXWins);
-      r.expectText(I18n.current.playAgain);
+      robot.expectText(I18n.current.playerXWins);
+      robot.expectText(I18n.current.playAgain);
 
-      await r.tapReplayButton();
-      r.expectBoardCleared();
+      await robot.tapReplayButton();
+      robot.expectBoardCleared();
     });
 
     testWidgets('a second player named "Ai" plays their own moves', (tester) async {
-      final r = _GameBoardScreenRobot(tester);
+      final robot = _GameBoardScreenRobot(tester);
 
-      await r.pumpOffline1v1(fromLabel: 'Jessy', toLabel: 'Ai');
-      await r.tapStartGame();
+      await robot.pumpOffline1v1(fromLabel: 'Jessy', toLabel: 'Ai');
+      await robot.tapStartGame();
 
-      await r.tapCell(0);
-      await r.tapCell(8);
+      await robot.tapCell(0);
+      await robot.tapCell(8);
       await tester.pump(const Duration(seconds: 1));
 
-      r.expectCellHasMark(8, 'O');
-      r.expectCellEmpty(4);
+      robot.expectCellHasMark(8, 'O');
+      robot.expectCellEmpty(4);
     });
 
     testWidgets('the AI answers the player', (tester) async {
-      final r = _GameBoardScreenRobot(tester);
+      final robot = _GameBoardScreenRobot(tester);
 
-      await r.pumpOfflineVsAi(fromLabel: 'Jessy');
+      await robot.pumpOfflineVsAi(fromLabel: 'Jessy');
 
-      r.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Ai');
+      robot.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Ai');
 
-      await r.tapStartGame();
+      await robot.tapStartGame();
 
-      await r.tapCell(0);
+      await robot.tapCell(0);
 
       await tester.pump(const Duration(seconds: 1));
 
-      r.expectMarkedCellCount(2);
+      robot.expectMarkedCellCount(2);
     });
   });
 
   group('Online game', () {
     testWidgets('a player cannot play out of turn', (tester) async {
       final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
-      final r = _GameBoardScreenRobot(tester, harness: harness);
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
 
-      await r.pumpOnline(label: 'Jessy', shareLink: 'ABCDEF');
+      await robot.pumpOnline(label: 'Jessy', shareLink: 'ABCDEF');
 
-      r.expectText(I18n.current.waitingForOpponent);
+      robot.expectText(I18n.current.waitingForOpponent);
 
       await harness.opponent.joinGame(shareLink: 'ABCDEF', joinerUid: 'O:Luigi');
       await tester.pumpAndSettle();
 
-      r.expectTextNotPresent(I18n.current.waitingForOpponent);
-      r.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Luigi');
+      robot.expectTextNotPresent(I18n.current.waitingForOpponent);
+      robot.expectPlayersHeader(fromId: 'X:Jessy', toId: 'O:Luigi');
 
-      await r.tapStartGame();
+      await robot.tapStartGame();
       await tester.pumpAndSettle();
 
-      await r.tapCell(0);
+      await robot.tapCell(0);
       await tester.pumpAndSettle();
-      r.expectCellHasMark(0, 'X');
+      robot.expectCellHasMark(0, 'X');
 
-      await r.tapCell(1);
+      await robot.tapCell(1);
       await tester.pumpAndSettle();
-      r.expectCellEmpty(1);
+      robot.expectCellEmpty(1);
 
       await harness.opponent.makeMove(gameId: await harness.gameId(), playerId: 'O:Luigi', row: 1, col: 1);
       await tester.pumpAndSettle();
-      r.expectCellHasMark(4, 'O');
+      robot.expectCellHasMark(4, 'O');
 
-      await r.tapCell(2);
+      await robot.tapCell(2);
       await tester.pumpAndSettle();
-      r.expectCellHasMark(2, 'X');
+      robot.expectCellHasMark(2, 'X');
     });
 
     testWidgets('a move refused by the server shows the retry message', (tester) async {
@@ -130,15 +129,15 @@ void main() {
 
       for (final refusal in refusals) {
         final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
-        final r = _GameBoardScreenRobot(tester, harness: harness);
+        final robot = _GameBoardScreenRobot(tester, harness: harness);
 
-        await r.pumpStartedOnlineGame(label: 'Jessy', opponentLabel: 'Luigi', shareLink: 'ABCDEF');
+        await robot.pumpStartedOnlineGame(label: 'Jessy', opponentLabel: 'Luigi', shareLink: 'ABCDEF');
 
         harness.beforeMakeMove = () => harness.seedForRefusal(refusal);
-        await r.tapCell(0);
+        await robot.tapCell(0);
         await tester.pumpAndSettle();
 
-        r.expectRetrySnackbar();
+        robot.expectRetrySnackbar();
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
@@ -147,56 +146,56 @@ void main() {
 
     testWidgets('the retry message shows again when the next move fails too', (tester) async {
       final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
-      final r = _GameBoardScreenRobot(tester, harness: harness);
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
 
-      await r.pumpStartedOnlineGame(label: 'Jessy', opponentLabel: 'Luigi', shareLink: 'ABCDEF');
+      await robot.pumpStartedOnlineGame(label: 'Jessy', opponentLabel: 'Luigi', shareLink: 'ABCDEF');
       harness.beforeMakeMove = () async => throw Exception('network unreachable');
 
-      await r.tapCell(0);
+      await robot.tapCell(0);
       await tester.pumpAndSettle();
-      r.expectRetrySnackbar();
+      robot.expectRetrySnackbar();
 
-      await r.dismissSnackbar();
-      await r.tapCell(0);
+      await robot.dismissSnackbar();
+      await robot.tapCell(0);
       await tester.pumpAndSettle();
 
-      r.expectRetrySnackbar();
+      robot.expectRetrySnackbar();
     });
 
     testWidgets('joining a game that does not exist shows a blocking error', (tester) async {
       final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
-      final r = _GameBoardScreenRobot(tester, harness: harness);
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
 
-      await r.pumpOnline(label: 'Luigi', shareLink: 'ABCDEF', shouldJoinGame: true);
+      await robot.pumpOnline(label: 'Luigi', shareLink: 'ABCDEF', shouldJoinGame: true);
       await tester.pumpAndSettle();
 
-      r.expectBlockingErrorDialog(I18n.current.gameNotFound);
+      robot.expectBlockingErrorDialog(I18n.current.gameNotFound);
     });
 
     testWidgets('joining a game that already has two players shows a blocking error', (tester) async {
       final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
-      final r = _GameBoardScreenRobot(tester, harness: harness);
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
 
       await harness.opponent.createGame(authorUid: 'X:Peach', shareLink: 'ABCDEF');
       await harness.opponent.joinGame(shareLink: 'ABCDEF', joinerUid: 'O:Luigi');
 
-      await r.pumpOnline(label: 'Mario', shareLink: 'ABCDEF', shouldJoinGame: true);
+      await robot.pumpOnline(label: 'Mario', shareLink: 'ABCDEF', shouldJoinGame: true);
       await tester.pumpAndSettle();
 
-      r.expectBlockingErrorDialog(I18n.current.gameAlreadyFull);
+      robot.expectBlockingErrorDialog(I18n.current.gameAlreadyFull);
       expect((await harness.game()).toId, 'O:Luigi');
     });
   });
 
   group('Game board goldens', () {
     screenTestGolden(
-      'GameBoardScreen',
-      tag: 'game_board_screen_setup',
+      'The board while waiting for an opponent',
+      fileName: 'game_board_screen_setup',
       builder: () {
         final input = GameCreateInput.createOnlineLobby(fromLabel: 'Jessy', shareLink: 'ABCDEF');
         return ProviderScope(
           overrides: [
-            gameNotifierProvider(gameCreateInput: input).overrideWith(() => _FakeGameNotifier(_buildSetupGame())),
+            gameNotifierProvider(gameCreateInput: input).overrideWith(() => _FakeGameNotifier.data(_buildSetupGame())),
           ],
           child: GameBoardScreen(input: input),
         );
@@ -204,13 +203,15 @@ void main() {
     );
 
     screenTestGolden(
-      'GameBoardScreen',
-      tag: 'game_board_screen_playing',
+      'The board during a round',
+      fileName: 'game_board_screen_playing',
       builder: () {
         final input = GameCreateInput.offline(fromLabel: 'Jessy', toLabel: 'Luigi');
         return ProviderScope(
           overrides: [
-            gameNotifierProvider(gameCreateInput: input).overrideWith(() => _FakeGameNotifier(_buildPlayingGame())),
+            gameNotifierProvider(
+              gameCreateInput: input,
+            ).overrideWith(() => _FakeGameNotifier.data(_buildPlayingGame())),
           ],
           child: GameBoardScreen(input: input),
         );
@@ -218,13 +219,15 @@ void main() {
     );
 
     screenTestGolden(
-      'GameBoardScreen',
-      tag: 'game_board_screen_finished',
+      'The board once a player won',
+      fileName: 'game_board_screen_finished',
       builder: () {
         final input = GameCreateInput.offline(fromLabel: 'Jessy', toLabel: 'Luigi');
         return ProviderScope(
           overrides: [
-            gameNotifierProvider(gameCreateInput: input).overrideWith(() => _FakeGameNotifier(_buildFinishedGame())),
+            gameNotifierProvider(
+              gameCreateInput: input,
+            ).overrideWith(() => _FakeGameNotifier.data(_buildFinishedGame())),
           ],
           child: GameBoardScreen(input: input),
         );
@@ -232,8 +235,8 @@ void main() {
     );
 
     screenTestGolden(
-      'GameBoardScreen',
-      tag: 'game_board_screen_error',
+      'The board with a retry message',
+      fileName: 'game_board_screen_error',
       whilePerforming: (tester) async {
         final context = tester.element(find.byType(MessageDisplayer));
         final container = ProviderScope.containerOf(context);
@@ -245,7 +248,9 @@ void main() {
         final input = GameCreateInput.offline(fromLabel: 'Jessy', toLabel: 'Luigi');
         return ProviderScope(
           overrides: [
-            gameNotifierProvider(gameCreateInput: input).overrideWith(() => _FakeGameNotifier(_buildPlayingGame())),
+            gameNotifierProvider(
+              gameCreateInput: input,
+            ).overrideWith(() => _FakeGameNotifier.data(_buildPlayingGame())),
           ],
           child: GameBoardScreen(input: input),
         );
@@ -253,15 +258,15 @@ void main() {
     );
 
     screenTestGolden(
-      'GameBoardScreen',
-      tag: 'game_board_screen_error_dialog',
+      'The board when the game cannot load',
+      fileName: 'game_board_screen_error_dialog',
       builder: () {
         final input = GameCreateInput.offline(fromLabel: 'Jessy', toLabel: 'Luigi');
         return ProviderScope(
           overrides: [
             gameNotifierProvider(
               gameCreateInput: input,
-            ).overrideWith(() => _FakeGameNotifier(Future.error(GameCreationDataMissingException()))),
+            ).overrideWith(() => _FakeGameNotifier.error(GameCreationDataMissingException())),
           ],
           child: GameBoardScreen(input: input),
         );
@@ -277,6 +282,8 @@ class _GameBoardScreenRobot {
 
   final WidgetTester tester;
   final _FirestoreTestHarness? harness;
+
+  _FirestoreTestHarness get _harness => harness ?? (throw StateError('Online scenarios need a Firestore harness'));
 
   static const _aiMoveDelay = Duration.zero;
 
@@ -311,7 +318,7 @@ class _GameBoardScreenRobot {
   Future<void> pumpOnline({required String label, required String shareLink, bool shouldJoinGame = false}) async {
     await tester.pumpScreen(
       ProviderScope(
-        overrides: [gameRepositoryProvider.overrideWith((ref) => harness!.appRepository())],
+        overrides: [gameRepositoryProvider.overrideWith((_) => _harness.appRepository())],
         child: GameBoardScreen(
           input: switch (shouldJoinGame) {
             false => GameCreateInput.createOnlineLobby(fromLabel: label, shareLink: shareLink),
@@ -329,7 +336,7 @@ class _GameBoardScreenRobot {
     required String shareLink,
   }) async {
     await pumpOnline(label: label, shareLink: shareLink);
-    await harness!.opponent.joinGame(shareLink: shareLink, joinerUid: 'O:$opponentLabel');
+    await _harness.opponent.joinGame(shareLink: shareLink, joinerUid: 'O:$opponentLabel');
     await tester.pumpAndSettle();
 
     await tapStartGame();
@@ -428,22 +435,12 @@ class _FirestoreTestHarness {
     return games.docs.single.id;
   }
 
-  Future<Game> game() async {
-    final snapshot = await firestore.collection('games').doc(await gameId()).get();
-    final data = snapshot.data()!;
-    return Game.fromJson({
-      ...data,
-      'id': snapshot.id,
-      'createdAt': (data['createdAt'] as Timestamp).toDate().toIso8601String(),
-      'updatedAt': (data['updatedAt'] as Timestamp).toDate().toIso8601String(),
-      'lastPlayAt': (data['lastPlayAt'] as Timestamp?)?.toDate().toIso8601String(),
-    });
-  }
+  Future<Game> game() async => opponent.watchGame(await gameId()).first;
 
   /// Puts the stored game in the state the server would refuse a move for.
   Future<void> seedForRefusal(AppException refusal) async {
     final gameRef = firestore.collection('games').doc(await gameId());
-    final game = (await gameRef.get()).data()!;
+    final game = (await gameRef.get()).data() ?? (throw StateError('The game to seed was never created'));
 
     switch (refusal) {
       case MoveGameFinishedException():
@@ -469,12 +466,14 @@ class _FirestoreTestHarness {
 }
 
 class _FakeGameNotifier extends GameNotifier {
-  _FakeGameNotifier(this._result);
+  _FakeGameNotifier.data(Game game) : _game = Stream.value(game);
 
-  final FutureOr<Game> _result;
+  _FakeGameNotifier.error(Object error) : _game = Stream.error(error);
+
+  final Stream<Game> _game;
 
   @override
-  Future<Game> build({required GameCreateInput gameCreateInput}) async => await _result;
+  Stream<Game> build({required GameCreateInput gameCreateInput}) => _game;
 }
 
 Game _buildSetupGame() => Game(

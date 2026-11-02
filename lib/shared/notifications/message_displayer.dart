@@ -9,7 +9,7 @@ class MessageDisplayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(messageNotifierProvider, (previous, next) {
+    ref.listen(messageNotifierProvider, (_, next) {
       if (next == null || !context.mounted) return;
 
       final i18n = I18n.of(context);

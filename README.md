@@ -48,15 +48,15 @@ lib/
      ├─ home/               # game mode selection
      ├─ creation/           # create / join dialogs
      └─ board/
-         ├─ domain/         # Game model, GameRules, TicTacToeAI — pure Dart, no Flutter
+         ├─ domain/         # Game model, GameRules, TicTacToeAI, repository interface — pure Dart
          ├─ data/           # Firestore and in-memory repositories, Firestore commands
-         ├─ application/    # GameNotifier (Riverpod) and the repository interface
+         ├─ application/    # GameNotifier (Riverpod)
          └─ presentation/   # board screen
 ```
 
 - **`GameRules`** is the single source of truth for moves and rounds: win detection in constant time (row, column and diagonal counters), turn order, scores, next round starter. Both repositories apply it.
 - **`GameRepositoryInterface`** has two implementations: `GameRepository` (Firestore, every write in a transaction that re-reads the game) and `GameLocalRepository` (in memory, also drives the AI).
-- **`GameNotifier`** creates or joins the game, listens to it, and serializes the player actions; failures are logged and shown as a "please retry" message.
+- **`GameNotifier`** creates or joins the game and streams it (Riverpod owns the subscription), and serializes the player actions; failures are logged and shown as a "please retry" message. An unknown or deleted game ends the stream in a `GameNotFoundException`, shown as a blocking error.
 
 ### Online data model
 

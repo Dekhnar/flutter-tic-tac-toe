@@ -17,6 +17,8 @@ class InMemoryStore<T> {
 
   T get value => _value;
 
+  bool get isClosed => _controller.isClosed;
+
   set value(T newValue) {
     if (!_controller.isClosed) {
       _value = newValue;

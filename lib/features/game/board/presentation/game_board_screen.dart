@@ -23,7 +23,7 @@ class GameBoardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = gameNotifierProvider(gameCreateInput: input);
     final gameAsync = ref.watch(provider);
-    ref.listen(provider, (previous, next) {
+    ref.listen(provider, (_, next) {
       // The game cannot go on without its state: the dialog blocks the screen and only offers to leave.
       if (next case AsyncValue(:final error?) when context.mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(context, error));

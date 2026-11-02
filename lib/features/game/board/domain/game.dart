@@ -24,7 +24,7 @@ final class Game with _$Game {
     this.currentRoundIndex = 0,
     this.currentWinnerId,
     this.lastPlayAt,
-    this.isOpponentAi = false,
+    this.vsAi = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -69,7 +69,7 @@ final class Game with _$Game {
   final DateTime? lastPlayAt;
 
   @override
-  final bool isOpponentAi;
+  final bool vsAi;
 
   @override
   final DateTime updatedAt;
@@ -85,7 +85,7 @@ extension GamePlayers on Game {
   /// The game creator plays X, the opponent plays O.
   CellMark markOf(String playerId) => playerId == fromId ? CellMark.X : CellMark.O;
 
-  bool get isAiTurn => isOpponentAi && status == GameStatus.playing && currentPlayerId == toId;
+  bool get isAiTurn => vsAi && status == GameStatus.playing && currentPlayerId == toId;
 }
 
 @freezed

@@ -4,11 +4,12 @@ import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/tic_tac_toe_ai.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 part 'game_local_repository_provider.g.dart';
 
@@ -19,32 +20,32 @@ GameLocalRepository gameLocalRepository(Ref ref) {
   return repository;
 }
 
-final class GameLocalRepository extends GameRepositoryInterface {
+final class GameLocalRepository implements GameRepositoryInterface {
   const GameLocalRepository({
-    required Map<String, InMemoryStore<Game>> stores,
+    @visibleForTesting TicTacToeAI ai = const TicTacToeAI(),
     @visibleForTesting Duration aiMoveDelay = const Duration(seconds: 1),
     @visibleForTesting Clock clock = const Clock(),
     @visibleForTesting GameRules rules = const GameRules(),
-    @visibleForTesting TicTacToeAI ai = const TicTacToeAI(),
-  }) : _stores = stores,
+    required Map<String, InMemoryStore<Game>> stores,
+  }) : _ai = ai,
        _aiMoveDelay = aiMoveDelay,
        _clock = clock,
        _rules = rules,
-       _ai = ai;
+       _stores = stores;
 
-  final Map<String, InMemoryStore<Game>> _stores;
+  final TicTacToeAI _ai;
   final Duration _aiMoveDelay;
   final Clock _clock;
   final GameRules _rules;
-  final TicTacToeAI _ai;
+  final Map<String, InMemoryStore<Game>> _stores;
 
   @override
-  Stream<Game> watchGame(String id) => switch (_stores[id]) {
+  Stream<Game> watchGame(String gameId) => switch (_stores[gameId]) {
     final store? => store.stream,
-    _ => const Stream.empty(),
+    null => Stream.error(GameNotFoundException()),
   };
 
-  Future<Game> createGame({required String fromId, required String toId, bool isOpponentAi = false}) async {
+  Future<Game> createGame({required String fromId, required String toId, bool vsAi = false}) async {
     final now = _clock.now();
     final id = 'local-${now.microsecondsSinceEpoch}';
     final game = Game(
@@ -61,7 +62,7 @@ final class GameLocalRepository extends GameRepositoryInterface {
       currentRoundIndex: 0,
       currentWinnerId: null,
       lastPlayAt: now,
-      isOpponentAi: isOpponentAi,
+      vsAi: vsAi,
       createdAt: now,
       updatedAt: now,
     );
@@ -71,8 +72,8 @@ final class GameLocalRepository extends GameRepositoryInterface {
 
   @override
   Future<void> startGame({required String gameId}) async {
-    final store = _stores[gameId];
-    if (store == null || store.value.status != GameStatus.setup) return;
+    final store = _storeOf(gameId);
+    if (store.value.status != GameStatus.setup) return;
 
     final now = _clock.now();
     store.value = store.value.copyWith(status: GameStatus.playing, lastPlayAt: now, updatedAt: now);
@@ -81,8 +82,7 @@ final class GameLocalRepository extends GameRepositoryInterface {
 
   @override
   Future<void> startNewRound({required String gameId}) async {
-    final store = _stores[gameId];
-    if (store == null) return;
+    final store = _storeOf(gameId);
 
     final nextRound = _rules.startNewRound(game: store.value, currentDate: _clock.now());
     if (nextRound == null) return;
@@ -93,9 +93,19 @@ final class GameLocalRepository extends GameRepositoryInterface {
 
   @override
   Future<void> makeMove({required String gameId, required String playerId, required int row, required int col}) async {
-    final store = _stores[gameId];
-    if (store == null) return;
+    _applyMove(_storeOf(gameId), playerId: playerId, row: row, col: col);
+  }
 
+  void dispose() {
+    for (final store in _stores.values) {
+      store.close();
+    }
+    _stores.clear();
+  }
+
+  InMemoryStore<Game> _storeOf(String gameId) => _stores[gameId] ?? (throw GameNotFoundException());
+
+  void _applyMove(InMemoryStore<Game> store, {required String playerId, required int row, required int col}) {
     final updated = _rules.applyMove(
       game: store.value,
       playerId: playerId,
@@ -110,30 +120,20 @@ final class GameLocalRepository extends GameRepositoryInterface {
     _playAiMoveIfNeeded(store);
   }
 
-  void dispose() {
-    for (final store in _stores.values) {
-      store.close();
-    }
-    _stores.clear();
-  }
-
   void _playAiMoveIfNeeded(InMemoryStore<Game> store) {
     if (!store.value.isAiTurn) return;
 
     // The move is chosen after the delay, from the board as it is then.
     unawaited(
-      Future<void>.delayed(_aiMoveDelay, () async {
+      Future<void>.delayed(_aiMoveDelay, () {
+        if (store.isClosed) return;
+
         final game = store.value;
         final aiId = game.toId;
         final cellIndex = _ai.nextMove(game);
         if (aiId == null || cellIndex == null) return;
 
-        await makeMove(
-          gameId: game.id,
-          playerId: aiId,
-          row: cellIndex ~/ GameRules.boardSize,
-          col: cellIndex % GameRules.boardSize,
-        );
+        _applyMove(store, playerId: aiId, row: cellIndex ~/ GameRules.boardSize, col: cellIndex % GameRules.boardSize);
       }),
     );
   }

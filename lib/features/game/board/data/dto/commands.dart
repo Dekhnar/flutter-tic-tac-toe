@@ -48,7 +48,6 @@ final class MoveEventCommand {
   };
 }
 
-/// Writes the state of a game after a move or a new round; the moves themselves live in the `moves` sub-collection.
 final class GameStateCommand {
   final Game _game;
 
@@ -56,13 +55,13 @@ final class GameStateCommand {
 
   Map<String, Object?> toFirestore() => {
     'boardState': _game.boardState.toJson(),
-    'status': _game.status.name,
-    'currentRoundIndex': _game.currentRoundIndex,
     'currentPlayerId': _game.currentPlayerId,
+    'currentRoundIndex': _game.currentRoundIndex,
     'currentWinnerId': _game.currentWinnerId,
     'fromWinCount': _game.fromWinCount,
-    'toWinCount': _game.toWinCount,
     'lastPlayAt': FieldValue.serverTimestamp(),
+    'status': _game.status.name,
+    'toWinCount': _game.toWinCount,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 }

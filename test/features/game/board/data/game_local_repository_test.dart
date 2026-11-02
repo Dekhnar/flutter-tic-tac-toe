@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_repository_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 void main() {
   late GameLocalRepository repository;
@@ -12,14 +13,14 @@ void main() {
 
   tearDown(() => repository.dispose());
 
-  Future<Game> startGame({required String toId, bool isOpponentAi = false}) async {
-    final game = await repository.createGame(fromId: 'X:Jessy', toId: toId, isOpponentAi: isOpponentAi);
+  Future<Game> startGame({required String toId, bool vsAi = false}) async {
+    final game = await repository.createGame(fromId: 'X:Jessy', toId: toId, vsAi: vsAi);
     await repository.startGame(gameId: game.id);
     return game;
   }
 
   test('the AI answers the player move', () async {
-    final game = await startGame(toId: 'O:Ai', isOpponentAi: true);
+    final game = await startGame(toId: 'O:Ai', vsAi: true);
 
     await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
 
@@ -48,6 +49,25 @@ void main() {
     final current = await repository.watchGame(game.id).first;
     expect(current.currentRoundIndex, 0);
     expect(current.moves, hasLength(1));
+  });
+
+  test('a game that does not exist can be neither watched nor played', () {
+    expect(repository.watchGame('unknown'), emitsError(isA<GameNotFoundException>()));
+    expect(
+      repository.makeMove(gameId: 'unknown', playerId: 'X:Jessy', row: 0, col: 0),
+      throwsA(isA<GameNotFoundException>()),
+    );
+  });
+
+  test('the AI stops playing once the games are closed', () async {
+    final game = await startGame(toId: 'O:Ai', vsAi: true);
+    final updates = repository.watchGame(game.id).toList();
+
+    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+    repository.dispose();
+    await Future<void>.delayed(Duration.zero);
+
+    expect((await updates).last.moves, hasLength(1));
   });
 
   test('closing the repository ends the games being watched', () async {

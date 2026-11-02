@@ -7,19 +7,19 @@ import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 import 'devices.dart';
 
-/// Renders a screen on every [GoldenScreen] (`goldens/ci/<tag>.<screen>.png`) and checks that every tap target
+/// Renders [scenario] on every [GoldenScreen] (`goldens/ci/<fileName>.<screen>.png`) and checks that every tap target
 /// carries a label for screen readers.
 void screenTestGolden(
-  String screenName, {
-  required String tag,
+  String scenario, {
   required ValueGetter<Widget> builder,
+  required String fileName,
   Interaction? whilePerforming,
 }) {
-  group(screenName, () {
+  group(scenario, () {
     for (final screen in GoldenScreen.values) {
       goldenTest(
-        '$screenName renders $tag on ${screen.name}',
-        fileName: '$tag.${screen.name}',
+        'renders on the ${screen.name} screen',
+        fileName: '$fileName.${screen.name}',
         textScaleFactor: screen.textScaleFactor,
         whilePerforming: whilePerforming,
         builder:
@@ -36,7 +36,7 @@ void screenTestGolden(
       );
     }
 
-    testWidgets('$screenName labels every tap target of $tag', (tester) async {
+    testWidgets('labels every tap target for screen readers', (tester) async {
       final semanticsHandle = tester.ensureSemantics();
       try {
         await tester.pumpWidget(MaterialGolden(child: builder()));

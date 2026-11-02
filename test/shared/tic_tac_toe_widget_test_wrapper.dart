@@ -9,7 +9,6 @@ class TicTacToeMaterialApp extends MaterialGolden {
 }
 
 extension TicTacToeWidgetTester on WidgetTester {
-  /// Pumps [screen] inside the app shell, on a phone-sized surface.
   Future<void> pumpScreen(Widget screen) async {
     view.physicalSize = GoldenScreen.iphone11.size;
     view.devicePixelRatio = 1;

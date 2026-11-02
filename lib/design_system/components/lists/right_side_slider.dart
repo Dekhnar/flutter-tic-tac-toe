@@ -69,7 +69,7 @@ class _RightSideSliderState extends State<RightSideSlider> with SingleTickerProv
       onVerticalDragUpdate: _onVerticalDrag,
       child: AnimatedBuilder(
         animation: _swipeController,
-        builder: (_, __) {
+        builder: (_, _) {
           final progress = _swipeController.value;
           return Container(
             constraints: BoxConstraints.tightFor(width: Dimens.sliderWidth),

@@ -118,16 +118,16 @@ void main() {
       robot.expectCellHasMark(2, 'X');
     });
 
-    testWidgets('a move refused by the server shows the retry message', (tester) async {
+    testWidgets('a move refused by the server says why', (tester) async {
       final refusals = [
-        MoveCellAlreadyTakenException(),
-        MoveGameFinishedException(),
-        MoveGameNotStartedException(),
-        MoveOpponentMissingException(),
-        MoveNotYourTurnException(),
+        (MoveCellAlreadyTakenException(), I18n.current.cellAlreadyTaken),
+        (MoveGameFinishedException(), I18n.current.roundIsOver),
+        (MoveGameNotStartedException(), I18n.current.gameNotStartedYet),
+        (MoveNotYourTurnException(), I18n.current.notYourTurn),
+        (MoveOpponentMissingException(), I18n.current.opponentMustJoin),
       ];
 
-      for (final refusal in refusals) {
+      for (final (refusal, explanation) in refusals) {
         final harness = _FirestoreTestHarness(shareLink: 'ABCDEF');
         final robot = _GameBoardScreenRobot(tester, harness: harness);
 
@@ -137,7 +137,7 @@ void main() {
         await robot.tapCell(0);
         await tester.pumpAndSettle();
 
-        robot.expectRetrySnackbar();
+        robot.expectText(explanation);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

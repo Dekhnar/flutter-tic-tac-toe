@@ -131,24 +131,11 @@ final class GameRepository implements GameRepositoryInterface {
 
   @override
   Future<void> makeMove({required String gameId, required String playerId, required int row, required int col}) async {
-    if (!_rules.isOnBoard(row: row, col: col)) throw MoveCellIndexInvalidException();
-    final index = row * GameRules.boardSize + col;
-
     await _beforeMakeMove?.call();
 
     await _firestore.runTransaction((transaction) async {
       final gameRef = _games.doc(gameId);
       final currentGame = _parseGame(await transaction.get(gameRef));
-
-      if (currentGame.status == GameStatus.finished) throw MoveGameFinishedException();
-      if (currentGame.status == GameStatus.setup) throw MoveGameNotStartedException();
-      if (currentGame.toId == null) throw MoveOpponentMissingException();
-      if (currentGame.currentPlayerId != playerId) throw MoveNotYourTurnException();
-
-      final moveRef = gameRef.collection('moves').doc('${currentGame.currentRoundIndex}:$index');
-      final moveSnapshot = await transaction.get(moveRef);
-      if (moveSnapshot.exists) throw MoveCellAlreadyTakenException();
-
       final updatedGame = _rules.applyMove(
         game: currentGame,
         playerId: playerId,
@@ -156,10 +143,14 @@ final class GameRepository implements GameRepositoryInterface {
         col: col,
         currentDate: _clock.now(),
       );
+      final move = updatedGame.moves.last;
 
-      if (updatedGame == null) throw StateError('Move rejected by the rules after passing every check');
+      // The stored game carries no moves: the rules cannot see the cell taken, its move document does.
+      final moveRef = gameRef.collection('moves').doc('${move.round}:${move.index}');
+      final moveSnapshot = await transaction.get(moveRef);
+      if (moveSnapshot.exists) throw MoveCellAlreadyTakenException();
 
-      transaction.set(moveRef, MoveEventCommand(move: updatedGame.moves.last).toFirestore());
+      transaction.set(moveRef, MoveEventCommand(move: move).toFirestore());
       transaction.update(gameRef, GameStateCommand(game: updatedGame).toFirestore());
     });
   }

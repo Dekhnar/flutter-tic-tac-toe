@@ -106,17 +106,13 @@ final class GameLocalRepository implements GameRepositoryInterface {
   InMemoryStore<Game> _storeOf(String gameId) => _stores[gameId] ?? (throw GameNotFoundException());
 
   void _applyMove(InMemoryStore<Game> store, {required String playerId, required int row, required int col}) {
-    final updated = _rules.applyMove(
+    store.value = _rules.applyMove(
       game: store.value,
       playerId: playerId,
       row: row,
       col: col,
       currentDate: _clock.now(),
     );
-
-    if (updated == null) return;
-
-    store.value = updated;
     _playAiMoveIfNeeded(store);
   }
 

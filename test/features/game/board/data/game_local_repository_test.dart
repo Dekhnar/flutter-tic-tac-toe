@@ -51,6 +51,16 @@ void main() {
     expect(current.moves, hasLength(1));
   });
 
+  test('a move on a cell already taken is refused, as it is online', () async {
+    final game = await startGame(toId: 'O:Mario');
+    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+
+    expect(
+      repository.makeMove(gameId: game.id, playerId: 'O:Mario', row: 0, col: 0),
+      throwsA(isA<MoveCellAlreadyTakenException>()),
+    );
+  });
+
   test('a game that does not exist can be neither watched nor played', () {
     expect(repository.watchGame('unknown'), emitsError(isA<GameNotFoundException>()));
     expect(

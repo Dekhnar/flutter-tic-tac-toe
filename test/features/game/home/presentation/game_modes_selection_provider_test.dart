@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
@@ -13,6 +15,7 @@ void main() {
     final container = ProviderContainer(overrides: [isOnlineAvailableProvider.overrideWithValue(isOnlineAvailable)]);
     addTearDown(container.dispose);
     container.listen(messageNotifierProvider, (_, _) {});
+    container.listen(gameModesSelectionNotifierProvider, (_, _) {});
     return container;
   }
 
@@ -50,5 +53,29 @@ void main() {
     expect(input, onlineInput);
     expect(dialogOpened, isTrue);
     expect(container.read(messageNotifierProvider), isNull);
+  });
+
+  test('choosing a mode again while its dialog is still open does not open a second one', () async {
+    final container = containerWith(isOnlineAvailable: true);
+    final openDialog = Completer<GameCreateInput?>();
+    var openedDialogs = 0;
+
+    Future<GameCreateInput?> chooseLocal() => container
+        .read(gameModesSelectionNotifierProvider.notifier)
+        .requestGameCreationByMode(
+          GameMode.offline1v1,
+          openOnlineGameCreationDialog: () async => null,
+          openOfflineGameCreationDialog: () {
+            openedDialogs++;
+            return openDialog.future;
+          },
+          openOfflineVsAiGameCreationDialog: () async => null,
+        );
+
+    final choices = [chooseLocal(), chooseLocal()];
+    openDialog.complete(null);
+    await Future.wait(choices);
+
+    expect(openedDialogs, 1);
   });
 }

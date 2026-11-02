@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Players are identified by the name they type: without Firebase Auth, these rules cannot tell who sends a write.
-// They enforce what the data allows instead: a game is joined once, a cell is played once, identities never change.
+// They enforce what the data allows instead: a game is joined once, a cell is played once, identities never change,
+// a move advances the game by exactly one turn and a score only grows by the round just won.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /games/{gameId} {
@@ -10,7 +11,10 @@ service cloud.firestore {
       allow create: if request.resource.data.status == 'setup'
         && request.resource.data.fromId is string
         && request.resource.data.toId == null
-        && request.resource.data.currentPlayerId == request.resource.data.fromId;
+        && request.resource.data.currentPlayerId == request.resource.data.fromId
+        && request.resource.data.currentRoundIndex == 0
+        && request.resource.data.fromWinCount == 0
+        && request.resource.data.toWinCount == 0;
 
       allow update: if isJoin() || isGameUpdate();
 
@@ -32,22 +36,36 @@ service cloud.firestore {
             'boardState', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'fromWinCount',
             'lastPlayAt', 'status', 'toWinCount', 'updatedAt'
           ])
-          && request.resource.data.currentPlayerId in [resource.data.fromId, resource.data.toId];
+          && request.resource.data.currentPlayerId in [resource.data.fromId, resource.data.toId]
+          && isScoreKeptOrWon('fromWinCount')
+          && isScoreKeptOrWon('toWinCount');
+      }
+
+      function isScoreKeptOrWon(score) {
+        let before = resource.data.get(score, 0);
+        let after = request.resource.data.get(score, 0);
+        return after == before || (after == before + 1 && request.resource.data.status == 'finished');
       }
 
       match /moves/{moveId} {
         allow read: if true;
 
-        allow create: if isPlayedByCurrentPlayer(get(/databases/$(database)/documents/games/$(gameId)).data);
+        allow create: if isOneTurnOfCurrentPlayer(
+          get(/databases/$(database)/documents/games/$(gameId)).data,
+          getAfter(/databases/$(database)/documents/games/$(gameId)).data
+        );
 
         allow update, delete: if false;
 
-        function isPlayedByCurrentPlayer(game) {
+        function isOneTurnOfCurrentPlayer(game, gameAfter) {
           let move = request.resource.data;
           return moveId == string(move.round) + ':' + string(move.index)
             && move.index >= 0 && move.index < 9
+            && game.status == 'playing'
             && move.round == game.currentRoundIndex
-            && move.playerId == game.currentPlayerId;
+            && move.playerId == game.currentPlayerId
+            && gameAfter.boardState.moveCount == game.boardState.moveCount + 1
+            && (gameAfter.currentPlayerId != move.playerId || gameAfter.status == 'finished');
         }
       }
     }

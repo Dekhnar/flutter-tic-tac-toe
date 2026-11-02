@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 const _x = 'X:Jessy';
 const _o = 'O:Mario';
@@ -9,17 +10,14 @@ final _now = DateTime(2025, 1, 1);
 void main() {
   const rules = GameRules();
 
-  Game play(Game game, List<int> cells) => cells.fold(game, (game, cell) {
-    final updated = rules.applyMove(
-      game: game,
-      playerId: game.currentPlayerId,
-      row: cell ~/ 3,
-      col: cell % 3,
-      currentDate: _now,
-    );
-    expect(updated, isNotNull, reason: 'cell $cell should be playable');
-    return updated!;
-  });
+  Game play(Game game, List<int> cells) => cells.fold(
+    game,
+    (game, cell) =>
+        rules.applyMove(game: game, playerId: game.currentPlayerId, row: cell ~/ 3, col: cell % 3, currentDate: _now),
+  );
+
+  Game Function() move(Game game, {required String playerId, required int row, required int col}) =>
+      () => rules.applyMove(game: game, playerId: playerId, row: row, col: col, currentDate: _now);
 
   group('A move', () {
     test('marks the cell with the player mark and passes the turn', () {
@@ -31,32 +29,32 @@ void main() {
     });
 
     test('is refused when it is not the player turn', () {
-      expect(rules.applyMove(game: _startedGame(), playerId: _o, row: 0, col: 0, currentDate: _now), isNull);
+      expect(move(_startedGame(), playerId: _o, row: 0, col: 0), throwsA(isA<MoveNotYourTurnException>()));
     });
 
     test('is refused on a cell already taken', () {
       final game = play(_startedGame(), [0]);
 
-      expect(rules.applyMove(game: game, playerId: _o, row: 0, col: 0, currentDate: _now), isNull);
+      expect(move(game, playerId: _o, row: 0, col: 0), throwsA(isA<MoveCellAlreadyTakenException>()));
     });
 
     test('is refused outside the board, even when row and column add up to an existing cell', () {
-      expect(rules.applyMove(game: _startedGame(), playerId: _x, row: 0, col: 5, currentDate: _now), isNull);
-      expect(rules.applyMove(game: _startedGame(), playerId: _x, row: -1, col: 1, currentDate: _now), isNull);
+      expect(move(_startedGame(), playerId: _x, row: 0, col: 5), throwsA(isA<MoveCellIndexInvalidException>()));
+      expect(move(_startedGame(), playerId: _x, row: -1, col: 1), throwsA(isA<MoveCellIndexInvalidException>()));
     });
 
     test('is refused before the game starts and after the round ends', () {
       final notStarted = _startedGame().copyWith(status: GameStatus.setup);
       final finished = play(_startedGame(), [0, 3, 1, 4, 2]);
 
-      expect(rules.applyMove(game: notStarted, playerId: _x, row: 0, col: 0, currentDate: _now), isNull);
-      expect(rules.applyMove(game: finished, playerId: _o, row: 2, col: 2, currentDate: _now), isNull);
+      expect(move(notStarted, playerId: _x, row: 0, col: 0), throwsA(isA<MoveGameNotStartedException>()));
+      expect(move(finished, playerId: _o, row: 2, col: 2), throwsA(isA<MoveGameFinishedException>()));
     });
 
     test('is refused while no opponent has joined', () {
       final alone = _startedGame().copyWith(toId: null);
 
-      expect(rules.applyMove(game: alone, playerId: _x, row: 0, col: 0, currentDate: _now), isNull);
+      expect(move(alone, playerId: _x, row: 0, col: 0), throwsA(isA<MoveOpponentMissingException>()));
     });
   });
 

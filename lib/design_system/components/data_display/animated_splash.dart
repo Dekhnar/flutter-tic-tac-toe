@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 enum BaseAnimatedEffect { fadeIn, zoomIn, zoomOut, topDown, rive, flare, static, lottie }
 
 class BaseAnimatedSplash extends StatefulWidget {
-  final Function? next;
+  final VoidCallback? next;
   final String imagePath;
   final int duration;
   final BaseAnimatedEffect animationEffect;
@@ -26,6 +26,7 @@ class BaseAnimatedSplashState extends State<BaseAnimatedSplash> with TickerProvi
   late AnimationController _controller;
   late Animation<double> _animation;
   static const size = Size(86, 86);
+  static const _nextDelay = Duration(milliseconds: 100);
   late final imageWidget = Image.asset(widget.imagePath, fit: widget.boxFit, height: size.height, width: size.width);
 
   @override
@@ -42,16 +43,17 @@ class BaseAnimatedSplashState extends State<BaseAnimatedSplash> with TickerProvi
     _animation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInCubic));
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 100)).then((value) => widget.next?.call());
+        Future<void>.delayed(_nextDelay, () {
+          if (mounted) widget.next?.call();
+        });
       }
     });
   }
 
   @override
   void dispose() {
-    super.dispose();
-    _controller.reset();
     _controller.dispose();
+    super.dispose();
   }
 
   @override

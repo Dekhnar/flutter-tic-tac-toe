@@ -1,26 +1,29 @@
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 final class GameRules {
   const GameRules();
 
   static const boardSize = 3;
 
-  Game? applyMove({
+  /// The game after the move, or throws the [AppException] that says why the move is refused.
+  Game applyMove({
     required Game game,
     required String playerId,
     required int row,
     required int col,
     required DateTime currentDate,
   }) {
-    if (game.status != GameStatus.playing) return null;
-    if (game.currentPlayerId != playerId) return null;
-    if (!isOnBoard(row: row, col: col)) return null;
+    if (game.status == GameStatus.finished) throw MoveGameFinishedException();
+    if (game.status == GameStatus.setup) throw MoveGameNotStartedException();
 
     final toId = game.toId;
-    if (toId == null) return null;
+    if (toId == null) throw MoveOpponentMissingException();
+    if (game.currentPlayerId != playerId) throw MoveNotYourTurnException();
+    if (!_isOnBoard(row: row, col: col)) throw MoveCellIndexInvalidException();
 
     final index = row * boardSize + col;
-    if (game.moves.any((m) => m.index == index)) return null;
+    if (game.moves.any((m) => m.index == index)) throw MoveCellAlreadyTakenException();
 
     final isFromPlayer = playerId == game.fromId;
     final (opponentId, sign) = isFromPlayer ? (toId, 1) : (game.fromId, -1);
@@ -85,5 +88,5 @@ final class GameRules {
     );
   }
 
-  bool isOnBoard({required int row, required int col}) => row >= 0 && row < boardSize && col >= 0 && col < boardSize;
+  bool _isOnBoard({required int row, required int col}) => row >= 0 && row < boardSize && col >= 0 && col < boardSize;
 }

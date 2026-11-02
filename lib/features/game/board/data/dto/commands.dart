@@ -14,6 +14,9 @@ final class CreateGameCommand {
     'boardState': const BoardState().toJson(),
     if (_shareLink case final shareLink?) "shareLink": shareLink,
     'currentPlayerId': _fromId,
+    'currentRoundIndex': 0,
+    'fromWinCount': 0,
+    'toWinCount': 0,
     'createdAt': FieldValue.serverTimestamp(),
     'updatedAt': FieldValue.serverTimestamp(),
   };

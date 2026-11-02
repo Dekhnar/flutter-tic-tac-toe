@@ -30,7 +30,8 @@ final class GameModesSelectionNotifier extends _$GameModesSelectionNotifier {
 
     _isRequestingGameCreation = true;
     try {
-      return switch (mode) {
+      // Awaited so the lock holds until the dialog closes, not until it opens.
+      return await switch (mode) {
         GameMode.online1v1 => openOnlineGameCreationDialog,
         GameMode.offline1v1 => openOfflineGameCreationDialog,
         GameMode.offlineVSAi => openOfflineVsAiGameCreationDialog,

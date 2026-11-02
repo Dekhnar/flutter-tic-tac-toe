@@ -43,10 +43,8 @@ class _AppState extends ConsumerState<App> {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: App.localizationsDelegates,
       supportedLocales: I18n.delegate.supportedLocales,
-      locale: boostrapData?.locale,
       theme: boostrapData?.theme,
       darkTheme: boostrapData?.darkTheme,
-      themeMode: boostrapData?.themeMode,
       routerDelegate: _appRouter.delegate(navigatorObservers: () => [AutoRouteObserver()]),
       routeInformationParser: _appRouter.defaultRouteParser(),
       builder: (context, child) {

@@ -56,14 +56,14 @@ lib/
 
 - **`GameRules`** is the single source of truth for moves and rounds: win detection in constant time (row, column and diagonal counters), turn order, scores, next round starter. Both repositories apply it.
 - **`GameRepositoryInterface`** has two implementations: `GameRepository` (Firestore, every write in a transaction that re-reads the game) and `GameLocalRepository` (in memory, also drives the AI).
-- **`GameNotifier`** creates or joins the game and streams it (Riverpod owns the subscription), and serializes the player actions; failures are logged and shown as a "please retry" message. An unknown or deleted game ends the stream in a `GameNotFoundException`, shown as a blocking error.
+- **`GameNotifier`** creates or joins the game and streams it (Riverpod owns the subscription), and serializes the player actions. A refused move says why (not your turn, cell taken, round over…); any other failure is logged and shown as a "please retry" message. An unknown or deleted game ends the stream in a `GameNotFoundException`, shown as a blocking error.
 
 ### Online data model
 
 - `games/{gameId}`: players (`fromId` plays X, `toId` plays O), status, board counters, scores, current round and player.
 - `games/{gameId}/moves/{round}:{cell}`: one document per move; its id makes a cell impossible to play twice in a round.
 
-[`firestore.rules`](firestore.rules) only allow a game to be joined once, a move to be created by the player whose turn it is, and never edited or deleted, and identities to stay unchanged.
+[`firestore.rules`](firestore.rules) only allow a game to be joined once, a move to be created by the player whose turn it is, never edited or deleted, and to advance the game by exactly one turn; identities never change and a score only grows by the round just won.
 
 **Known limitation:** players are identified by the name they type, not by an account. The rules prevent taking over a game or rewriting its history, but a modified client could still play the opponent's turn. Closing that gap requires Firebase Authentication (anonymous sign-in is enough) and rules based on `request.auth.uid`.
 

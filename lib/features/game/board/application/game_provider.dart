@@ -6,6 +6,7 @@ import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_r
 import 'package:tic_tac_toe_app/features/game/board/data/repository/game_repository_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/notifications/message_notifier.dart';
 
@@ -88,11 +89,20 @@ class GameNotifier extends _$GameNotifier {
     _actionRunning = true;
     try {
       await action(game);
+    } on AppException catch (refusal) {
+      ref.read(errorLoggerServiceProvider).logAppException(refusal);
+      _showMessage(InfoMessage.explaining(refusal));
     } catch (error, stackTrace) {
       ref.read(errorLoggerServiceProvider).logError(error, stackTrace);
-      if (!_disposed) ref.read(messageNotifierProvider.notifier).showMessage(InfoMessage.pleaseRetry);
+      _showMessage(InfoMessage.pleaseRetry);
     } finally {
       _actionRunning = false;
     }
+  }
+
+  void _showMessage(InfoMessage message) {
+    if (_disposed) return;
+
+    ref.read(messageNotifierProvider.notifier).showMessage(message);
   }
 }

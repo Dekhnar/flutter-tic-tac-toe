@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/notifications/message_notifier.dart';
 
 class MessageDisplayer extends ConsumerWidget {
@@ -10,14 +10,14 @@ class MessageDisplayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(messageNotifierProvider, (previous, next) {
-      // j’affiche tous les messages ; la page décide d’en envoyer un ou non, même le même si elle veut
-      final message = switch (next) {
-        InfoMessage(:final name) => Intl.message(name, name: name),
-        _ => null,
+      if (next == null || !context.mounted) return;
+
+      final i18n = I18n.of(context);
+      final text = switch (next.message) {
+        InfoMessage.onlineUnavailable => i18n.onlineUnavailable,
+        InfoMessage.pleaseRetry => i18n.pleaseRetry,
       };
-      if (message != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
     });
     return child;
   }

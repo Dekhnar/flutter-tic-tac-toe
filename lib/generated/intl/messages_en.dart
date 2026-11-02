@@ -26,6 +26,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(row, column) => "Cell ${row} ${column} empty";
 
+  static String m3(player) => "Turn: ${player}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "boardCellCircle": m0,
@@ -53,6 +55,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "An error occurred, please try again later.",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
+    "gameAlreadyFull": MessageLookupByLibrary.simpleMessage(
+      "This game already has two players.",
+    ),
     "gameNotFound": MessageLookupByLibrary.simpleMessage("Game not found."),
     "gameNotStartedYet": MessageLookupByLibrary.simpleMessage(
       "The game has not started yet.",
@@ -67,6 +72,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "offline1v1": MessageLookupByLibrary.simpleMessage("Offline 1v1"),
     "online1v1": MessageLookupByLibrary.simpleMessage("Online 1v1"),
     "onlineGame": MessageLookupByLibrary.simpleMessage("Online game"),
+    "onlineUnavailable": MessageLookupByLibrary.simpleMessage(
+      "Online mode is unavailable in this build.",
+    ),
     "opponentMustJoin": MessageLookupByLibrary.simpleMessage(
       "An opponent must join the game.",
     ),
@@ -108,6 +116,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "soloVsAi": MessageLookupByLibrary.simpleMessage("Solo vs AI"),
     "start": MessageLookupByLibrary.simpleMessage("Start"),
     "startGame": MessageLookupByLibrary.simpleMessage("Start the game"),
+    "turnOf": m3,
     "versusAiOffline": MessageLookupByLibrary.simpleMessage(
       "Versus AI (offline)",
     ),

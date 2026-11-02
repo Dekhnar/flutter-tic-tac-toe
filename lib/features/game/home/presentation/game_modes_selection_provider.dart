@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_state.dart';
+import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
+import 'package:tic_tac_toe_app/shared/notifications/message_notifier.dart';
 
 part 'game_modes_selection_provider.g.dart';
 
@@ -20,6 +22,12 @@ final class GameModesSelectionNotifier extends _$GameModesSelectionNotifier {
     required OpenGameCreationDialogCallback openOfflineVsAiGameCreationDialog,
   }) async {
     if (_isRequestingGameCreation) return null;
+
+    if (mode == GameMode.online1v1 && !ref.read(isOnlineAvailableProvider)) {
+      ref.read(messageNotifierProvider.notifier).showMessage(InfoMessage.onlineUnavailable);
+      return null;
+    }
+
     _isRequestingGameCreation = true;
     try {
       return switch (mode) {

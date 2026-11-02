@@ -3,6 +3,8 @@ import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 final class GameRules {
   const GameRules();
 
+  static const boardSize = 3;
+
   Game? applyMove({
     required Game game,
     required String playerId,
@@ -10,18 +12,18 @@ final class GameRules {
     required int col,
     required DateTime currentDate,
   }) {
-    if (game.status == GameStatus.finished) return null;
-    if (game.status == GameStatus.setup) return null;
+    if (game.status != GameStatus.playing) return null;
     if (game.currentPlayerId != playerId) return null;
+    if (!isOnBoard(row: row, col: col)) return null;
 
-    final index = row * 3 + col;
-    if (index >= 9) return null;
+    final toId = game.toId;
+    if (toId == null) return null;
+
+    final index = row * boardSize + col;
     if (game.moves.any((m) => m.index == index)) return null;
 
-    final (opponentId, sign, mark) = switch (playerId == game.fromId) {
-      true => (game.toId!, 1, CellMark.X),
-      false => (game.fromId, -1, CellMark.O),
-    };
+    final isFromPlayer = playerId == game.fromId;
+    final (opponentId, sign) = isFromPlayer ? (toId, 1) : (game.fromId, -1);
 
     final nextRow = List<int>.of(game.boardState.row, growable: false);
     final nextCol = List<int>.of(game.boardState.col, growable: false);
@@ -31,44 +33,57 @@ final class GameRules {
 
     nextRow[row] += sign;
     nextCol[col] += sign;
-    if (row == col) nextDiag += sign; // ex: (0,0), (1,1), (2,2)
-    if ((row + col) == 2) nextAnti += sign; // ex: (2,0), (1,1), (0,2)
+    if (row == col) nextDiag += sign; // e.g. (0,0), (1,1), (2,2)
+    if ((row + col) == boardSize - 1) nextAnti += sign; // e.g. (2,0), (1,1), (0,2)
 
-    String? winnerId;
-    final hasLine = nextRow[row].abs() == 3 || nextCol[col].abs() == 3 || nextDiag.abs() == 3 || nextAnti.abs() == 3;
-
-    if (hasLine) {
-      winnerId = playerId;
-    } else if (nextMoveCount == 9) {
-      winnerId = null;
-    }
+    final hasLine = [nextRow[row], nextCol[col], nextDiag, nextAnti].any((count) => count.abs() == boardSize);
 
     final move = Move(
       playerId: playerId,
       index: index,
-      mark: mark,
+      mark: game.markOf(playerId),
       round: game.currentRoundIndex,
-      turn: game.moves.length,
+      turn: game.boardState.moveCount,
     );
 
-    Game updated = game.copyWith(
+    final updated = game.copyWith(
       moves: [...game.moves, move],
       boardState: BoardState(row: nextRow, col: nextCol, diag: nextDiag, anti: nextAnti, moveCount: nextMoveCount),
       lastPlayAt: currentDate,
       updatedAt: currentDate,
     );
 
-    if (winnerId != null || nextMoveCount == 9) {
-      updated = updated.copyWith(
-        status: GameStatus.finished,
-        currentWinnerId: winnerId,
-        fromWinCount: updated.fromWinCount + ((winnerId == game.fromId) ? 1 : 0),
-        toWinCount: updated.toWinCount + ((winnerId == game.toId) ? 1 : 0),
-      );
-    } else {
-      updated = updated.copyWith(currentPlayerId: opponentId);
+    if (!hasLine && nextMoveCount < boardSize * boardSize) {
+      return updated.copyWith(currentPlayerId: opponentId);
     }
 
-    return updated;
+    return updated.copyWith(
+      status: GameStatus.finished,
+      currentWinnerId: hasLine ? playerId : null,
+      fromWinCount: updated.fromWinCount + (hasLine && isFromPlayer ? 1 : 0),
+      toWinCount: updated.toWinCount + (hasLine && !isFromPlayer ? 1 : 0),
+    );
   }
+
+  /// Resets the board for the next round; the players take turns to start.
+  Game? startNewRound({required Game game, required DateTime currentDate}) {
+    if (game.status != GameStatus.finished) return null;
+
+    final toId = game.toId;
+    if (toId == null) return null;
+
+    final nextRoundIndex = game.currentRoundIndex + 1;
+    return game.copyWith(
+      status: GameStatus.playing,
+      currentRoundIndex: nextRoundIndex,
+      currentPlayerId: nextRoundIndex.isEven ? game.fromId : toId,
+      currentWinnerId: null,
+      moves: const [],
+      boardState: const BoardState(),
+      lastPlayAt: currentDate,
+      updatedAt: currentDate,
+    );
+  }
+
+  bool isOnBoard({required int row, required int col}) => row >= 0 && row < boardSize && col >= 0 && col < boardSize;
 }

@@ -48,5 +48,8 @@
   "quit": "Quitter",
   "boardCellEmpty": "Case {row} {column} vide",
   "boardCellCross": "Case {row} {column} croix",
-  "boardCellCircle": "Case {row} {column} rond"
+  "boardCellCircle": "Case {row} {column} rond",
+  "turnOf": "Tour : {player}",
+  "onlineUnavailable": "Le mode en ligne n'est pas disponible dans cette version.",
+  "gameAlreadyFull": "Cette partie a déjà deux joueurs."
 }

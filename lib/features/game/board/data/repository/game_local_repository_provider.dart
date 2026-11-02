@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
@@ -13,7 +13,11 @@ import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
 part 'game_local_repository_provider.g.dart';
 
 @riverpod
-GameLocalRepository gameLocalRepository(Ref ref) => GameLocalRepository(stores: <String, InMemoryStore<Game>>{});
+GameLocalRepository gameLocalRepository(Ref ref) {
+  final repository = GameLocalRepository(stores: <String, InMemoryStore<Game>>{});
+  ref.onDispose(repository.dispose);
+  return repository;
+}
 
 final class GameLocalRepository extends GameRepositoryInterface {
   const GameLocalRepository({
@@ -21,15 +25,18 @@ final class GameLocalRepository extends GameRepositoryInterface {
     @visibleForTesting Duration aiMoveDelay = const Duration(seconds: 1),
     @visibleForTesting Clock clock = const Clock(),
     @visibleForTesting GameRules rules = const GameRules(),
+    @visibleForTesting TicTacToeAI ai = const TicTacToeAI(),
   }) : _stores = stores,
        _aiMoveDelay = aiMoveDelay,
        _clock = clock,
-       _rules = rules;
+       _rules = rules,
+       _ai = ai;
 
   final Map<String, InMemoryStore<Game>> _stores;
   final Duration _aiMoveDelay;
   final Clock _clock;
   final GameRules _rules;
+  final TicTacToeAI _ai;
 
   @override
   Stream<Game> watchGame(String id) => switch (_stores[id]) {
@@ -37,7 +44,7 @@ final class GameLocalRepository extends GameRepositoryInterface {
     _ => const Stream.empty(),
   };
 
-  Future<Game> createGame({required String fromId, required String toId}) async {
+  Future<Game> createGame({required String fromId, required String toId, bool isOpponentAi = false}) async {
     final now = _clock.now();
     final id = 'local-${now.microsecondsSinceEpoch}';
     final game = Game(
@@ -54,6 +61,7 @@ final class GameLocalRepository extends GameRepositoryInterface {
       currentRoundIndex: 0,
       currentWinnerId: null,
       lastPlayAt: now,
+      isOpponentAi: isOpponentAi,
       createdAt: now,
       updatedAt: now,
     );
@@ -62,56 +70,71 @@ final class GameLocalRepository extends GameRepositoryInterface {
   }
 
   @override
-  Future<void> startGame({required Game game}) async {
-    final store = _stores[game.id];
-    if (store == null) return;
+  Future<void> startGame({required String gameId}) async {
+    final store = _stores[gameId];
+    if (store == null || store.value.status != GameStatus.setup) return;
+
     final now = _clock.now();
-    store.value = game.copyWith(status: GameStatus.playing, lastPlayAt: now, updatedAt: now);
+    store.value = store.value.copyWith(status: GameStatus.playing, lastPlayAt: now, updatedAt: now);
+    _playAiMoveIfNeeded(store);
   }
 
   @override
-  Future<void> startNewRound({required Game game}) async {
-    final store = _stores[game.id];
+  Future<void> startNewRound({required String gameId}) async {
+    final store = _stores[gameId];
     if (store == null) return;
-    final nextRound = game.currentRoundIndex + 1;
-    final nextStarter = nextRound.isEven ? game.fromId : game.toId!;
-    final now = _clock.now();
-    store.value = game.copyWith(
-      status: GameStatus.playing,
-      currentRoundIndex: nextRound,
-      currentPlayerId: nextStarter,
-      currentWinnerId: null,
-      lastPlayAt: now,
-      updatedAt: now,
-      moves: const [],
-      boardState: const BoardState(),
+
+    final nextRound = _rules.startNewRound(game: store.value, currentDate: _clock.now());
+    if (nextRound == null) return;
+
+    store.value = nextRound;
+    _playAiMoveIfNeeded(store);
+  }
+
+  @override
+  Future<void> makeMove({required String gameId, required String playerId, required int row, required int col}) async {
+    final store = _stores[gameId];
+    if (store == null) return;
+
+    final updated = _rules.applyMove(
+      game: store.value,
+      playerId: playerId,
+      row: row,
+      col: col,
+      currentDate: _clock.now(),
     );
-    _maybePlayAiMove(store.value);
-  }
-
-  @override
-  Future<void> makeMove({required Game game, required String playerId, required int row, required int col}) async {
-    final store = _stores[game.id];
-    if (store == null) return;
-
-    final updated = _rules.applyMove(game: game, playerId: playerId, row: row, col: col, currentDate: _clock.now());
 
     if (updated == null) return;
 
     store.value = updated;
-    await _maybePlayAiMove(store.value);
+    _playAiMoveIfNeeded(store);
   }
 
-  Future<void> _maybePlayAiMove(Game currentGame) async {
-    final ticTacToeAI = TicTacToeAI();
-    final bestCellIndex = ticTacToeAI.playIfNeeded(currentGame);
-    if (bestCellIndex case final bestCellIndex? when bestCellIndex >= 0) {
-      final aiRowIndex = bestCellIndex ~/ 3;
-      final aiColumnIndex = bestCellIndex % 3;
-      Future.microtask(() async {
-        await Future.delayed(_aiMoveDelay);
-        await makeMove(game: currentGame, playerId: currentGame.currentPlayerId, row: aiRowIndex, col: aiColumnIndex);
-      });
+  void dispose() {
+    for (final store in _stores.values) {
+      store.close();
     }
+    _stores.clear();
+  }
+
+  void _playAiMoveIfNeeded(InMemoryStore<Game> store) {
+    if (!store.value.isAiTurn) return;
+
+    // The move is chosen after the delay, from the board as it is then.
+    unawaited(
+      Future<void>.delayed(_aiMoveDelay, () async {
+        final game = store.value;
+        final aiId = game.toId;
+        final cellIndex = _ai.nextMove(game);
+        if (aiId == null || cellIndex == null) return;
+
+        await makeMove(
+          gameId: game.id,
+          playerId: aiId,
+          row: cellIndex ~/ GameRules.boardSize,
+          col: cellIndex % GameRules.boardSize,
+        );
+      }),
+    );
   }
 }

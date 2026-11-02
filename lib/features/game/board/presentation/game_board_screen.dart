@@ -1,6 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
@@ -8,6 +8,7 @@ import 'package:tic_tac_toe_app/features/game/board/application/game_provider.da
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 import 'package:tic_tac_toe_app/shared/notifications/message_displayer.dart';
 
 @RoutePage()
@@ -23,9 +24,9 @@ class GameBoardScreen extends ConsumerWidget {
     final provider = gameNotifierProvider(gameCreateInput: input);
     final gameAsync = ref.watch(provider);
     ref.listen(provider, (previous, next) {
-      // la modale est bloquante est fait sortir du jeu
-      if (next.hasError && context.mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(context));
+      // The game cannot go on without its state: the dialog blocks the screen and only offers to leave.
+      if (next case AsyncValue(:final error?) when context.mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(context, error));
       }
     });
 
@@ -98,7 +99,7 @@ class GameBoardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showBlockingErrorDialog(BuildContext context) {
+  Future<void> _showBlockingErrorDialog(BuildContext context, Object error) {
     final i18n = I18n.of(context);
     return showDialog(
       context: context,
@@ -108,7 +109,11 @@ class GameBoardScreen extends ConsumerWidget {
           canPop: false,
           child: AlertDialog(
             title: Text(i18n.errorTitle),
-            content: Text(i18n.errorRetryLater),
+            content: Text(switch (error) {
+              GameNotFoundException() => i18n.gameNotFound,
+              GameAlreadyFullException() => i18n.gameAlreadyFull,
+              _ => i18n.errorRetryLater,
+            }),
             actions: [
               TextButton(
                 onPressed: () {
@@ -220,7 +225,7 @@ class _GameHeader extends StatelessWidget {
               )
             else if (game.status == GameStatus.playing) ...[
               Text(
-                'Tour: ${game.currentPlayerId}',
+                I18n.of(context).turnOf(game.currentPlayerId),
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(
                   context,

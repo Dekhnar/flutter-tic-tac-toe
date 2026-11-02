@@ -1,26 +1,31 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/shared/bootstrap/bootstrap_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
+import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
+import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  final container = ProviderContainer(overrides: [], observers: [const AsyncErrorLogger()]);
-  final errorLoggerService = container.read(errorLoggerServiceProvider);
+  const errorLoggerService = ErrorLoggerService();
+  final isOnlineAvailable = await _initializeFirebase(errorLoggerService);
+
+  final container = ProviderContainer(
+    overrides: [isOnlineAvailableProvider.overrideWithValue(isOnlineAvailable)],
+    observers: [const AsyncErrorLogger()],
+  );
   try {
     await Future.wait([
       container.read(bootstrapServiceProvider.future),
-      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]),
     ]);
   } catch (e, st) {
@@ -29,6 +34,19 @@ void main() async {
 
   _registerErrorHandlers(errorLoggerService);
   runApp(UncontrolledProviderScope(container: container, child: const App()));
+}
+
+Future<bool> _initializeFirebase(ErrorLoggerService errorLogger) async {
+  final options = FirebaseEnvironment.currentPlatform;
+  if (options == null) return false;
+
+  try {
+    await Firebase.initializeApp(options: options);
+    return true;
+  } catch (e, st) {
+    errorLogger.logError(e, st);
+    return false;
+  }
 }
 
 void _registerErrorHandlers(ErrorLoggerService errorLogger) {

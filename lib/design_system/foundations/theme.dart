@@ -65,7 +65,7 @@ final class ThemeBuilder {
         actionsIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
         iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant, size: Dimens.standardAssetSize),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         margin: EdgeInsets.zero,
         surfaceTintColor: isDark ? Colors.white.withValues(alpha: 0.08) : null,

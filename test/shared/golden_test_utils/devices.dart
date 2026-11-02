@@ -1,34 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 
-final class Devices {
-  static final portraitScreens = [...screensWithoutAccessibility, a11yScreen];
+/// The screens every golden is rendered on; [name] is the suffix of the golden file.
+enum GoldenScreen {
+  iphone11(size: Size(414, 896), themeMode: ThemeMode.dark),
+  a11y(size: Size(375, 667), themeMode: ThemeMode.dark, textScaleFactor: 2),
+  light(size: Size(414, 896), themeMode: ThemeMode.light),
+  semantic(size: Size(375, 667), themeMode: ThemeMode.dark, showSemantics: true);
 
-  static List<Device> screens({bool includeLandscapeMode = false, bool includeTabletLandscape = false}) {
-    return [
-      ...portraitScreens,
-      if (includeTabletLandscape) Device.tabletLandscape,
-      if (includeLandscapeMode)
-        ...portraitScreens.map(
-          (screen) => screen.copyWith(
-            name: '${screen.name}_landscape',
-            size: screen.size.flipped,
-            safeArea: EdgeInsets.fromLTRB(
-              screen.safeArea.top,
-              screen.safeArea.right,
-              screen.safeArea.bottom,
-              screen.safeArea.left,
-            ),
-          ),
-        ),
-    ];
-  }
+  const GoldenScreen({
+    required this.size,
+    required this.themeMode,
+    this.textScaleFactor = 1,
+    this.showSemantics = false,
+  });
 
-  static final a11yScreen = Device.phone.copyWith(name: 'a11y', textScale: 2);
-
-  static final semanticsScreen = Device.phone.copyWith(name: 'semantic');
-
-  static final lightModeScreen = Device.iphone11.copyWith(name: 'light');
-
-  static final screensWithoutAccessibility = [Device.iphone11];
+  final Size size;
+  final ThemeMode themeMode;
+  final double textScaleFactor;
+  final bool showSemantics;
 }

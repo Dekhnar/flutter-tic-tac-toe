@@ -1,8 +1,10 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/index.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:uuid/uuid.dart';
 
 @RoutePage()
@@ -30,7 +32,6 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
   void initState() {
     super.initState();
     _shareLinkCtrl = TextEditingController(text: _shareLink);
-    debugPrint(_shareLink);
   }
 
   @override

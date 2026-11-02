@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// Players are identified by the name they type: without Firebase Auth, these rules cannot tell who sends a write.
+// They enforce what the data allows instead: a game is joined once, a cell is played once, identities never change.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{gameId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.status == 'setup'
+        && request.resource.data.fromId is string
+        && request.resource.data.toId == null
+        && request.resource.data.currentPlayerId == request.resource.data.fromId;
+
+      allow update: if isJoin() || isGameUpdate();
+
+      allow delete: if false;
+
+      function changedKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+
+      function isJoin() {
+        return resource.data.toId == null
+          && request.resource.data.toId is string
+          && changedKeys().hasOnly(['toId', 'updatedAt']);
+      }
+
+      function isGameUpdate() {
+        return resource.data.toId != null
+          && changedKeys().hasOnly([
+            'boardState', 'status', 'currentRoundIndex', 'currentPlayerId', 'currentWinnerId',
+            'fromWinCount', 'toWinCount', 'lastPlayAt', 'updatedAt'
+          ])
+          && request.resource.data.currentPlayerId in [resource.data.fromId, resource.data.toId];
+      }
+
+      match /moves/{moveId} {
+        allow read: if true;
+
+        allow create: if isPlayedByCurrentPlayer(get(/databases/$(database)/documents/games/$(gameId)).data);
+
+        allow update, delete: if false;
+
+        function isPlayedByCurrentPlayer(game) {
+          let move = request.resource.data;
+          return moveId == string(move.round) + ':' + string(move.index)
+            && move.index >= 0 && move.index < 9
+            && move.round == game.currentRoundIndex
+            && move.playerId == game.currentPlayerId;
+        }
+      }
+    }
+  }
+}

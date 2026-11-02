@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:built_collection/built_collection.dart';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
@@ -34,30 +33,35 @@ final class GameRepository extends GameRepositoryInterface {
   final GameRules _rules;
   final Clock _clock;
 
+  CollectionReference<Map<String, dynamic>> get _games => _firestore.collection('games');
+
   Future<Game> createGame({required String authorUid, required String shareLink}) async {
-    final ref = await _firestore
-        .collection('games')
-        .add(CreateGameCommand(fromId: authorUid, shareLink: shareLink).toFirestore());
+    final ref = await _games.add(CreateGameCommand(fromId: authorUid, shareLink: shareLink).toFirestore());
     final snapshot = await ref.get();
 
     return _parseGame(snapshot);
   }
 
   Future<Game> joinGame({required String shareLink, required String joinerUid}) async {
-    final qs = await _firestore.collection('games').where('shareLink', isEqualTo: shareLink).limit(1).get();
+    final qs = await _games.where('shareLink', isEqualTo: shareLink).limit(1).get();
     if (qs.docs.isEmpty) {
       throw GameNotFoundException();
     }
     final gameRef = qs.docs.first.reference;
-    await gameRef.update(JoinGameCommand(joinerUid: joinerUid).toFirestore());
-    final snapshot = await gameRef.get();
 
-    return _parseGame(snapshot);
+    await _firestore.runTransaction((tx) async {
+      final game = _parseGame(await tx.get(gameRef));
+      if (game.toId != null) throw GameAlreadyFullException();
+
+      tx.update(gameRef, JoinGameCommand(joinerUid: joinerUid).toFirestore());
+    });
+
+    return _parseGame(await gameRef.get());
   }
 
   @override
   Stream<Game> watchGame(String gameId) {
-    final gameRef = _firestore.collection('games').doc(gameId);
+    final gameRef = _games.doc(gameId);
 
     final controller = StreamController<Game>();
     StreamSubscription? gameSub;
@@ -77,7 +81,7 @@ final class GameRepository extends GameRepositoryInterface {
 
       movesSub = gameRef.collection('moves').where('round', isEqualTo: round).snapshots().listen((qs) {
         final moves = qs.docs.map((d) => Move.fromJson(d.data())).toList(growable: false)
-          ..sort((a, b) => a.turn.compareTo(b.turn)); // tri côté Dart
+          ..sort((a, b) => a.turn.compareTo(b.turn)); // sorted client-side: `where` + `orderBy` needs a composite index
         latestMoves = moves;
         emit();
       }, onError: controller.addError);
@@ -111,110 +115,64 @@ final class GameRepository extends GameRepositoryInterface {
   }
 
   @override
-  Future<void> makeMove({required Game game, required String playerId, required int row, required int col}) async {
-    final index = row * 3 + col;
-    if (index >= 9) throw MoveCellIndexInvalidException();
+  Future<void> makeMove({required String gameId, required String playerId, required int row, required int col}) async {
+    if (!_rules.isOnBoard(row: row, col: col)) throw MoveCellIndexInvalidException();
+    final index = row * GameRules.boardSize + col;
 
     await _beforeMakeMove?.call();
 
     await _firestore.runTransaction((tx) async {
-      final currentGame = _parseGame(await tx.get(_firestore.collection('games').doc(game.id)));
+      final gameRef = _games.doc(gameId);
+      final currentGame = _parseGame(await tx.get(gameRef));
 
       if (currentGame.status == GameStatus.finished) throw MoveGameFinishedException();
       if (currentGame.status == GameStatus.setup) throw MoveGameNotStartedException();
       if (currentGame.toId == null) throw MoveOpponentMissingException();
       if (currentGame.currentPlayerId != playerId) throw MoveNotYourTurnException();
-      if (currentGame.boardState.moveCount >= 9) throw MoveGameFinishedException();
 
-      final gameRef = _firestore.collection('games').doc(currentGame.id);
       final moveRef = gameRef.collection('moves').doc('${currentGame.currentRoundIndex}:$index');
       final moveSnap = await tx.get(moveRef);
       if (moveSnap.exists) throw MoveCellAlreadyTakenException();
 
       final updatedGame = _rules.applyMove(
-        game: game,
+        game: currentGame,
         playerId: playerId,
         row: row,
         col: col,
         currentDate: _clock.now(),
       );
 
-      if (updatedGame == null) return;
+      if (updatedGame == null) throw StateError('Move rejected by the rules after passing every check');
 
-      final (opponentId, mark) =
-          (playerId == currentGame.fromId)
-              ? (currentGame.toId, CellMark.X.name)
-              : (currentGame.fromId, CellMark.O.name);
-
-      tx.set(
-        moveRef,
-        MoveEventCommand(
-          mark: mark,
-          playerId: playerId,
-          index: index,
-          round: currentGame.currentRoundIndex,
-          turn: currentGame.boardState.moveCount,
-        ).toFirestore(),
-      );
-
-      final patchCmd = GamePatchCommand(
-        (b) =>
-            b
-              ..boardStateRow = ListBuilder<int>(updatedGame.boardState.row)
-              ..boardStateCol = ListBuilder<int>(updatedGame.boardState.col)
-              ..boardStateDiag = updatedGame.boardState.diag
-              ..boardStateAnti = updatedGame.boardState.anti
-              ..boardStateMoveCount = updatedGame.boardState.moveCount
-              ..status = updatedGame.status.name
-              ..currentWinnerId = updatedGame.currentWinnerId
-              ..currentPlayerId = updatedGame.currentPlayerId
-              ..fromWins = game.fromWinCount != updatedGame.fromWinCount
-              ..toWins = game.toWinCount != updatedGame.toWinCount
-              ..hasMoved = true,
-      );
-
-      tx.update(gameRef, patchCmd.toFirestore());
+      tx.set(moveRef, MoveEventCommand(move: updatedGame.moves.last).toFirestore());
+      tx.update(gameRef, GameStateCommand(game: updatedGame).toFirestore());
     });
   }
 
   @override
-  Future<void> startNewRound({required Game game}) async {
+  Future<void> startNewRound({required String gameId}) async {
     await _firestore.runTransaction((tx) async {
-      final nextRound = game.currentRoundIndex + 1;
-      final nextStarter = game.currentRoundIndex.isEven ? game.toId : game.fromId;
+      final gameRef = _games.doc(gameId);
+      final currentGame = _parseGame(await tx.get(gameRef));
 
-      tx.update(
-        _firestore.doc('games/${game.id}'),
-        GamePatchCommand(
-          (b) =>
-              b
-                ..boardStateRow = ListBuilder<int>([0, 0, 0])
-                ..boardStateCol = ListBuilder<int>([0, 0, 0])
-                ..boardStateDiag = 0
-                ..boardStateAnti = 0
-                ..boardStateMoveCount = 0
-                ..currentRoundIndex = nextRound
-                ..status = GameStatus.playing.name
-                ..currentWinnerId = null
-                ..currentPlayerId = nextStarter
-                ..hasMoved = false,
-        ).toFirestore(),
-      );
+      // Both players see "play again": the second request finds the round already started and does nothing.
+      final nextRound = _rules.startNewRound(game: currentGame, currentDate: _clock.now());
+      if (nextRound == null) return;
+
+      tx.update(gameRef, GameStateCommand(game: nextRound).toFirestore());
     });
   }
 
   @override
-  Future<void> startGame({required Game game}) async {
+  Future<void> startGame({required String gameId}) async {
     await _firestore.runTransaction((tx) async {
-      tx.update(
-        _firestore.doc('games/${game.id}'),
-        GamePatchCommand(
-          (b) =>
-              b
-                ..status = GameStatus.playing.name
-                ..hasMoved = false,
-        ).toFirestore(),
-      );
+      final gameRef = _games.doc(gameId);
+      final currentGame = _parseGame(await tx.get(gameRef));
+
+      if (currentGame.status != GameStatus.setup) return;
+      if (currentGame.toId == null) throw MoveOpponentMissingException();
+
+      tx.update(gameRef, const StartGameCommand().toFirestore());
     });
   }
 

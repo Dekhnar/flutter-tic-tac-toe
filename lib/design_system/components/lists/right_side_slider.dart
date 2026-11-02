@@ -24,7 +24,7 @@ class RightSideSlider extends StatefulWidget {
 }
 
 class _RightSideSliderState extends State<RightSideSlider> with SingleTickerProviderStateMixin {
-  int _currentIndex = 1;
+  late int _currentIndex = widget.items.length > 1 ? 1 : 0;
   bool _isSwipeUp = false;
 
   static const _swipeDuration = Duration(milliseconds: 400);
@@ -33,8 +33,8 @@ class _RightSideSliderState extends State<RightSideSlider> with SingleTickerProv
   late final AnimationController _swipeController = AnimationController(vsync: this, duration: _swipeDuration)
     ..addStatusListener(_onSwipeTransitionStatusChanged);
 
-  int _getIndexBackward(int i) => i == 0 ? 2 : i - 1;
-  int _getIndexForward(int i) => i == 2 ? 0 : i + 1;
+  int _getIndexBackward(int i) => (i - 1) % widget.items.length;
+  int _getIndexForward(int i) => (i + 1) % widget.items.length;
 
   void _onSwipeTransitionStatusChanged(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
@@ -72,7 +72,7 @@ class _RightSideSliderState extends State<RightSideSlider> with SingleTickerProv
         builder: (_, __) {
           final progress = _swipeController.value;
           return Container(
-            constraints: BoxConstraints.tightFor(width: 600),
+            constraints: BoxConstraints.tightFor(width: Dimens.sliderWidth),
             child: Stack(
               children: [
                 _SliderPaneLayout(
@@ -129,17 +129,14 @@ class _SliderPaneLayout extends StatelessWidget {
     required this.child,
   });
 
-  static final _whiteToGreenTween = ColorTween(begin: Colors.white, end: Colors.green);
-  static final _greenToWhiteTween = ColorTween(begin: Colors.green, end: Colors.white);
-
-  Color? get _cardColor => switch (position) {
-    _SliderPanePosition.top || _SliderPanePosition.bottom => _whiteToGreenTween,
-    _SliderPanePosition.center => _greenToWhiteTween,
+  Color? _cardColor(ColorScheme colors) => switch (position) {
+    _SliderPanePosition.top || _SliderPanePosition.bottom => ColorTween(begin: colors.onPrimary, end: colors.primary),
+    _SliderPanePosition.center => ColorTween(begin: colors.primary, end: colors.onPrimary),
   }.transform(progress);
 
-  Color? get _textColor => switch (position) {
-    _SliderPanePosition.top || _SliderPanePosition.bottom => _greenToWhiteTween,
-    _SliderPanePosition.center => _whiteToGreenTween,
+  Color? _textColor(ColorScheme colors) => switch (position) {
+    _SliderPanePosition.top || _SliderPanePosition.bottom => ColorTween(begin: colors.primary, end: colors.onPrimary),
+    _SliderPanePosition.center => ColorTween(begin: colors.onPrimary, end: colors.primary),
   }.transform(progress);
 
   double get _currentOpacity {
@@ -182,11 +179,13 @@ class _SliderPaneLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textColor = _textColor(colors);
     return Theme(
       data: Theme.of(context).copyWith(
-        textTheme: Theme.of(context).textTheme.apply(bodyColor: _textColor, displayColor: _textColor),
+        textTheme: Theme.of(context).textTheme.apply(bodyColor: textColor, displayColor: textColor),
         cardTheme: CardTheme.of(context).copyWith(
-          color: _cardColor,
+          color: _cardColor(colors),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.horizontal(left: Radius.circular(Dimens.largeRadius)),
           ),
@@ -224,7 +223,10 @@ class _SliderPaneCard extends StatelessWidget {
             const SizedBox(height: Dimens.halfPadding),
             ElevatedButton(
               onPressed: onPaneTap,
-              child: Text(ctaLabel, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.green)),
+              child: Text(
+                ctaLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+              ),
             ),
           ],
         ),

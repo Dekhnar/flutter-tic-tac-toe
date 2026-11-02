@@ -1,6 +1,9 @@
 sealed class AppException implements Exception {
   AppException({required this.code});
   final String code;
+
+  @override
+  String toString() => '$runtimeType($code)';
 }
 
 final class GameCreationDataMissingException extends AppException {
@@ -9,6 +12,10 @@ final class GameCreationDataMissingException extends AppException {
 
 final class GameNotFoundException extends AppException {
   GameNotFoundException() : super(code: "game_not_found");
+}
+
+final class GameAlreadyFullException extends AppException {
+  GameAlreadyFullException() : super(code: "game_already_full");
 }
 
 final class MoveGameFinishedException extends AppException {

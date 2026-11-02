@@ -1,4 +1,4 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 

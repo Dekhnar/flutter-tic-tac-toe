@@ -1,9 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
-import 'package:built_collection/built_collection.dart';
-import 'package:built_value/built_value.dart';
-
-part 'commands.g.dart';
 
 final class CreateGameCommand {
   final String _fromId;
@@ -15,13 +11,7 @@ final class CreateGameCommand {
     'fromId': _fromId,
     'toId': null,
     'status': GameStatus.setup.name,
-    'boardState': {
-      'row': const [0, 0, 0],
-      'col': const [0, 0, 0],
-      'diag': 0,
-      'anti': 0,
-      'moveCount': 0,
-    },
+    'boardState': const BoardState().toJson(),
     if (_shareLink case final shareLink?) "shareLink": shareLink,
     'currentPlayerId': _fromId,
     'createdAt': FieldValue.serverTimestamp(),
@@ -37,86 +27,42 @@ final class JoinGameCommand {
   Map<String, Object?> toFirestore() => {'toId': _joinerUid, 'updatedAt': FieldValue.serverTimestamp()};
 }
 
-final class MoveEventCommand {
-  final String _playerId;
-  final int _index;
-  final String _mark;
-  final int _round;
-  final int _turn;
+final class StartGameCommand {
+  const StartGameCommand();
 
-  MoveEventCommand({
-    required String playerId,
-    required int index,
-    required String mark,
-    required int round,
-    required int turn,
-  }) : _playerId = playerId,
-       _index = index,
-       _mark = mark,
-       _round = round,
-       _turn = turn;
+  Map<String, Object?> toFirestore() => {'status': GameStatus.playing.name, 'updatedAt': FieldValue.serverTimestamp()};
+}
+
+final class MoveEventCommand {
+  final Move _move;
+
+  const MoveEventCommand({required Move move}) : _move = move;
 
   Map<String, Object?> toFirestore() => {
-    'playerId': _playerId,
-    'index': _index,
-    'mark': _mark,
-    'round': _round,
-    'turn': _turn,
+    'playerId': _move.playerId,
+    'index': _move.index,
+    'mark': _move.mark.name,
+    'round': _move.round,
+    'turn': _move.turn,
     'createdAt': FieldValue.serverTimestamp(),
   };
 }
 
-abstract class GamePatchCommand implements Built<GamePatchCommand, GamePatchCommandBuilder> {
-  BuiltList<int>? get boardStateRow;
+/// Writes the state of a game after a move or a new round; the moves themselves live in the `moves` sub-collection.
+final class GameStateCommand {
+  final Game _game;
 
-  BuiltList<int>? get boardStateCol;
+  const GameStateCommand({required Game game}) : _game = game;
 
-  int? get boardStateDiag;
-
-  int? get boardStateAnti;
-
-  int? get boardStateMoveCount;
-
-  String? get status;
-
-  String? get currentPlayerId;
-
-  String? get currentWinnerId;
-
-  bool? get fromWins;
-
-  bool? get toWins;
-
-  bool? get hasMoved;
-
-  int? get currentRoundIndex;
-
-  GamePatchCommand._();
-  factory GamePatchCommand([void Function(GamePatchCommandBuilder) updates]) = _$GamePatchCommand;
-
-  Map<String, Object?> toFirestore() {
-    return <String, Object?>{
-      if (currentRoundIndex case final currentRoundIndex?) 'currentRoundIndex': currentRoundIndex,
-
-      if (boardStateRow case final boardStateRow?) 'boardState.row': boardStateRow.toList(growable: false),
-      if (boardStateCol case final boardStateCol?) 'boardState.col': boardStateCol.toList(growable: false),
-      if (boardStateDiag != null) 'boardState.diag': boardStateDiag,
-      if (boardStateAnti != null) 'boardState.anti': boardStateAnti,
-      if (boardStateMoveCount != null) 'boardState.moveCount': boardStateMoveCount,
-
-      if (hasMoved == true) 'lastPlayAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-
-      if (status != null) 'status': status,
-      if (currentPlayerId != null) 'currentPlayerId': currentPlayerId,
-
-      if (currentWinnerId != null)
-        'currentWinnerId': currentWinnerId
-      else if (status == GameStatus.finished.name)
-        'currentWinnerId': null,
-
-      if (fromWins == true) 'fromWinCount': FieldValue.increment(1),
-      if (toWins == true) 'toWinCount': FieldValue.increment(1),
-    };
-  }
+  Map<String, Object?> toFirestore() => {
+    'boardState': _game.boardState.toJson(),
+    'status': _game.status.name,
+    'currentRoundIndex': _game.currentRoundIndex,
+    'currentPlayerId': _game.currentPlayerId,
+    'currentWinnerId': _game.currentWinnerId,
+    'fromWinCount': _game.fromWinCount,
+    'toWinCount': _game.toWinCount,
+    'lastPlayAt': FieldValue.serverTimestamp(),
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 }

@@ -24,6 +24,7 @@ final class Game with _$Game {
     this.currentRoundIndex = 0,
     this.currentWinnerId,
     this.lastPlayAt,
+    this.isOpponentAi = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -68,6 +69,9 @@ final class Game with _$Game {
   final DateTime? lastPlayAt;
 
   @override
+  final bool isOpponentAi;
+
+  @override
   final DateTime updatedAt;
 
   @override
@@ -75,6 +79,13 @@ final class Game with _$Game {
 
   factory Game.fromJson(Map<String, Object?> json) => _$GameFromJson(json);
   Map<String, Object?> toJson() => _$GameToJson(this);
+}
+
+extension GamePlayers on Game {
+  /// The game creator plays X, the opponent plays O.
+  CellMark markOf(String playerId) => playerId == fromId ? CellMark.X : CellMark.O;
+
+  bool get isAiTurn => isOpponentAi && status == GameStatus.playing && currentPlayerId == toId;
 }
 
 @freezed

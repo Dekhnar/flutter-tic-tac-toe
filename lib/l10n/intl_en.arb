@@ -48,5 +48,8 @@
   "quit": "Close",
   "boardCellEmpty": "Cell {row} {column} empty",
   "boardCellCross": "Cell {row} {column} cross",
-  "boardCellCircle": "Cell {row} {column} circle"
+  "boardCellCircle": "Cell {row} {column} circle",
+  "turnOf": "Turn: {player}",
+  "onlineUnavailable": "Online mode is unavailable in this build.",
+  "gameAlreadyFull": "This game already has two players."
 }

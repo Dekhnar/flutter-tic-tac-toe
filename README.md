@@ -1,222 +1,116 @@
 # Tic Tac Toe – Flutter
 
-Un petit jeu de morpion (3×3) développé en **Flutter**, jouable :
+A 3×3 tic-tac-toe game, playable:
 
-- **En ligne (1v1)** via **Firebase / Cloud Firestore** et un lien ou un ID de partage
-- **En local (1v1)** sur le même appareil
-- **En solo vs IA** (IA simple qui essaie de gagner ou de bloquer)
-
-Ce projet montre comment faire un petit jeu temps réel avec une architecture découpée, du state management moderne (Riverpod) et une UI réutilisable.
+- **Online (1v1)** through **Cloud Firestore**, by sharing a game link
+- **Locally (1v1)** on the same device
+- **Solo against an AI** that wins when it can, blocks when it must, and otherwise prefers the center, then corners
 
 ---
 
-## ⚠️ Prérequis
+## Getting started
 
-- Flutter installé
-- **Firebase configuré est obligatoire** : le projet démarre mais les fonctionnalités en ligne dépendent de `firebase_options.dart` généré via `flutterfire configure`.
-- Accès à un projet Firebase avec Firestore activé.
-
----
-
-## 🕹️ Description
-
-- **Écran d’accueil** : écran de sélection du mode de jeu.
-- **Mode en ligne** :
-  - le joueur A crée une partie → un `gameId` est créé dans Firestore ;
-  - il partage l’ID/lien ;
-  - le joueur B rejoint avec cet ID ;
-  - les deux appareils écoutent le même document Firestore → les coups sont visibles en temps réel.
-- **Mode local 1v1** : deux joueurs se passent le téléphone.
-- **Mode solo vs IA** : tu joues contre une IA intégrée, qui joue juste après toi.
-- **Plateau 3×3** : détection de victoire sur lignes, colonnes et diagonales, plus détection du match nul.
-- **Multi-manches** : possibilité de relancer une manche sans recréer toute la partie.
-
----
-
-## 🏗️ Architecture
-
-L’architecture est organisée de manière **feature-first** pour rester lisible et modulable.
-
-```text
-lib/
- ├─ main.dart               # bootstrap Flutter + Firebase
- ├─ app.dart                # MaterialApp, thèmes, i18n, router
- ├─ shared/                 # briques réutilisables (routing, bootstrap…)
- ├─ design_system/          # composants UI communs
- └─ features/
-     └─ game/
-         ├─ home/           # sélection du mode
-         ├─ creation/       # dialogs de création/join
-         └─ board/          # logique de partie + écran du plateau
-```
-
-### 1. Présentation (UI)
-
-- `GameModeSelectionScreen` : permet de choisir **Online 1v1**, **Local 1v1**, **Solo vs IA**.
-- `GameBoardScreen` : affiche la grille, le tour du joueur, l’éventuel gagnant et les actions (nouvelle manche).
-- UI basée sur un petit **design system** (cards, spacing, couleurs).
-
-### 2. Application
-
-- Un **notifier/provider** central (via Riverpod) orchestre le déroulement d’une partie :
-  - création d’une partie (online ou locale),
-  - abonnement aux mises à jour (Firestore ou mémoire),
-  - actions de jeu : `makeMove(...)`, `startNewRound(...)`, etc.
-
-### 3. Domaine
-
-- Modèles : `Game`, `Move`, `BoardState`.
-- Règles du morpion : détection rapide de victoire ou de match nul.
-
-### 4. Données
-
-- **Implémentation Firestore** :
-  - doc principal dans `games/{gameId}`
-  - sous-collection des coups
-  - synchronisation en temps réel
-- **Implémentation locale (in-memory)** :
-  - utilisée pour le local et l’IA
-  - aucune dépendance réseau
-
----
-
-## 🛠️ Stack utilisée
-
-- **Flutter** 3.x
-- **hooks_riverpod / riverpod_annotation** pour le state management et la DI
-- **auto_route** pour la navigation déclarative
-- **freezed** + **json_serializable** pour les modèles immuables
-- **Firebase Core** + **Cloud Firestore** pour le mode en ligne
-- **flutter_localizations** + ARB pour l’i18n
-- **google_fonts** pour la typo
-
----
-
-## 🚀 Démarrage
-
-### 1. Installer les dépendances
+The Flutter version is pinned in [`mise.toml`](mise.toml) (**3.41.1**). With [mise](https://mise.jdx.dev): `mise install`; otherwise install that version by any other means.
 
 ```bash
 flutter pub get
-```
-
-### 2. Générer le code
-
-Le projet utilise plusieurs générateurs (freezed, json, riverpod, auto_route).  
-Après modification des modèles ou des providers, lance :
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-### 3. Lancer l’application
-
-```bash
 flutter run
 ```
 
----
+The app runs right after a clone: **local and AI games need no setup**. Without Firebase options, the online mode stays visible but tells the player it is unavailable.
 
-## 🔥 Configuration Firebase (mode en ligne)
+### Enabling the online mode
 
-1. Crée un projet Firebase.
-2. Configure ton app Flutter avec :
+1. Create a Firebase project with Firestore enabled, and register the Android and/or Apple apps.
+2. Copy [`firebase_options.example.json`](firebase_options.example.json) to `firebase_options.json` (git-ignored) and fill it with the values of each app (Firebase console → Project settings → Your apps).
+3. Deploy the security rules: `firebase deploy --only firestore:rules`.
+4. Run with the options:
 
    ```bash
-   flutterfire configure
+   flutter run --dart-define-from-file=firebase_options.json
    ```
 
-3. Vérifie que `firebase_options.dart` est bien généré.
-4. Le mode en ligne utilisera une collection **`games`** dans Firestore, avec éventuellement une sous-collection pour les coups.
+Only Android, iOS and macOS read these options; other platforms run offline.
 
 ---
 
-## 🎮 Détail des modes
+## Architecture
 
-### Online 1v1
+Feature-first, each feature split into layers:
 
-- Création de partie → génération d’un ID
-- Partage de l’ID
-- Jointure par le second joueur
-- Les deux sont synchronisés via Firestore
-
-### Local 1v1
-
-- Deux joueurs, un seul téléphone
-- Pas de réseau requis
-- Alternance automatique des tours
-
-### Solo vs IA
-
-- Même logique que le local
-- Après ton coup, l’IA joue :
-  1. elle essaie de jouer un coup gagnant ;
-  2. sinon elle bloque ton coup gagnant ;
-  3. sinon elle joue un coup par défaut.
-
----
-
-## 🧪 Tests
-
-Pour exécuter les tests :
-
-```bash
-flutter test
+```text
+lib/
+ ├─ main.dart               # Firebase (optional), error handlers, ProviderContainer
+ ├─ app.dart                # MaterialApp, themes, i18n, router
+ ├─ shared/                 # bootstrap, Firebase environment, routing, notifications, errors
+ ├─ design_system/          # foundations (theme, dimensions, typography) and components
+ └─ features/game/
+     ├─ home/               # game mode selection
+     ├─ creation/           # create / join dialogs
+     └─ board/
+         ├─ domain/         # Game model, GameRules, TicTacToeAI — pure Dart, no Flutter
+         ├─ data/           # Firestore and in-memory repositories, Firestore commands
+         ├─ application/    # GameNotifier (Riverpod) and the repository interface
+         └─ presentation/   # board screen
 ```
 
-et pour maj les goldens
+- **`GameRules`** is the single source of truth for moves and rounds: win detection in constant time (row, column and diagonal counters), turn order, scores, next round starter. Both repositories apply it.
+- **`GameRepositoryInterface`** has two implementations: `GameRepository` (Firestore, every write in a transaction that re-reads the game) and `GameLocalRepository` (in memory, also drives the AI).
+- **`GameNotifier`** creates or joins the game, listens to it, and serializes the player actions; failures are logged and shown as a "please retry" message.
 
-```bash
-flutter test --update-goldens
-```
+### Online data model
+
+- `games/{gameId}`: players (`fromId` plays X, `toId` plays O), status, board counters, scores, current round and player.
+- `games/{gameId}/moves/{round}:{cell}`: one document per move; its id makes a cell impossible to play twice in a round.
+
+[`firestore.rules`](firestore.rules) only allow a game to be joined once, a move to be created by the player whose turn it is, and never edited or deleted, and identities to stay unchanged.
+
+**Known limitation:** players are identified by the name they type, not by an account. The rules prevent taking over a game or rewriting its history, but a modified client could still play the opponent's turn. Closing that gap requires Firebase Authentication (anonymous sign-in is enough) and rules based on `request.auth.uid`.
 
 ---
 
-## 🧹 Qualité
+## Stack
 
-Pour analyser le code :
+- **flutter_riverpod / riverpod_annotation** (+ `riverpod_lint`) for state management and DI
+- **auto_route** for typed navigation
+- **freezed** + **json_serializable** for the immutable domain model
+- **Firebase Core** + **Cloud Firestore** for the online mode
+- **intl** + ARB files for i18n (English, French)
+- **google_fonts** (Raleway, bundled in `assets/google_fonts`)
+
+---
+
+## Development
 
 ```bash
+# Generated code (freezed, json, riverpod, auto_route)
+dart run build_runner build --delete-conflicting-outputs
+
+# Translations: edit lib/l10n/intl_*.arb; the Flutter Intl IDE plugin regenerates lib/generated
+
+# Static analysis, including riverpod_lint
 flutter analyze
+dart run custom_lint
 ```
 
-Pour vérifier la couverture:
+---
 
-Pré-requis : brew install lcov
+## Tests
+
+```bash
+flutter test                                   # everything
+flutter test --exclude-tags golden             # without goldens
+flutter test --tags golden --update-goldens    # regenerate goldens after an intended visual change
+```
+
+- **Unit tests** cover the rules, the AI, both repositories (Firestore through `fake_cloud_firestore`) and the game mode selection.
+- **Widget tests** drive the board screen through a robot (`_GameBoardScreenRobot`): scenarios read as player actions and selectors live in one place. Online scenarios play the opponent through a second `GameRepository` on the same fake database.
+- **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state in dark, light, large text and semantics views. They are CI goldens: text is drawn as blocks, so the images do not depend on the OS or the machine.
+
+Coverage, without generated files (requires `lcov`):
 
 ```bash
 flutter test --coverage
-
-# puis on enlève les fichiers générés du rapport
-lcov --remove coverage/lcov.info \
-  '**/*.g.dart' \
-  '**/*.freezed.dart' \
-  '**/*.gen.dart' \
-  '**/*.gr.dart' \
-  '**/*.mocks.dart' \
-  'lib/generated/**' \
-  -o coverage/lcov.info
-
-# puis on génère le HTML
+lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/*.gr.dart' 'lib/generated/**' -o coverage/lcov.info
 genhtml coverage/lcov.info -o coverage
-```
-
-![Coverage](docs/coverage.png)
-
----
-
-## 🗂️ Scripts utiles
-
-```bash
-# regénérer tout le code
-dart run build_runner build --delete-conflicting-outputs
-
-# analyser
-flutter analyze
-
-# lancer les tests
-flutter test
-
-# mettre à jour les goldens
-flutter test --update-goldens
 ```

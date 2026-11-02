@@ -7,7 +7,7 @@ part of 'game_modes_selection_provider.dart';
 // **************************************************************************
 
 String _$gameModesSelectionNotifierHash() =>
-    r'48611c626f742a10a110ae71c91c28cb84618cc1';
+    r'83ac18be5dca2d338386bd96bb8ee60562556609';
 
 /// See also [GameModesSelectionNotifier].
 @ProviderFor(GameModesSelectionNotifier)

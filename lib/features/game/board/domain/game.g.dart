@@ -30,6 +30,7 @@ Game _$GameFromJson(Map<String, dynamic> json) => Game(
       json['lastPlayAt'] == null
           ? null
           : DateTime.parse(json['lastPlayAt'] as String),
+  isOpponentAi: json['isOpponentAi'] as bool? ?? false,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
 );
@@ -48,6 +49,7 @@ Map<String, dynamic> _$GameToJson(Game instance) => <String, dynamic>{
   'currentPlayerId': instance.currentPlayerId,
   'currentWinnerId': instance.currentWinnerId,
   'lastPlayAt': instance.lastPlayAt?.toIso8601String(),
+  'isOpponentAi': instance.isOpponentAi,
   'updatedAt': instance.updatedAt.toIso8601String(),
   'createdAt': instance.createdAt.toIso8601String(),
 };

@@ -7,7 +7,7 @@ part of 'game_local_repository_provider.dart';
 // **************************************************************************
 
 String _$gameLocalRepositoryHash() =>
-    r'b262b64b06b6a2d0fbc9b613d12f2a17a622e23f';
+    r'7c57e8735a7f6687a6783e07f9f2a9bb426eab8d';
 
 /// See also [gameLocalRepository].
 @ProviderFor(gameLocalRepository)

@@ -9,16 +9,18 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:auto_route/auto_route.dart' as _i7;
-import 'package:flutter/material.dart' as _i8;
+import 'package:auto_route/auto_route.dart' as _i8;
+import 'package:flutter/material.dart' as _i9;
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart'
-    as _i9;
+    as _i10;
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart'
     as _i2;
 import 'package:tic_tac_toe_app/features/game/creation/presentation/game_create_offline_dialog.dart'
     as _i3;
 import 'package:tic_tac_toe_app/features/game/creation/presentation/game_create_online_dialog.dart'
     as _i4;
+import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_pilot.dart'
+    as _i7;
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_screen.dart'
     as _i6;
 import 'package:tic_tac_toe_app/shared/routing/empty_router.dart' as _i1;
@@ -26,13 +28,13 @@ import 'package:uuid/uuid.dart' as _i5;
 
 /// generated route for
 /// [_i1.EmptyRouter]
-class EmptyRouter extends _i7.PageRouteInfo<void> {
-  const EmptyRouter({List<_i7.PageRouteInfo>? children})
+class EmptyRouter extends _i8.PageRouteInfo<void> {
+  const EmptyRouter({List<_i8.PageRouteInfo>? children})
     : super(EmptyRouter.name, initialChildren: children);
 
   static const String name = 'EmptyRouter';
 
-  static _i7.PageInfo page = _i7.PageInfo(
+  static _i8.PageInfo page = _i8.PageInfo(
     name,
     builder: (data) {
       return const _i1.EmptyRouter();
@@ -42,11 +44,11 @@ class EmptyRouter extends _i7.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i2.GameBoardScreen]
-class GameBoardScreenRoute extends _i7.PageRouteInfo<GameBoardScreenRouteArgs> {
+class GameBoardScreenRoute extends _i8.PageRouteInfo<GameBoardScreenRouteArgs> {
   GameBoardScreenRoute({
-    _i8.Key? key,
-    required _i9.GameCreateInput input,
-    List<_i7.PageRouteInfo>? children,
+    _i9.Key? key,
+    required _i10.GameCreateInput input,
+    List<_i8.PageRouteInfo>? children,
   }) : super(
          GameBoardScreenRoute.name,
          args: GameBoardScreenRouteArgs(key: key, input: input),
@@ -55,7 +57,7 @@ class GameBoardScreenRoute extends _i7.PageRouteInfo<GameBoardScreenRouteArgs> {
 
   static const String name = 'GameBoardScreenRoute';
 
-  static _i7.PageInfo page = _i7.PageInfo(
+  static _i8.PageInfo page = _i8.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<GameBoardScreenRouteArgs>();
@@ -67,9 +69,9 @@ class GameBoardScreenRoute extends _i7.PageRouteInfo<GameBoardScreenRouteArgs> {
 class GameBoardScreenRouteArgs {
   const GameBoardScreenRouteArgs({this.key, required this.input});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
-  final _i9.GameCreateInput input;
+  final _i10.GameCreateInput input;
 
   @override
   String toString() {
@@ -80,11 +82,11 @@ class GameBoardScreenRouteArgs {
 /// generated route for
 /// [_i3.GameCreateOfflineDialog]
 class GameCreateOfflineDialogRoute
-    extends _i7.PageRouteInfo<GameCreateOfflineDialogRouteArgs> {
+    extends _i8.PageRouteInfo<GameCreateOfflineDialogRouteArgs> {
   GameCreateOfflineDialogRoute({
-    _i8.Key? key,
+    _i9.Key? key,
     bool vsAi = false,
-    List<_i7.PageRouteInfo>? children,
+    List<_i8.PageRouteInfo>? children,
   }) : super(
          GameCreateOfflineDialogRoute.name,
          args: GameCreateOfflineDialogRouteArgs(key: key, vsAi: vsAi),
@@ -93,7 +95,7 @@ class GameCreateOfflineDialogRoute
 
   static const String name = 'GameCreateOfflineDialogRoute';
 
-  static _i7.PageInfo page = _i7.PageInfo(
+  static _i8.PageInfo page = _i8.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<GameCreateOfflineDialogRouteArgs>(
@@ -107,7 +109,7 @@ class GameCreateOfflineDialogRoute
 class GameCreateOfflineDialogRouteArgs {
   const GameCreateOfflineDialogRouteArgs({this.key, this.vsAi = false});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   final bool vsAi;
 
@@ -120,11 +122,11 @@ class GameCreateOfflineDialogRouteArgs {
 /// generated route for
 /// [_i4.GameCreateOnlineDialog]
 class GameCreateOnlineDialogRoute
-    extends _i7.PageRouteInfo<GameCreateOnlineDialogRouteArgs> {
+    extends _i8.PageRouteInfo<GameCreateOnlineDialogRouteArgs> {
   GameCreateOnlineDialogRoute({
-    _i8.Key? key,
+    _i9.Key? key,
     _i5.Uuid uuid = const _i5.Uuid(),
-    List<_i7.PageRouteInfo>? children,
+    List<_i8.PageRouteInfo>? children,
   }) : super(
          GameCreateOnlineDialogRoute.name,
          args: GameCreateOnlineDialogRouteArgs(key: key, uuid: uuid),
@@ -133,7 +135,7 @@ class GameCreateOnlineDialogRoute
 
   static const String name = 'GameCreateOnlineDialogRoute';
 
-  static _i7.PageInfo page = _i7.PageInfo(
+  static _i8.PageInfo page = _i8.PageInfo(
     name,
     builder: (data) {
       final args = data.argsAs<GameCreateOnlineDialogRouteArgs>(
@@ -150,7 +152,7 @@ class GameCreateOnlineDialogRouteArgs {
     this.uuid = const _i5.Uuid(),
   });
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   final _i5.Uuid uuid;
 
@@ -162,16 +164,43 @@ class GameCreateOnlineDialogRouteArgs {
 
 /// generated route for
 /// [_i6.GameModeSelectionScreen]
-class GameModeSelectionScreenRoute extends _i7.PageRouteInfo<void> {
-  const GameModeSelectionScreenRoute({List<_i7.PageRouteInfo>? children})
-    : super(GameModeSelectionScreenRoute.name, initialChildren: children);
+class GameModeSelectionScreenRoute
+    extends _i8.PageRouteInfo<GameModeSelectionScreenRouteArgs> {
+  GameModeSelectionScreenRoute({
+    _i9.Key? key,
+    _i7.GameModesSelectionPilot pilot = const _i7.GameModesSelectionPilot(),
+    List<_i8.PageRouteInfo>? children,
+  }) : super(
+         GameModeSelectionScreenRoute.name,
+         args: GameModeSelectionScreenRouteArgs(key: key, pilot: pilot),
+         initialChildren: children,
+       );
 
   static const String name = 'GameModeSelectionScreenRoute';
 
-  static _i7.PageInfo page = _i7.PageInfo(
+  static _i8.PageInfo page = _i8.PageInfo(
     name,
     builder: (data) {
-      return const _i6.GameModeSelectionScreen();
+      final args = data.argsAs<GameModeSelectionScreenRouteArgs>(
+        orElse: () => const GameModeSelectionScreenRouteArgs(),
+      );
+      return _i6.GameModeSelectionScreen(key: args.key, pilot: args.pilot);
     },
   );
+}
+
+class GameModeSelectionScreenRouteArgs {
+  const GameModeSelectionScreenRouteArgs({
+    this.key,
+    this.pilot = const _i7.GameModesSelectionPilot(),
+  });
+
+  final _i9.Key? key;
+
+  final _i7.GameModesSelectionPilot pilot;
+
+  @override
+  String toString() {
+    return 'GameModeSelectionScreenRouteArgs{key: $key, pilot: $pilot}';
+  }
 }

@@ -463,6 +463,36 @@ class I18n {
       args: [row, column],
     );
   }
+
+  /// `Turn: {player}`
+  String turnOf(Object player) {
+    return Intl.message(
+      'Turn: $player',
+      name: 'turnOf',
+      desc: '',
+      args: [player],
+    );
+  }
+
+  /// `Online mode is unavailable in this build.`
+  String get onlineUnavailable {
+    return Intl.message(
+      'Online mode is unavailable in this build.',
+      name: 'onlineUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This game already has two players.`
+  String get gameAlreadyFull {
+    return Intl.message(
+      'This game already has two players.',
+      name: 'gameAlreadyFull',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<I18n> {

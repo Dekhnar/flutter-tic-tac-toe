@@ -1,5 +1,5 @@
 name: tic_tac_toe_app
-description: A new Flutter project.
+description: Tic-tac-toe played online (Firestore), locally, or against an AI.
 
 publish_to: "none"
 
@@ -17,28 +17,24 @@ dependencies:
   firebase_core: ^4.2.0
   cloud_firestore: ^6.0.3
 
-  # Traductions
+  # Translations
   flutter_localizations:
     sdk: flutter
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # State Management
-  hooks_riverpod: ^2.6.1
-  flutter_hooks: ^0.21.2
+  flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
 
-  #Routing
+  # Routing
   auto_route: 10.0.1
 
-  #UI
+  # UI
   google_fonts: ^6.3.1
 
   freezed_annotation: ^3.1.0
-  built_value: ^8.10.1
-  built_collection: ^5.1.1
 
   uuid: ^4.5.2
-  fake_cloud_firestore: ^4.0.0
   clock: ^1.1.2
 
 dev_dependencies:
@@ -46,20 +42,14 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   build_runner: ^2.5.4
-  source_gen: ^2.0.0
   auto_route_generator: 10.0.1
   custom_lint: ^0.7.5
   riverpod_generator: ^2.6.5
   riverpod_lint: ^2.6.5
   json_serializable: ^6.7.1
   freezed: ^3.1.0
-  built_value_generator: ^8.10.1
-  mocktail: ^1.0.4
-  golden_toolkit: ^0.15.0
-  meta: ^1.16.0
-
-dependency_overrides:
-  analyzer_plugin: ^0.13.4 # compatible analyzer ^7.5.1
+  fake_cloud_firestore: ^4.0.0
+  alchemist: ^0.14.0
 
 flutter:
   uses-material-design: true

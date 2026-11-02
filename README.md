@@ -34,7 +34,7 @@ Run the app on two simulators or emulators to play against yourself. The Android
 
 ### Online mode on a Firebase project
 
-1. Create a Firebase project, enable **Firestore** and the **Anonymous** sign-in provider, and register the Android and/or Apple apps.
+1. Create a Firebase project, enable **Firestore** and the **Anonymous** sign-in provider, and register the Android and/or Apple apps: both use the identifier `io.github.dekhnar.tictactoe`.
 2. Copy [`firebase_options.example.json`](firebase_options.example.json) to `firebase_options.json` (git-ignored) and fill it with the values of each app (Firebase console → Project settings → Your apps).
 3. Deploy the security rules: `firebase deploy --only firestore:rules`.
 4. Let Firestore delete games 30 days after their creation, with a [TTL policy](https://firebase.google.com/docs/firestore/ttl) on `expiresAt`:
@@ -48,7 +48,20 @@ On a real project (never on the emulators), the app also turns on:
 - **Crashlytics**, collecting from release builds only; nothing is collected before the app enables it. Android does not upload the R8 mapping, which needs `google-services.json`: enable `mappingFileUploadEnabled` in `android/app/build.gradle.kts` once the project has one. For symbolicated iOS reports, add Crashlytics' dSYM upload script to the Runner build phases.
 - **App Check**, with Play Integrity on Android and App Attest (DeviceCheck as a fallback) on Apple platforms; debug builds use the debug providers, whose token the console must allow. Register the apps in App Check, then turn on enforcement for Firestore and Auth.
 
-Only Android, iOS and macOS read these options; other platforms run offline. **macOS:** Firebase Auth stores its session in the keychain, which needs the *Keychain Sharing* capability, and so a development team: enable it in Xcode (Runner → Signing & Capabilities). Without it, signing in fails and the home screen asks to retry.
+### Release builds
+
+Android signs release builds with the upload key that `android/key.properties` (git-ignored) describes:
+
+```properties
+storeFile=/absolute/path/to/upload-keystore.jks
+storePassword=…
+keyAlias=upload
+keyPassword=…
+```
+
+Without that file, Gradle warns and signs with the debug key, so that `flutter run --release` still works on a developer machine. Apple platforms sign with the team set in Xcode.
+
+Only Android, iOS and macOS read the Firebase options; other platforms run offline. **macOS:** Firebase Auth stores its session in the keychain, which needs the *Keychain Sharing* capability, and so a development team: enable it in Xcode (Runner → Signing & Capabilities). Without it, signing in fails and the home screen asks to retry.
 
 ---
 
@@ -74,7 +87,7 @@ lib/
 ```
 
 - **`GameRules`** is the single source of truth for every change a game goes through — joining, starting, a move, the next round, leaving — on a `Game` that only holds game concepts (players, board, scores, round). A refusal throws the `GameException` that says why. Both repositories only store what it returns, and the security rules check the same rules on the server.
-- **One composition root.** The domain declares the repositories and the player identity as providers that throw until bound (`game_providers.dart`). [`composition.dart`](lib/composition.dart) starts what the app needs before its first frame and binds every contract — the online ones only when Firebase is initialized — and the one `ErrorLogger` the error handlers and the provider observer share (Crashlytics on a real project). Nothing else imports an implementation.
+- **One composition root.** The domain is plain Dart: it declares the repositories and the player identity as interfaces, which the application exposes as providers that throw until bound (`game_dependencies.dart`). [`composition.dart`](lib/composition.dart) starts what the app needs before its first frame and binds every contract — the online ones only when Firebase is initialized — and the one `ErrorLogger` the error handlers and the provider observer share (Crashlytics on a real project). Nothing else imports an implementation.
 - **The home screen starts a `GameSession`** through `GameSessionStarter`: it creates the local game, or signs in anonymously and creates or joins the online one. The home notifier is loading meanwhile (a barrier covers the modes) and holds the error when it fails (unknown code, game already full), which the screen shows.
 - **On the board, `gameProvider` only watches the game** and **`GameActions` acts on it**: loading while the repository handles a move, a start or a new round — the board takes no other action meanwhile — and the error when it refused, shown as a message.
 - **The AI is a player of the application layer**: `aiOpponentProvider` watches the game and, on the AI's turn, plays the move `TicTacToeAI` picks through `GameActions`, after a thinking time. It stops when the board closes. Which seat the AI plays belongs to the `GameSession`, not to the game.
@@ -84,7 +97,7 @@ lib/
 
 ### Online data model and security rules
 
-One document per game, `games/{gameId}`: the game id is the code players share, six characters without the ones read alike (0/O, 1/I); the creation picks one no other game uses. It holds the players (`fromId` plays X, `toId` plays O) and their names, the status, the scores, the current round and player, the board as nine cells (`'X'`, `'O'` or `''`), and what only the server needs: when it was written and `expiresAt`.
+One document per game, `games/{gameId}`: the game id is the code players share, six characters without the ones read alike (0/O, 1/I); the creation picks one no other game uses. It holds the players (`hostId` plays X, `guestId` plays O) and their names, the status, the scores, the current round and player, the board as nine cells (`'X'`, `'O'` or `''`), and what only the server needs: when it was written and `expiresAt`.
 
 [`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write the app makes is a `GameWrite` listing the fields it changes — the same lists [`firestore.rules`](firestore.rules) allow, write by write — and the rules refuse anything else; a test reads `firestore.rules` to keep the two lists equal, and checks that the server pins every time a write carries. Games can be read with their code but never listed. Names count at most 20 UTF-16 code units, as the rules count them. A move must come from the signed-in player whose turn it is, and is checked against the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and only the winner scores. The integration tests exercise these rules on the emulator, including a cheating client.
 

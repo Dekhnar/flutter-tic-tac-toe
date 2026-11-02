@@ -43,7 +43,7 @@ final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
       final gameRef = _gameRef(gameId);
       if ((await transaction.get(gameRef)).exists) continue;
 
-      final game = Game(currentPlayerId: host, fromId: host, fromName: hostName, id: gameId, status: GameStatus.setup);
+      final game = Game(currentPlayerId: host, hostId: host, hostName: hostName, id: gameId, status: GameStatus.setup);
       transaction.set(gameRef, GameDocument.write(GameWrite.create, game, expiresAt: _clock.now().add(lifetime)));
       return gameId;
     }

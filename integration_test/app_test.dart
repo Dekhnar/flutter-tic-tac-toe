@@ -33,7 +33,6 @@ void main() {
       await robot.chooseMode(i18n.local1v1);
       await robot.enterNames(['Jessy', 'Mario']);
       await robot.tapText(i18n.start);
-      await robot.tapText(i18n.startGame);
 
       await robot.play([0, 3, 1, 4, 2]);
       await robot.waitFor(find.text(i18n.playerWins('Jessy (X)')));
@@ -49,7 +48,6 @@ void main() {
       await robot.chooseMode(i18n.soloVsAi);
       await robot.enterNames(['Jessy']);
       await robot.tapText(i18n.start);
-      await robot.tapText(i18n.startGame);
 
       await robot.play([0]);
       await robot.waitFor(find.text('O'));
@@ -133,7 +131,7 @@ void main() {
       ]);
 
       final game = (await opponent.gameRef(gameId).get()).data();
-      expect((game?['currentRoundIndex'], game?['status'], game?['fromWinCount']), (1, 'playing', 1));
+      expect((game?['currentRoundIndex'], game?['status'], game?['hostWinCount']), (1, 'playing', 1));
     }, skip: !online);
 
     test('two players joining at once: one takes the seat, the other is told the game is full', () async {
@@ -144,7 +142,7 @@ void main() {
           .then<Object?>((_) => device.id, onError: (Object error) => error);
       final outcomes = await Future.wait([join(cheater, 'Wario'), join(latecomer, 'Waluigi')]);
 
-      final seated = (await opponent.gameRef(gameId).get()).data()?['toId'];
+      final seated = (await opponent.gameRef(gameId).get()).data()?['guestId'];
       expect(outcomes.where((outcome) => outcome is PlayerId && outcome.value == seated), hasLength(1));
       expect(outcomes.whereType<GameAlreadyFullException>(), hasLength(1));
     }, skip: !online);
@@ -168,7 +166,7 @@ void main() {
       test('taking the seat of a player who already joined', () async {
         await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
 
-        await expectDenied(opponent.gameRef(gameId).update({'toId': opponent.id.value, 'toName': 'Luigi'}));
+        await expectDenied(opponent.gameRef(gameId).update({'guestId': opponent.id.value, 'guestName': 'Luigi'}));
       }, skip: !online);
 
       test('a name longer than 20 UTF-16 code units, which a few flags reach', () async {
@@ -183,8 +181,8 @@ void main() {
         await opponent.repository.leaveGame(gameId);
         await expectDenied(
           cheater.gameRef(gameId).update({
-            GameField.toId.name: cheater.id.value,
-            GameField.toName.name: 'Wario',
+            GameField.guestId.name: cheater.id.value,
+            GameField.guestName.name: 'Wario',
             GameField.updatedAt.name: FieldValue.serverTimestamp(),
           }),
         );
@@ -236,7 +234,7 @@ void main() {
           opponent.play(gameId, _board(x: [0]), {
             GameField.status: GameStatus.finished.name,
             GameField.currentWinnerId: opponent.id.value,
-            GameField.fromWinCount: 1,
+            GameField.hostWinCount: 1,
           }),
         );
 
@@ -247,7 +245,7 @@ void main() {
         await expectDenied(cheater.play(gameId, _board(o: [0]), {GameField.currentPlayerId: opponent.id.value}));
 
         // A score edit outside any move is refused.
-        await expectDenied(opponent.gameRef(gameId).update({GameField.fromWinCount.name: 5}));
+        await expectDenied(opponent.gameRef(gameId).update({GameField.hostWinCount.name: 5}));
       }, skip: !online);
 
       test('a game with a field the app never writes, or that would outlive its 30 days', () async {
@@ -255,8 +253,8 @@ void main() {
           GameWrite.create,
           Game(
             currentPlayerId: cheater.id,
-            fromId: cheater.id,
-            fromName: 'Wario',
+            hostId: cheater.id,
+            hostName: 'Wario',
             id: gameId,
             status: GameStatus.setup,
           ),

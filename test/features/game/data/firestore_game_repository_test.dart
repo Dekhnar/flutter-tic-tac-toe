@@ -62,9 +62,9 @@ void main() {
 
       final game = await host
           .watchGame(gameId)
-          .firstWhere((game) => game.toId != null)
+          .firstWhere((game) => game.guestId != null)
           .timeout(const Duration(seconds: 1));
-      expect((game.toId, game.toName, game.markOf(_luigi)), (_luigi, 'Luigi', CellMark.O));
+      expect((game.guestId, game.guestName, game.markOf(_luigi)), (_luigi, 'Luigi', CellMark.O));
     });
 
     test('fails when nobody created a game with this code', () {
@@ -82,7 +82,7 @@ void main() {
         FirestoreGameRepository(firestore: firestore).joinGame(gameId, guest: _mario, guestName: 'Mario'),
         throwsA(isA<GameAlreadyFullException>()),
       );
-      expect((await storedGame()).toId, _luigi);
+      expect((await storedGame()).guestId, _luigi);
     });
 
     test('again, from the same device, comes back to the same seat', () async {
@@ -90,7 +90,7 @@ void main() {
 
       await guest.joinGame(gameId, guest: _luigi, guestName: 'Luigi');
 
-      expect((await storedGame()).toId, _luigi);
+      expect((await storedGame()).guestId, _luigi);
     });
   });
 
@@ -209,7 +209,7 @@ void main() {
       final stored = await storedGame(marks: 5);
       expect(stored.status, GameStatus.finished);
       expect(stored.currentWinnerId, _jessy);
-      expect((stored.fromWinCount, stored.toWinCount), (1, 0));
+      expect((stored.hostWinCount, stored.guestWinCount), (1, 0));
     });
   });
 

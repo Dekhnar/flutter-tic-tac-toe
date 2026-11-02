@@ -5,7 +5,7 @@ import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 

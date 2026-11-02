@@ -15,17 +15,13 @@ void main() {
     addTearDown(repository.dispose);
   });
 
-  Future<GameId> startGame() async {
-    final gameId = await repository.createGame(guestName: 'Mario', hostName: 'Jessy');
-    await repository.startGame(gameId: gameId);
-    return gameId;
-  }
+  Future<GameId> startGame() => repository.createGame(guestName: 'Mario', hostName: 'Jessy');
 
-  test('a new game seats the host as X, who plays first', () async {
+  test('a new game starts at once, the host playing X and first', () async {
     final gameId = await repository.createGame(guestName: 'Mario', hostName: 'Jessy');
 
     final game = await repository.watchGame(gameId).first;
-    expect(game.status, GameStatus.setup);
+    expect(game.status, GameStatus.playing);
     expect(game.currentPlayerId, _host);
     expect((game.nameOf(_host), game.markOf(_host)), ('Jessy', CellMark.X));
     expect((game.nameOf(_guest), game.markOf(_guest)), ('Mario', CellMark.O));

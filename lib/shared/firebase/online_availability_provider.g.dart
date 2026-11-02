@@ -8,15 +8,15 @@ part of 'online_availability_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Whether Firebase is initialized; `main` overrides it once the initialization settled.
+/// Whether Firebase is initialized: `composition.dart` binds it once the initialization settled.
 
 @ProviderFor(isOnlineAvailable)
 const isOnlineAvailableProvider = IsOnlineAvailableProvider._();
 
-/// Whether Firebase is initialized; `main` overrides it once the initialization settled.
+/// Whether Firebase is initialized: `composition.dart` binds it once the initialization settled.
 
 final class IsOnlineAvailableProvider extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
-  /// Whether Firebase is initialized; `main` overrides it once the initialization settled.
+  /// Whether Firebase is initialized: `composition.dart` binds it once the initialization settled.
   const IsOnlineAvailableProvider._()
     : super(
         from: null,
@@ -46,4 +46,4 @@ final class IsOnlineAvailableProvider extends $FunctionalProvider<bool, bool, bo
   }
 }
 
-String _$isOnlineAvailableHash() => r'ff5d6115db01b373cd252a7d44c3cea689dd9210';
+String _$isOnlineAvailableHash() => r'411219dd7b3fbe66550932dd3ce63a54f8677d09';

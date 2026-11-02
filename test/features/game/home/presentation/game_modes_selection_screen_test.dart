@@ -12,7 +12,7 @@ import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
@@ -108,7 +108,7 @@ void main() {
     expect(find.text(i18n.onlineGame), findsNothing);
   });
 
-  testWidgets('a local game set up in the dialog opens on its board', (tester) async {
+  testWidgets('a local game set up in the dialog opens on its board, ready to play', (tester) async {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
 
@@ -118,7 +118,7 @@ void main() {
 
     expect(find.text('Jessy (X)'), findsOneWidget);
     expect(find.text('Mario (O)'), findsOneWidget);
-    expect(find.text(i18n.startGame), findsOneWidget);
+    expect(find.text(i18n.turnOf('Jessy (X)')), findsOneWidget);
   });
 
   testWidgets('leaving the board of a local game forgets the game', (tester) async {
@@ -232,7 +232,7 @@ void main() {
     await robot.tapText(i18n.start);
 
     expect(find.text(i18n.nameTooLong(PlayerName.maxLength)), findsOneWidget);
-    expect(find.text(i18n.startGame), findsNothing);
+    expect(find.text('Mario (O)'), findsNothing);
   });
 
   testWidgets('joining a game that already has two players says so and stays on the home screen', (tester) async {

@@ -18,32 +18,32 @@ class GameCreateOfflineDialog extends StatefulWidget {
 class _GameCreateOfflineDialogState extends State<GameCreateOfflineDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _fromNameController = TextEditingController();
-  final TextEditingController _toNameController = TextEditingController();
+  final TextEditingController _hostNameController = TextEditingController();
+  final TextEditingController _guestNameController = TextEditingController();
 
-  final FocusNode _fromFocusNode = FocusNode();
-  final FocusNode _toFocusNode = FocusNode();
+  final FocusNode _hostFocusNode = FocusNode();
+  final FocusNode _guestFocusNode = FocusNode();
 
   bool get _isVsAi => widget.vsAi;
 
   @override
   void dispose() {
-    _fromNameController.dispose();
-    _toNameController.dispose();
-    _fromFocusNode.dispose();
-    _toFocusNode.dispose();
+    _hostNameController.dispose();
+    _guestNameController.dispose();
+    _hostFocusNode.dispose();
+    _guestFocusNode.dispose();
     super.dispose();
   }
 
   void _handleSubmit(BuildContext context) {
     if (_formKey.currentState?.validate() != true) return;
 
-    final fromName = _fromNameController.text.trim();
-    final toName = _toNameController.text.trim();
+    final hostName = _hostNameController.text.trim();
+    final guestName = _guestNameController.text.trim();
 
     context.router.pop(switch (_isVsAi) {
-      true => GameCreateInput.offlineVsAi(hostName: fromName),
-      false => GameCreateInput.offline(guestName: toName, hostName: fromName),
+      true => GameCreateInput.offlineVsAi(hostName: hostName),
+      false => GameCreateInput.offline(guestName: guestName, hostName: hostName),
     });
   }
 
@@ -59,18 +59,18 @@ class _GameCreateOfflineDialogState extends State<GameCreateOfflineDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             PlayerNameField(
-              controller: _fromNameController,
-              focusNode: _fromFocusNode,
+              controller: _hostNameController,
+              focusNode: _hostFocusNode,
               label: I18n.of(context).playerOneFirstName,
               mark: CellMark.X,
               textInputAction: _isVsAi ? TextInputAction.done : TextInputAction.next,
-              onSubmitted: _isVsAi ? () => _handleSubmit(context) : _toFocusNode.requestFocus,
+              onSubmitted: _isVsAi ? () => _handleSubmit(context) : _guestFocusNode.requestFocus,
             ),
             if (!_isVsAi) ...[
               const SizedBox(height: Dimens.halfSpacing),
               PlayerNameField(
-                controller: _toNameController,
-                focusNode: _toFocusNode,
+                controller: _guestNameController,
+                focusNode: _guestFocusNode,
                 label: I18n.of(context).playerTwoFirstName,
                 mark: CellMark.O,
                 textInputAction: TextInputAction.done,

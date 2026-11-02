@@ -28,7 +28,7 @@ class GameHeader extends ConsumerWidget {
     final colors = theme.colorScheme;
     final nameStyle = theme.textTheme.headlineMedium?.copyWith(color: colors.onInverseSurface);
     final scoreStyle = theme.textTheme.headlineMedium?.copyWith(color: colors.inversePrimary);
-    final opponentId = game.toId;
+    final opponentId = game.guestId;
 
     String playerLabel(PlayerId player) =>
         i18n.playerWithMark(session.isAi(game, player) ? i18n.ai : game.nameOf(player), game.markOf(player).name);
@@ -48,8 +48,8 @@ class GameHeader extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(playerLabel(game.fromId), style: nameStyle, overflow: TextOverflow.ellipsis),
-                      Text(score(game.fromWinCount), style: scoreStyle),
+                      Text(playerLabel(game.hostId), style: nameStyle, overflow: TextOverflow.ellipsis),
+                      Text(score(game.hostWinCount), style: scoreStyle),
                     ],
                   ),
                 ),
@@ -59,7 +59,7 @@ class GameHeader extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(playerLabel(opponentId), style: nameStyle, overflow: TextOverflow.ellipsis),
-                        Text(score(game.toWinCount), style: scoreStyle),
+                        Text(score(game.guestWinCount), style: scoreStyle),
                       ],
                     ),
                   ),

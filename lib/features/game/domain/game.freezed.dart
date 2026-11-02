@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Game {
 
- Board get board; PlayerId get currentPlayerId; int get currentRoundIndex; PlayerId? get currentWinnerId; PlayerId get fromId; String get fromName; int get fromWinCount; GameId get id; GameStatus get status; PlayerId? get toId; String? get toName; int get toWinCount;
+ Board get board; PlayerId get currentPlayerId; int get currentRoundIndex; PlayerId? get currentWinnerId; PlayerId? get guestId; String? get guestName; int get guestWinCount; PlayerId get hostId; String get hostName; int get hostWinCount; GameId get id; GameStatus get status;
 /// Create a copy of Game
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $GameCopyWith<Game> get copyWith => _$GameCopyWithImpl<Game>(this as Game, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Game&&(identical(other.board, board) || other.board == board)&&(identical(other.currentPlayerId, currentPlayerId) || other.currentPlayerId == currentPlayerId)&&(identical(other.currentRoundIndex, currentRoundIndex) || other.currentRoundIndex == currentRoundIndex)&&(identical(other.currentWinnerId, currentWinnerId) || other.currentWinnerId == currentWinnerId)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.fromName, fromName) || other.fromName == fromName)&&(identical(other.fromWinCount, fromWinCount) || other.fromWinCount == fromWinCount)&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.toName, toName) || other.toName == toName)&&(identical(other.toWinCount, toWinCount) || other.toWinCount == toWinCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Game&&(identical(other.board, board) || other.board == board)&&(identical(other.currentPlayerId, currentPlayerId) || other.currentPlayerId == currentPlayerId)&&(identical(other.currentRoundIndex, currentRoundIndex) || other.currentRoundIndex == currentRoundIndex)&&(identical(other.currentWinnerId, currentWinnerId) || other.currentWinnerId == currentWinnerId)&&(identical(other.guestId, guestId) || other.guestId == guestId)&&(identical(other.guestName, guestName) || other.guestName == guestName)&&(identical(other.guestWinCount, guestWinCount) || other.guestWinCount == guestWinCount)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.hostName, hostName) || other.hostName == hostName)&&(identical(other.hostWinCount, hostWinCount) || other.hostWinCount == hostWinCount)&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,board,currentPlayerId,currentRoundIndex,currentWinnerId,fromId,fromName,fromWinCount,id,status,toId,toName,toWinCount);
+int get hashCode => Object.hash(runtimeType,board,currentPlayerId,currentRoundIndex,currentWinnerId,guestId,guestName,guestWinCount,hostId,hostName,hostWinCount,id,status);
 
 @override
 String toString() {
-  return 'Game(board: $board, currentPlayerId: $currentPlayerId, currentRoundIndex: $currentRoundIndex, currentWinnerId: $currentWinnerId, fromId: $fromId, fromName: $fromName, fromWinCount: $fromWinCount, id: $id, status: $status, toId: $toId, toName: $toName, toWinCount: $toWinCount)';
+  return 'Game(board: $board, currentPlayerId: $currentPlayerId, currentRoundIndex: $currentRoundIndex, currentWinnerId: $currentWinnerId, guestId: $guestId, guestName: $guestName, guestWinCount: $guestWinCount, hostId: $hostId, hostName: $hostName, hostWinCount: $hostWinCount, id: $id, status: $status)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $GameCopyWith<$Res>  {
   factory $GameCopyWith(Game value, $Res Function(Game) _then) = _$GameCopyWithImpl;
 @useResult
 $Res call({
- Board board, PlayerId currentPlayerId, int currentRoundIndex, PlayerId? currentWinnerId, PlayerId fromId, String fromName, int fromWinCount, GameId id, GameStatus status, PlayerId? toId, String? toName, int toWinCount
+ Board board, PlayerId currentPlayerId, int currentRoundIndex, PlayerId? currentWinnerId, PlayerId? guestId, String? guestName, int guestWinCount, PlayerId hostId, String hostName, int hostWinCount, GameId id, GameStatus status
 });
 
 
@@ -62,21 +62,21 @@ class _$GameCopyWithImpl<$Res>
 
 /// Create a copy of Game
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? board = null,Object? currentPlayerId = null,Object? currentRoundIndex = null,Object? currentWinnerId = freezed,Object? fromId = null,Object? fromName = null,Object? fromWinCount = null,Object? id = null,Object? status = null,Object? toId = freezed,Object? toName = freezed,Object? toWinCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? board = null,Object? currentPlayerId = null,Object? currentRoundIndex = null,Object? currentWinnerId = freezed,Object? guestId = freezed,Object? guestName = freezed,Object? guestWinCount = null,Object? hostId = null,Object? hostName = null,Object? hostWinCount = null,Object? id = null,Object? status = null,}) {
   return _then(Game(
 board: null == board ? _self.board : board // ignore: cast_nullable_to_non_nullable
 as Board,currentPlayerId: null == currentPlayerId ? _self.currentPlayerId : currentPlayerId // ignore: cast_nullable_to_non_nullable
 as PlayerId,currentRoundIndex: null == currentRoundIndex ? _self.currentRoundIndex : currentRoundIndex // ignore: cast_nullable_to_non_nullable
 as int,currentWinnerId: freezed == currentWinnerId ? _self.currentWinnerId : currentWinnerId // ignore: cast_nullable_to_non_nullable
-as PlayerId?,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
-as PlayerId,fromName: null == fromName ? _self.fromName : fromName // ignore: cast_nullable_to_non_nullable
-as String,fromWinCount: null == fromWinCount ? _self.fromWinCount : fromWinCount // ignore: cast_nullable_to_non_nullable
+as PlayerId?,guestId: freezed == guestId ? _self.guestId : guestId // ignore: cast_nullable_to_non_nullable
+as PlayerId?,guestName: freezed == guestName ? _self.guestName : guestName // ignore: cast_nullable_to_non_nullable
+as String?,guestWinCount: null == guestWinCount ? _self.guestWinCount : guestWinCount // ignore: cast_nullable_to_non_nullable
+as int,hostId: null == hostId ? _self.hostId : hostId // ignore: cast_nullable_to_non_nullable
+as PlayerId,hostName: null == hostName ? _self.hostName : hostName // ignore: cast_nullable_to_non_nullable
+as String,hostWinCount: null == hostWinCount ? _self.hostWinCount : hostWinCount // ignore: cast_nullable_to_non_nullable
 as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as GameId,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GameStatus,toId: freezed == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
-as PlayerId?,toName: freezed == toName ? _self.toName : toName // ignore: cast_nullable_to_non_nullable
-as String?,toWinCount: null == toWinCount ? _self.toWinCount : toWinCount // ignore: cast_nullable_to_non_nullable
-as int,
+as GameStatus,
   ));
 }
 

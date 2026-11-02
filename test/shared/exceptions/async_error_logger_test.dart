@@ -7,7 +7,7 @@ import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
@@ -35,7 +35,6 @@ void main() {
 
   test('a move the game refuses is reported once', () async {
     final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy');
-    await games.startGame(gameId: gameId);
     final session = GameSession.local(gameId: gameId);
     container.listen(gameProvider(session), (_, _) {});
     container.listen(gameActionsProvider(session), (_, _) {});

@@ -16,7 +16,7 @@ class RoundActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (status, hasOpponent) = ref.watch(
-      gameProvider(session).select((asyncGame) => (asyncGame.value?.status, asyncGame.value?.toId != null)),
+      gameProvider(session).select((asyncGame) => (asyncGame.value?.status, asyncGame.value?.guestId != null)),
     );
     final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
     GameActions actions() => ref.read(gameActionsProvider(session).notifier);

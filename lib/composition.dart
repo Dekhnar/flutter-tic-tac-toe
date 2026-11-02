@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tic_tac_toe_app/features/game/data/auth/firebase_player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';

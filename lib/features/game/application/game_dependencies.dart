@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 
-part 'game_providers.g.dart';
+part 'game_dependencies.g.dart';
 
 // Contracts the app binds in `lib/composition.dart`: the domain and the application never import an implementation.
 // An unbound contract throws: a missing binding fails loudly instead of degrading.

@@ -24,17 +24,17 @@ final class InMemoryGameRepository implements LocalGameRepositoryInterface {
   @override
   Future<GameId> createGame({required String guestName, required String hostName}) async {
     final gameId = GameId('local-${++_createdGames}');
-    _stores[gameId] = InMemoryStore<Game>(
-      Game(
-        currentPlayerId: hostId,
-        fromId: hostId,
-        fromName: hostName,
-        id: gameId,
-        status: GameStatus.setup,
-        toId: guestId,
-        toName: guestName,
-      ),
+    final seated = Game(
+      currentPlayerId: hostId,
+      guestId: guestId,
+      guestName: guestName,
+      hostId: hostId,
+      hostName: hostName,
+      id: gameId,
+      status: GameStatus.setup,
     );
+    // Both players are on this device from the start: nobody has to wait, the game starts at once.
+    _stores[gameId] = InMemoryStore<Game>(_rules.start(seated) ?? seated);
     return gameId;
   }
 

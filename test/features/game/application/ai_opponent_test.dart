@@ -7,7 +7,7 @@ import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 
 const _almostDoneThinking = Duration(milliseconds: 999);
 const _lastMillisecond = Duration(milliseconds: 1);
@@ -21,7 +21,6 @@ void main() {
     late GameId gameId;
     games.createGame(guestName: 'Mario', hostName: 'Jessy').then((id) => gameId = id);
     time.flushMicrotasks();
-    games.startGame(gameId: gameId);
     final session = GameSession.local(gameId: gameId, vsAi: vsAi);
     container.listen(gameProvider(session), (_, _) {});
     final ai = container.listen(aiOpponentProvider(session), (_, _) {});

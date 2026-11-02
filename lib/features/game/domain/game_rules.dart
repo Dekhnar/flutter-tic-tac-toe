@@ -11,16 +11,16 @@ final class GameRules {
   /// The game once [guest] took the free seat, or null when [guest] already plays it.
   Game? join(Game game, {required PlayerId guest, required String guestName}) {
     if (game.status == GameStatus.abandoned) throw GameAbandonedException();
-    if (guest == game.fromId || guest == game.toId) return null;
-    if (game.toId != null) throw GameAlreadyFullException();
+    if (guest == game.hostId || guest == game.guestId) return null;
+    if (game.guestId != null) throw GameAlreadyFullException();
 
-    return game.copyWith(toId: guest, toName: guestName);
+    return game.copyWith(guestId: guest, guestName: guestName);
   }
 
   /// The game once started, or null when it already is.
   Game? start(Game game) {
     if (game.status != GameStatus.setup) return null;
-    if (game.toId == null) throw MoveOpponentMissingException();
+    if (game.guestId == null) throw MoveOpponentMissingException();
 
     return game.copyWith(status: GameStatus.playing);
   }
@@ -30,8 +30,8 @@ final class GameRules {
     if (game.status == GameStatus.finished) throw MoveGameFinishedException();
     if (game.status == GameStatus.setup) throw MoveGameNotStartedException();
 
-    final toId = game.toId;
-    if (toId == null) throw MoveOpponentMissingException();
+    final guestId = game.guestId;
+    if (guestId == null) throw MoveOpponentMissingException();
     if (game.currentPlayerId != playerId) throw MoveNotYourTurnException();
     if (!cell.isOnBoard) throw MoveCellIndexInvalidException();
     if (game.board[cell] != null) throw MoveCellAlreadyTakenException();
@@ -42,14 +42,14 @@ final class GameRules {
     final hasLine = board.hasLine(mark);
 
     if (!hasLine && !board.isFull) {
-      return played.copyWith(currentPlayerId: playerId == game.fromId ? toId : game.fromId);
+      return played.copyWith(currentPlayerId: playerId == game.hostId ? guestId : game.hostId);
     }
 
     return played.copyWith(
       status: GameStatus.finished,
       currentWinnerId: hasLine ? playerId : null,
-      fromWinCount: game.fromWinCount + (hasLine && playerId == game.fromId ? 1 : 0),
-      toWinCount: game.toWinCount + (hasLine && playerId == toId ? 1 : 0),
+      hostWinCount: game.hostWinCount + (hasLine && playerId == game.hostId ? 1 : 0),
+      guestWinCount: game.guestWinCount + (hasLine && playerId == guestId ? 1 : 0),
     );
   }
 
@@ -57,13 +57,13 @@ final class GameRules {
   Game? startNewRound(Game game) {
     if (game.status != GameStatus.finished) return null;
 
-    final toId = game.toId;
-    if (toId == null) return null;
+    final guestId = game.guestId;
+    if (guestId == null) return null;
 
     final nextRoundIndex = game.currentRoundIndex + 1;
     return game.copyWith(
       board: Board.empty,
-      currentPlayerId: nextRoundIndex.isEven ? game.fromId : toId,
+      currentPlayerId: nextRoundIndex.isEven ? game.hostId : guestId,
       currentRoundIndex: nextRoundIndex,
       currentWinnerId: null,
       status: GameStatus.playing,

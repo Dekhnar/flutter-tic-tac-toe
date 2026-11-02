@@ -3,7 +3,8 @@ rules_version = '2';
 // Players sign in anonymously: request.auth.uid is the player id stored in the game.
 // Each kind of write the app makes has its own rule, with the exact fields it may change, and a move is checked against
 // the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and
-// only the winner scores. The field names are those of `GameField` (lib/features/game/board/data/dto/game_document.dart).
+// only the winner scores. The field names are those of `GameField` (lib/features/game/data/dto/game_document.dart), and
+// test/features/game/data/dto/game_document_rules_test.dart keeps each write's fields equal to its rule's.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /games/{gameId} {
@@ -41,7 +42,7 @@ service cloud.firestore {
       }
 
       function isPlayer() {
-        return request.auth.uid == before().fromId || request.auth.uid == before().toId;
+        return request.auth.uid == before().hostId || request.auth.uid == before().guestId;
       }
 
       // `size()` counts UTF-16 code units, as `PlayerName` does in the app.
@@ -60,35 +61,35 @@ service cloud.firestore {
         let game = request.resource.data;
         return signedIn()
           && game.keys().hasOnly([
-            'board', 'createdAt', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'expiresAt', 'fromId',
-            'fromName', 'fromWinCount', 'status', 'toId', 'toName', 'toWinCount', 'updatedAt'
+            'board', 'createdAt', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'expiresAt', 'hostId',
+            'hostName', 'hostWinCount', 'status', 'guestId', 'guestName', 'guestWinCount', 'updatedAt'
           ])
           && game.createdAt == request.time
           && game.updatedAt == request.time
           && game.expiresAt is timestamp
           && game.expiresAt > request.time
           && game.expiresAt <= request.time + duration.value(31, 'd')
-          && game.fromId == request.auth.uid
-          && isValidName(game.fromName)
-          && game.toId == null
-          && game.toName == null
+          && game.hostId == request.auth.uid
+          && isValidName(game.hostName)
+          && game.guestId == null
+          && game.guestName == null
           && game.status == 'setup'
-          && game.currentPlayerId == game.fromId
+          && game.currentPlayerId == game.hostId
           && game.currentRoundIndex == 0
           && game.currentWinnerId == null
-          && game.fromWinCount == 0
-          && game.toWinCount == 0
+          && game.hostWinCount == 0
+          && game.guestWinCount == 0
           && game.board == emptyBoard();
       }
 
       function isJoin() {
         return signedIn()
           && before().status == 'setup'
-          && before().toId == null
-          && request.auth.uid != before().fromId
-          && after().toId == request.auth.uid
-          && isValidName(after().toName)
-          && changedKeys().hasOnly(['toId', 'toName', 'updatedAt'])
+          && before().guestId == null
+          && request.auth.uid != before().hostId
+          && after().guestId == request.auth.uid
+          && isValidName(after().guestName)
+          && changedKeys().hasOnly(['guestId', 'guestName', 'updatedAt'])
           && isUpdatedNow();
       }
 
@@ -96,7 +97,7 @@ service cloud.firestore {
         return signedIn()
           && isPlayer()
           && before().status == 'setup'
-          && before().toId != null
+          && before().guestId != null
           && after().status == 'playing'
           && changedKeys().hasOnly(['status', 'updatedAt'])
           && isUpdatedNow();
@@ -113,12 +114,12 @@ service cloud.firestore {
       }
 
       function isMove() {
-        let mark = before().currentPlayerId == before().fromId ? 'X' : 'O';
+        let mark = before().currentPlayerId == before().hostId ? 'X' : 'O';
         return signedIn()
           && before().status == 'playing'
           && request.auth.uid == before().currentPlayerId
           && changedKeys().hasOnly([
-            'board', 'currentPlayerId', 'currentWinnerId', 'fromWinCount', 'lastPlayAt', 'status', 'toWinCount',
+            'board', 'currentPlayerId', 'currentWinnerId', 'hostWinCount', 'lastPlayAt', 'status', 'guestWinCount',
             'updatedAt'
           ])
           && isPlayedNow()
@@ -150,7 +151,7 @@ service cloud.firestore {
 
       function isOutcomeOf(board, mark) {
         let mover = before().currentPlayerId;
-        let opponent = mover == before().fromId ? before().toId : before().fromId;
+        let opponent = mover == before().hostId ? before().guestId : before().hostId;
         let won = hasLine(board, mark);
         let full = !board.hasAny(['']);
         return (won
@@ -165,13 +166,13 @@ service cloud.firestore {
       }
 
       function scoresUnchanged() {
-        return after().fromWinCount == before().fromWinCount && after().toWinCount == before().toWinCount;
+        return after().hostWinCount == before().hostWinCount && after().guestWinCount == before().guestWinCount;
       }
 
       function scoresWonBy(winner) {
-        return winner == before().fromId
-          ? after().fromWinCount == before().fromWinCount + 1 && after().toWinCount == before().toWinCount
-          : after().toWinCount == before().toWinCount + 1 && after().fromWinCount == before().fromWinCount;
+        return winner == before().hostId
+          ? after().hostWinCount == before().hostWinCount + 1 && after().guestWinCount == before().guestWinCount
+          : after().guestWinCount == before().guestWinCount + 1 && after().hostWinCount == before().hostWinCount;
       }
 
       function isNewRound() {
@@ -181,7 +182,7 @@ service cloud.firestore {
           && before().status == 'finished'
           && after().status == 'playing'
           && after().currentRoundIndex == nextRound
-          && after().currentPlayerId == (nextRound % 2 == 0 ? before().fromId : before().toId)
+          && after().currentPlayerId == (nextRound % 2 == 0 ? before().hostId : before().guestId)
           && after().currentWinnerId == null
           && after().board == emptyBoard()
           && scoresUnchanged()

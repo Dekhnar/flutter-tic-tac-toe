@@ -17,12 +17,12 @@ void main() {
       () => rules.applyMove(game: game, playerId: playerId, cell: Cell(cell));
 
   group('Joining', () {
-    final waiting = _startedGame().copyWith(status: GameStatus.setup, toId: null, toName: null);
+    final waiting = _startedGame().copyWith(status: GameStatus.setup, guestId: null, guestName: null);
 
     test('seats the guest in the free seat, by name', () {
       final joined = rules.join(waiting, guest: _o, guestName: 'Mario');
 
-      expect((joined?.toId, joined?.toName), (_o, 'Mario'));
+      expect((joined?.guestId, joined?.guestName), (_o, 'Mario'));
     });
 
     test('again, or as the host, changes nothing', () {
@@ -74,7 +74,7 @@ void main() {
     });
 
     test('is refused while no opponent has joined', () {
-      final alone = _startedGame().copyWith(status: GameStatus.setup, toId: null);
+      final alone = _startedGame().copyWith(status: GameStatus.setup, guestId: null);
 
       expect(() => rules.start(alone), throwsA(isA<MoveOpponentMissingException>()));
     });
@@ -113,7 +113,7 @@ void main() {
     });
 
     test('is refused while no opponent has joined', () {
-      final alone = _startedGame().copyWith(toId: null);
+      final alone = _startedGame().copyWith(guestId: null);
 
       expect(move(alone, playerId: _x, cell: 0), throwsA(isA<MoveOpponentMissingException>()));
     });
@@ -125,14 +125,14 @@ void main() {
 
       expect(game.status, GameStatus.finished);
       expect(game.currentWinnerId, _x);
-      expect((game.fromWinCount, game.toWinCount), (1, 0));
+      expect((game.hostWinCount, game.guestWinCount), (1, 0));
     });
 
     test('when the second player completes a column', () {
       final game = play(_startedGame(), [0, 1, 3, 4, 8, 7]);
 
       expect(game.currentWinnerId, _o);
-      expect((game.fromWinCount, game.toWinCount), (0, 1));
+      expect((game.hostWinCount, game.guestWinCount), (0, 1));
     });
 
     test('when a player completes a diagonal or the anti-diagonal', () {
@@ -145,7 +145,7 @@ void main() {
 
       expect(game.status, GameStatus.finished);
       expect(game.currentWinnerId, isNull);
-      expect((game.fromWinCount, game.toWinCount), (0, 0));
+      expect((game.hostWinCount, game.guestWinCount), (0, 0));
     });
   });
 
@@ -160,7 +160,7 @@ void main() {
       expect(next?.currentPlayerId, _o);
       expect(next?.currentWinnerId, isNull);
       expect(next?.board, Board.empty);
-      expect((next?.fromWinCount, next?.toWinCount), (1, 0));
+      expect((next?.hostWinCount, next?.guestWinCount), (1, 0));
     });
 
     test('cannot start while the round is still being played', () {
@@ -173,10 +173,10 @@ void main() {
 
 Game _startedGame() => Game(
   currentPlayerId: _x,
-  fromId: _x,
-  fromName: 'Jessy',
+  hostId: _x,
+  hostName: 'Jessy',
   id: const GameId('game'),
   status: GameStatus.playing,
-  toId: _o,
-  toName: 'Mario',
+  guestId: _o,
+  guestName: 'Mario',
 );

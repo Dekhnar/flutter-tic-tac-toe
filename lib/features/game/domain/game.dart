@@ -15,14 +15,14 @@ final class Game with _$Game {
     required this.currentPlayerId,
     this.currentRoundIndex = 0,
     this.currentWinnerId,
-    required this.fromId,
-    required this.fromName,
-    this.fromWinCount = 0,
+    this.guestId,
+    this.guestName,
+    this.guestWinCount = 0,
+    required this.hostId,
+    required this.hostName,
+    this.hostWinCount = 0,
     required this.id,
     required this.status,
-    this.toId,
-    this.toName,
-    this.toWinCount = 0,
   });
 
   /// The board of the current round.
@@ -38,36 +38,38 @@ final class Game with _$Game {
   @override
   final PlayerId? currentWinnerId;
 
+  /// The player who joined, and plays O; null until someone joins.
   @override
-  final PlayerId fromId;
+  final PlayerId? guestId;
 
   @override
-  final String fromName;
+  final String? guestName;
 
   @override
-  final int fromWinCount;
+  final int guestWinCount;
+
+  /// The player who created the game, and plays X.
+  @override
+  final PlayerId hostId;
+
+  @override
+  final String hostName;
+
+  @override
+  final int hostWinCount;
 
   @override
   final GameId id;
 
   @override
   final GameStatus status;
-
-  @override
-  final PlayerId? toId;
-
-  @override
-  final String? toName;
-
-  @override
-  final int toWinCount;
 }
 
 extension GamePlayers on Game {
   /// The game creator plays X, the opponent plays O.
-  CellMark markOf(PlayerId playerId) => playerId == fromId ? CellMark.X : CellMark.O;
+  CellMark markOf(PlayerId playerId) => playerId == hostId ? CellMark.X : CellMark.O;
 
-  String nameOf(PlayerId playerId) => playerId == fromId ? fromName : toName ?? '';
+  String nameOf(PlayerId playerId) => playerId == hostId ? hostName : guestName ?? '';
 }
 
 /// A cell of the board, numbered row by row from 0 to 8.

@@ -114,7 +114,7 @@ class _LeaveGuard extends ConsumerWidget {
     final endsForOpponent = ref.watch(
       gameProvider(session).select(
         (asyncGame) => switch ((session, asyncGame.value)) {
-          (OnlineGameSession(), Game(toId: _?, :final status)) => status != GameStatus.abandoned,
+          (OnlineGameSession(), Game(guestId: _?, :final status)) => status != GameStatus.abandoned,
           _ => false,
         },
       ),

@@ -17,7 +17,7 @@ import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
@@ -43,8 +43,6 @@ void main() {
       robot.expectText('Jessy (X)');
       robot.expectText('Mario (O)');
 
-      await robot.tapStartGame();
-
       // X wins with the top row: 0, 3, 1, 4, 2
       for (final cell in [0, 3, 1, 4, 2]) {
         await robot.tapCell(cell);
@@ -66,7 +64,6 @@ void main() {
 
       robot.expectText('${i18n.ai} (O)');
 
-      await robot.tapStartGame();
       await robot.tapCell(0);
       await tester.pump(const Duration(seconds: 1));
 
@@ -416,7 +413,7 @@ class _FirestoreTestHarness {
       case MoveGameNotStartedException():
         await gameRef.update({GameField.status.name: GameStatus.setup.name});
       case MoveOpponentMissingException():
-        await gameRef.update({GameField.toId.name: null});
+        await gameRef.update({GameField.guestId.name: null});
       case MoveNotYourTurnException():
         await gameRef.update({GameField.currentPlayerId.name: _luigi.value});
       case MoveCellAlreadyTakenException():
@@ -466,30 +463,30 @@ final class _AppRepository implements OnlineGameRepositoryInterface {
 }
 
 Game _buildSetupGame() =>
-    const Game(currentPlayerId: _jessy, fromId: _jessy, fromName: 'Jessy', id: _gameId, status: GameStatus.setup);
+    const Game(currentPlayerId: _jessy, hostId: _jessy, hostName: 'Jessy', id: _gameId, status: GameStatus.setup);
 
 Game _buildPlayingGame() => Game(
   board: _board(x: [0], o: [4]),
   currentPlayerId: _jessy,
-  fromId: _jessy,
-  fromName: 'Jessy',
+  hostId: _jessy,
+  hostName: 'Jessy',
   id: _gameId,
   status: GameStatus.playing,
-  toId: _luigi,
-  toName: 'Luigi',
+  guestId: _luigi,
+  guestName: 'Luigi',
 );
 
 Game _buildFinishedGame() => Game(
   board: _board(x: [0, 1, 2], o: [3, 4]),
   currentPlayerId: _jessy,
   currentWinnerId: _jessy,
-  fromId: _jessy,
-  fromName: 'Jessy',
-  fromWinCount: 1,
+  hostId: _jessy,
+  hostName: 'Jessy',
+  hostWinCount: 1,
   id: _gameId,
   status: GameStatus.finished,
-  toId: _luigi,
-  toName: 'Luigi',
+  guestId: _luigi,
+  guestName: 'Luigi',
 );
 
 Board _board({required List<int> x, required List<int> o}) => [

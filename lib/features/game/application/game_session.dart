@@ -23,7 +23,7 @@ extension GameSessionPlayers on GameSession {
 
   /// Whether the AI plays [player]: the guest of a local game against the AI.
   bool isAi(Game game, PlayerId player) => switch (this) {
-    LocalGameSession(vsAi: true) => player == game.toId,
+    LocalGameSession(vsAi: true) => player == game.guestId,
     _ => false,
   };
 

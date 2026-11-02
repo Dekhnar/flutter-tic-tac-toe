@@ -11,14 +11,14 @@ abstract interface class GameRepositoryInterface {
   Future<void> startNewRound({required GameId gameId});
 
   Future<void> startGame({required GameId gameId});
+
+  /// Leaves the game for good: a local game is forgotten, the opponent of an online one sees it abandoned.
+  Future<void> leaveGame(GameId gameId);
 }
 
 /// Games played on this device, both players sharing the screen.
 abstract interface class LocalGameRepositoryInterface implements GameRepositoryInterface {
   Future<GameId> createGame({required String guestName, required String hostName});
-
-  /// Forgets a game once nobody plays it any more.
-  void endGame(GameId gameId);
 }
 
 /// Games played between two devices, joined with the game id: a short code the host shares.
@@ -26,7 +26,4 @@ abstract interface class OnlineGameRepositoryInterface implements GameRepository
   Future<GameId> createGame({required PlayerId host, required String hostName});
 
   Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName});
-
-  /// Leaves the game for good: the opponent sees it abandoned.
-  Future<void> leaveGame(GameId gameId);
 }

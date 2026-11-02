@@ -79,11 +79,11 @@ void main() {
     );
   });
 
-  test('a game ended by its players is forgotten, and its board stops receiving updates', () async {
+  test('a game its players left is forgotten, and its board stops receiving updates', () async {
     final gameId = await startGame();
     final updates = repository.watchGame(gameId).toList();
 
-    repository.endGame(gameId);
+    await repository.leaveGame(gameId);
 
     await expectLater(updates, completes);
     expect(repository.watchGame(gameId), emitsError(isA<GameNotFoundException>()));

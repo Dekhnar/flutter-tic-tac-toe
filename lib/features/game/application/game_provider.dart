@@ -19,27 +19,8 @@ GameRepositoryInterface sessionGameRepository(Ref ref, GameSession session) => s
 Duration? _noRetry(int retryCount, Object error) => null;
 
 @Riverpod(retry: _noRetry)
-Stream<Game> game(Ref ref, GameSession session) {
-  ref.watch(gameLifetimeProvider(session));
-
-  return ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
-}
-
-/// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-/// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-/// rebuild, which keeps it.
-@riverpod
-void gameLifetime(Ref ref, GameSession session) {
-  switch (session) {
-    case LocalGameSession(:final gameId):
-      final repository = ref.watch(localGameRepositoryProvider);
-      ref.onDispose(() => repository.endGame(gameId));
-    case OnlineGameSession(:final gameId):
-      final repository = ref.watch(onlineGameRepositoryProvider);
-      final errorLogger = ref.watch(errorLoggerProvider);
-      ref.onDispose(() => unawaited(repository.leaveGame(gameId).onError(errorLogger.log)));
-  }
-}
+Stream<Game> game(Ref ref, GameSession session) =>
+    ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 @riverpod
@@ -55,6 +36,13 @@ class GameActions extends _$GameActions {
   });
 
   Future<void> startNewRound() => _run((repository) => repository.startNewRound(gameId: session.gameId));
+
+  /// The player leaves the game for good. The board closes right away: the leave runs to its end on its own, and a
+  /// failure is logged rather than shown, the player having left already.
+  Future<void> leave() {
+    final errorLogger = ref.read(errorLoggerProvider);
+    return ref.read(sessionGameRepositoryProvider(session)).leaveGame(session.gameId).onError(errorLogger.log);
+  }
 
   Future<void> _run(Future<void> Function(GameRepositoryInterface repository) action) async {
     // The board disables its controls while an action runs.

@@ -331,6 +331,31 @@ class I18n {
   String get gameAbandoned {
     return Intl.message('This game is over: a player left it.', name: 'gameAbandoned', desc: '', args: []);
   }
+
+  /// `Leave the game?`
+  String get leaveGameTitle {
+    return Intl.message('Leave the game?', name: 'leaveGameTitle', desc: '', args: []);
+  }
+
+  /// `Your opponent will see that you left, and the game will end for both of you.`
+  String get leaveGameMessage {
+    return Intl.message(
+      'Your opponent will see that you left, and the game will end for both of you.',
+      name: 'leaveGameMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Stay`
+  String get stay {
+    return Intl.message('Stay', name: 'stay', desc: '', args: []);
+  }
+
+  /// `Leave`
+  String get leave {
+    return Intl.message('Leave', name: 'leave', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<I18n> {

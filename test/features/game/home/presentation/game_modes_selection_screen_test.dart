@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_providers.dart';
@@ -21,6 +22,7 @@ import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dar
 import '../../../../shared/fakes/pending_local_game_repository.dart';
 import '../../../../shared/golden_test_utils/devices.dart';
 
+const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
 
 void main() {
@@ -124,14 +126,77 @@ void main() {
     await robot.enterNames(['Jessy', 'Mario']);
     await robot.tapText(I18n.current.start);
 
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
+    await robot.goBack();
 
     expect(find.text(I18n.current.local1v1), findsOneWidget);
     // The game streams run on real time: the test clock would never deliver a game that is still there.
     await tester.runAsync(
       () => expectLater(games.watchGame(recorded.createdGames.single).first, throwsA(isA<GameNotFoundException>())),
     );
+  });
+
+  group('Leaving an online game', () {
+    late FakeFirebaseFirestore firestore;
+    late FirestoreGameRepository opponent;
+    late _HomeRobot robot;
+
+    setUp(() {
+      firestore = FakeFirebaseFirestore();
+      opponent = FirestoreGameRepository(firestore: firestore);
+    });
+
+    /// The host's board, in the real app, once the game is created and the opponent sat down if [joined].
+    Future<GameId> openBoard(WidgetTester tester, {required bool joined}) async {
+      robot = _HomeRobot(tester);
+      await robot.launch(
+        localRepository: games,
+        online: [
+          onlineGameRepositoryProvider.overrideWithValue(FirestoreGameRepository(firestore: firestore)),
+          playerIdentityProvider.overrideWithValue(const _SignedIn(_jessy)),
+        ],
+      );
+      final gameId = await robot.createOnlineGame(hostName: 'Jessy');
+      if (joined) {
+        await opponent.joinGame(gameId, guest: _luigi, guestName: 'Luigi');
+        await tester.pumpAndSettle();
+      }
+      return gameId;
+    }
+
+    /// The game as the opponent's device sees it; the fake database answers in real time.
+    Future<Game?> seenByOpponent(WidgetTester tester, GameId gameId) =>
+        tester.runAsync(() => opponent.watchGame(gameId).first.timeout(const Duration(seconds: 1)));
+
+    testWidgets('with an opponent asks first, and staying keeps the game going', (tester) async {
+      final gameId = await openBoard(tester, joined: true);
+
+      await robot.goBack();
+      expect(find.text(I18n.current.leaveGameTitle), findsOneWidget);
+      await robot.tapText(I18n.current.stay);
+
+      expect(find.text('Luigi (O)'), findsOneWidget);
+      expect((await seenByOpponent(tester, gameId))?.status, GameStatus.setup);
+    });
+
+    testWidgets('with an opponent, once confirmed, ends it for them', (tester) async {
+      final gameId = await openBoard(tester, joined: true);
+
+      await robot.goBack();
+      await robot.tapText(I18n.current.leave);
+
+      expect(find.text(I18n.current.local1v1), findsOneWidget);
+      expect((await seenByOpponent(tester, gameId))?.status, GameStatus.abandoned);
+    });
+
+    testWidgets('nobody joined yet needs no confirmation, and nobody can join it any more', (tester) async {
+      final gameId = await openBoard(tester, joined: false);
+
+      await robot.goBack();
+
+      expect(find.text(I18n.current.leaveGameTitle), findsNothing);
+      expect(find.text(I18n.current.local1v1), findsOneWidget);
+      expect((await seenByOpponent(tester, gameId))?.status, GameStatus.abandoned);
+    });
   });
 
   testWidgets('the modes stay covered while the game is being created', (tester) async {
@@ -220,6 +285,21 @@ class _HomeRobot {
     for (final (index, name) in names.indexed) {
       await tester.enterText(find.widgetWithText(TextFormField, labels[index]), name);
     }
+    await tester.pumpAndSettle();
+  }
+
+  /// Creates a game from the app, and reads its code where the board shows it to share.
+  Future<GameId> createOnlineGame({required String hostName}) async {
+    await chooseMode(I18n.current.online1v1);
+    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), hostName);
+    await tapText(I18n.current.createGame);
+
+    final codeLabel = I18n.current.gameCodeValue('');
+    return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
+  }
+
+  Future<void> goBack() async {
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
   }
 

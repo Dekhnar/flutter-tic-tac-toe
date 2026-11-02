@@ -127,7 +127,7 @@ final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Str
   }
 }
 
-String _$gameHash() => r'1d9a3c326afe8a3abcf3590264f734b2973202f0';
+String _$gameHash() => r'5732a176b245e7add54ef3c36ed63dbe2500f862';
 
 final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Game>, GameSession> {
   const GameFamily._()
@@ -143,92 +143,6 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
 
   @override
   String toString() => r'gameProvider';
-}
-
-/// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-/// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-/// rebuild, which keeps it.
-
-@ProviderFor(gameLifetime)
-const gameLifetimeProvider = GameLifetimeFamily._();
-
-/// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-/// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-/// rebuild, which keeps it.
-
-final class GameLifetimeProvider extends $FunctionalProvider<void, void, void> with $Provider<void> {
-  /// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-  /// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-  /// rebuild, which keeps it.
-  const GameLifetimeProvider._({required GameLifetimeFamily super.from, required GameSession super.argument})
-    : super(
-        retry: null,
-        name: r'gameLifetimeProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$gameLifetimeHash();
-
-  @override
-  String toString() {
-    return r'gameLifetimeProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $ProviderElement<void> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
-
-  @override
-  void create(Ref ref) {
-    final argument = this.argument as GameSession;
-    return gameLifetime(ref, argument);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(void value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<void>(value));
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is GameLifetimeProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$gameLifetimeHash() => r'3fc243ba2e357827442d88c30e769801567d4fe6';
-
-/// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-/// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-/// rebuild, which keeps it.
-
-final class GameLifetimeFamily extends $Family with $FunctionalFamilyOverride<void, GameSession> {
-  const GameLifetimeFamily._()
-    : super(
-        retry: null,
-        name: r'gameLifetimeProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// A game lives as long as something watches it: once its board closes, a local game is forgotten and the player
-  /// leaves an online one, which the opponent then sees abandoned. Retrying the game watches it again in the same
-  /// rebuild, which keeps it.
-
-  GameLifetimeProvider call(GameSession session) => GameLifetimeProvider._(argument: session, from: this);
-
-  @override
-  String toString() => r'gameLifetimeProvider';
 }
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
@@ -273,7 +187,7 @@ final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void
   }
 }
 
-String _$gameActionsHash() => r'ae7b3e5253248ef9496ab3f78960e614b36f5d63';
+String _$gameActionsHash() => r'63159fa20d1096191bdc841e844a13c1acdc9c24';
 
 /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
 

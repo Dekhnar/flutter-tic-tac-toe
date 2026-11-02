@@ -71,17 +71,6 @@ void main() {
 
       robot.expectMarkedCellCount(2);
     });
-
-    testWidgets('closing the board ends the game: nobody can come back to it', (tester) async {
-      final robot = _GameBoardScreenRobot(tester);
-      final session = await robot.pumpLocalGame(guestName: 'Mario', hostName: 'Jessy');
-
-      await tester.pumpWidget(const SizedBox.shrink());
-
-      await tester.runAsync(
-        () => expectLater(robot.localRepository.watchGame(session.gameId).first, throwsA(isA<GameNotFoundException>())),
-      );
-    });
   });
 
   group('Online game', () {
@@ -200,22 +189,6 @@ void main() {
 
       robot.expectText(I18n.current.opponentLeft);
       robot.expectCellEmpty(0);
-    });
-
-    testWidgets('closing the board leaves the game, which the opponent then sees abandoned', (tester) async {
-      final harness = _FirestoreTestHarness();
-      final robot = _GameBoardScreenRobot(tester, harness: harness);
-      await robot.pumpStartedOnlineGame();
-
-      await tester.pumpWidget(const SizedBox.shrink());
-
-      final stored = await tester.runAsync(
-        () => harness.host
-            .watchGame(harness.gameId)
-            .firstWhere((game) => game.status == GameStatus.abandoned)
-            .timeout(const Duration(seconds: 1)),
-      );
-      expect(stored?.status, GameStatus.abandoned);
     });
 
     testWidgets('a game deleted while being played shows a blocking error that only offers to leave', (tester) async {

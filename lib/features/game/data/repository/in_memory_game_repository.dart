@@ -49,7 +49,7 @@ final class InMemoryGameRepository implements LocalGameRepositoryInterface {
       _update(gameId, (game) => _rules.applyMove(game: game, playerId: playerId, cell: cell));
 
   @override
-  void endGame(GameId gameId) => _stores.remove(gameId)?.close();
+  Future<void> leaveGame(GameId gameId) async => _stores.remove(gameId)?.close();
 
   void dispose() {
     for (final store in _stores.values) {

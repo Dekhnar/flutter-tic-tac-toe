@@ -53,5 +53,9 @@
   "share": "Share",
   "shareInvitation": "Join my tic-tac-toe game with the code {code}",
   "opponentLeft": "Your opponent left the game.",
-  "gameAbandoned": "This game is over: a player left it."
+  "gameAbandoned": "This game is over: a player left it.",
+  "leaveGameTitle": "Leave the game?",
+  "leaveGameMessage": "Your opponent will see that you left, and the game will end for both of you.",
+  "stay": "Stay",
+  "leave": "Leave"
 }

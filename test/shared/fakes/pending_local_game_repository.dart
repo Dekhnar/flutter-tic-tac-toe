@@ -27,7 +27,7 @@ final class PendingLocalGameRepository implements LocalGameRepositoryInterface {
   }
 
   @override
-  void endGame(GameId gameId) => _repository.endGame(gameId);
+  Future<void> leaveGame(GameId gameId) => _repository.leaveGame(gameId);
 
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) =>

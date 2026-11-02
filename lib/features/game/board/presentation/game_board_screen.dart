@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,11 +11,13 @@ import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/game_board_grid.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/game_header.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/widgets/round_actions.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// Shows the game of [session] while the board is open; against the AI, the AI plays meanwhile.
+/// Shows the game of [session] while the board is open; against the AI, the AI plays meanwhile. Leaving the board
+/// leaves the game.
 @RoutePage()
 class GameBoardScreen extends ConsumerWidget {
   const GameBoardScreen({super.key, required this.session});
@@ -39,20 +43,23 @@ class GameBoardScreen extends ConsumerWidget {
     });
     final (loaded, failed) = ref.watch(provider.select((game) => (game.hasValue, game.hasError && !game.isLoading)));
 
-    return Scaffold(
-      appBar: AppBar(),
-      body: SafeArea(
-        child: switch ((loaded, failed)) {
-          (false, true) => const SizedBox.shrink(),
-          (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
-          (true, _) => LayoutBuilder(
-            builder:
-                (context, constraints) => switch (constraints.maxWidth > constraints.maxHeight) {
-                  true => _LandscapeBoard(session: session, height: constraints.maxHeight),
-                  false => _PortraitBoard(session: session),
-                },
-          ),
-        },
+    return _LeaveGuard(
+      session: session,
+      child: Scaffold(
+        appBar: AppBar(),
+        body: SafeArea(
+          child: switch ((loaded, failed)) {
+            (false, true) => const SizedBox.shrink(),
+            (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
+            (true, _) => LayoutBuilder(
+              builder:
+                  (context, constraints) => switch (constraints.maxWidth > constraints.maxHeight) {
+                    true => _LandscapeBoard(session: session, height: constraints.maxHeight),
+                    false => _PortraitBoard(session: session),
+                  },
+            ),
+          },
+        ),
       ),
     );
   }
@@ -90,6 +97,58 @@ class GameBoardScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Every way out of the board — back button, back gesture, system back — leaves the game. An online game someone else
+/// plays then ends for them too: the player confirms it first.
+class _LeaveGuard extends ConsumerWidget {
+  const _LeaveGuard({required this.child, required this.session});
+
+  final Widget child;
+  final GameSession session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final endsForOpponent = ref.watch(
+      gameProvider(session).select(
+        (asyncGame) => switch ((session, asyncGame.value)) {
+          (OnlineGameSession(), Game(toId: _?, :final status)) => status != GameStatus.abandoned,
+          _ => false,
+        },
+      ),
+    );
+
+    return PopScope(
+      canPop: !endsForOpponent,
+      // Called for every pop, the one that follows a confirmation included: that is where the game is left.
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) {
+          unawaited(ref.read(gameActionsProvider(session).notifier).leave());
+          return;
+        }
+
+        final confirmed = await _confirmLeave(context);
+        if (confirmed == true && context.mounted) Navigator.of(context).pop();
+      },
+      child: child,
+    );
+  }
+
+  Future<bool?> _confirmLeave(BuildContext context) {
+    final i18n = I18n.of(context);
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Text(i18n.leaveGameTitle),
+            content: Text(i18n.leaveGameMessage),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text(i18n.stay)),
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: Text(i18n.leave)),
+            ],
+          ),
     );
   }
 }

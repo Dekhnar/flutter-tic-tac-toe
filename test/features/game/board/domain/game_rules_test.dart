@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
 const _x = PlayerId('jessy');
 const _o = PlayerId('mario');

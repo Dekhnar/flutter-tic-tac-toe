@@ -6,25 +6,42 @@ part of 'error_logger.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$errorLoggerServiceHash() =>
-    r'd6d98738974acc46e858cc918aa3c72db38b505b';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [errorLoggerService].
 @ProviderFor(errorLoggerService)
-final errorLoggerServiceProvider =
-    AutoDisposeProvider<ErrorLoggerService>.internal(
-      errorLoggerService,
-      name: r'errorLoggerServiceProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$errorLoggerServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+const errorLoggerServiceProvider = ErrorLoggerServiceProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ErrorLoggerServiceRef = AutoDisposeProviderRef<ErrorLoggerService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class ErrorLoggerServiceProvider
+    extends $FunctionalProvider<ErrorLoggerService, ErrorLoggerService, ErrorLoggerService>
+    with $Provider<ErrorLoggerService> {
+  const ErrorLoggerServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'errorLoggerServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$errorLoggerServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ErrorLoggerService> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  ErrorLoggerService create(Ref ref) {
+    return errorLoggerService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ErrorLoggerService value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<ErrorLoggerService>(value));
+  }
+}
+
+String _$errorLoggerServiceHash() => r'4bd2fb0b66d5ae0947f017e0769fcbf589a736b1';

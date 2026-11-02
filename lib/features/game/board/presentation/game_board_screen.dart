@@ -9,62 +9,95 @@ import 'package:tic_tac_toe_app/features/game/board/application/game_provider.da
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
+import 'package:tic_tac_toe_app/features/game/board/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
-import 'package:tic_tac_toe_app/shared/notifications/message_displayer.dart';
 
+/// Shows the game of [session]. A local game lives as long as its board: closing the board forgets it.
 @RoutePage()
-class GameBoardScreen extends ConsumerWidget {
-  final GameSession session;
+class GameBoardScreen extends ConsumerStatefulWidget {
   const GameBoardScreen({super.key, required this.session});
 
+  final GameSession session;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = gameNotifierProvider(session: session);
+  ConsumerState<GameBoardScreen> createState() => _GameBoardScreenState();
+}
+
+class _GameBoardScreenState extends ConsumerState<GameBoardScreen> {
+  // Read up front: `ref` cannot be used any more once `dispose` runs.
+  late final LocalGameRepositoryInterface? _localRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _localRepository = switch (widget.session) {
+      LocalGameSession() => ref.read(localGameRepositoryProvider),
+      OnlineGameSession() => null,
+    };
+  }
+
+  @override
+  void dispose() {
+    _localRepository?.endGame(widget.session.gameId);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = widget.session;
+    final provider = gameProvider(session);
     ref.listen(provider, (_, next) {
-      // A retry reloads from the error state: Riverpod then reports the error again, flagged as loading.
-      if (next case AsyncError(:final error, isLoading: false) when context.mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(context, ref, error));
+      // Invalidating the game to retry reports the error again, flagged as loading.
+      if (next case AsyncError(:final error, isLoading: false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _showBlockingErrorDialog(error));
+      }
+    });
+    ref.listen(gameActionsProvider(session), (_, next) {
+      if (next case AsyncError(:final error)) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).gameError(error))));
       }
     });
     final (loaded, failed) = ref.watch(provider.select((game) => (game.hasValue, game.hasError && !game.isLoading)));
 
-    return MessageDisplayer(
-      child: Scaffold(
-        appBar: AppBar(),
-        body: SafeArea(
-          child: switch ((loaded, failed)) {
-            (false, true) => const SizedBox.shrink(),
-            (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
-            (true, _) => SingleChildScrollView(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: Dimens.boardMaxWidth),
-                  child: Column(
-                    children: [
-                      _GameHeader(session: session),
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: Dimens.standardPadding) +
-                            const EdgeInsets.only(top: Dimens.standardPadding),
-                        child: _GameBoardGrid(session: session),
-                      ),
-                      _GameActions(session: session),
-                    ],
-                  ),
+    return Scaffold(
+      appBar: AppBar(),
+      body: SafeArea(
+        child: switch ((loaded, failed)) {
+          (false, true) => const SizedBox.shrink(),
+          (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
+          (true, _) => SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: Dimens.boardMaxWidth),
+                child: Column(
+                  children: [
+                    _GameHeader(session: session),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: Dimens.standardPadding) +
+                          const EdgeInsets.only(top: Dimens.standardPadding),
+                      child: _GameBoardGrid(session: session),
+                    ),
+                    _RoundActions(session: session),
+                  ],
                 ),
               ),
             ),
-          },
-        ),
+          ),
+        },
       ),
     );
   }
 
   /// The board cannot show a game it failed to load: the dialog blocks the screen, offering to retry when it may help.
-  Future<void> _showBlockingErrorDialog(BuildContext context, WidgetRef ref, Object error) {
+  Future<void> _showBlockingErrorDialog(Object error) {
+    if (!mounted) return Future.value();
+
     final i18n = I18n.of(context);
     final gameIsGone = error is GameNotFoundException;
     return showDialog<void>(
@@ -81,7 +114,7 @@ class GameBoardScreen extends ConsumerWidget {
                 TextButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    ref.invalidate(gameNotifierProvider(session: session));
+                    ref.invalidate(gameProvider(widget.session));
                   },
                   child: Text(i18n.retry),
                 ),
@@ -107,7 +140,7 @@ class _GameHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final game = ref.watch(gameNotifierProvider(session: session).select((game) => game.valueOrNull));
+    final game = ref.watch(gameProvider(session).select((game) => game.value));
     if (game == null) return const SizedBox.shrink();
 
     final i18n = I18n.of(context);
@@ -243,18 +276,18 @@ class _GameCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = gameNotifierProvider(session: session);
     final (mark, playable) = ref.watch(
-      provider.select((asyncGame) {
-        final game = asyncGame.valueOrNull;
+      gameProvider(session).select((asyncGame) {
+        final game = asyncGame.value;
         final mark = game?.moves.where((move) => move.index == index).firstOrNull?.mark;
         return (mark, mark == null && (game?.isPlayableBy(session.me) ?? false));
       }),
     );
+    final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
 
     final row = index ~/ GameRules.boardSize;
     final col = index % GameRules.boardSize;
-    final onTap = playable ? () => ref.read(provider.notifier).makeMove(row, col) : null;
+    final onTap = playable && !busy ? () => ref.read(gameActionsProvider(session).notifier).makeMove(row, col) : null;
     final i18n = I18n.of(context);
 
     return Semantics(
@@ -264,7 +297,7 @@ class _GameCell extends ConsumerWidget {
         CellMark.O => i18n.boardCellCircle(row + 1, col + 1),
       },
       button: true,
-      enabled: playable,
+      enabled: onTap != null,
       onTap: onTap,
       child: ExcludeSemantics(
         child: BaseCardButton(
@@ -279,17 +312,18 @@ class _GameCell extends ConsumerWidget {
   }
 }
 
-class _GameActions extends ConsumerWidget {
-  const _GameActions({required this.session});
+class _RoundActions extends ConsumerWidget {
+  const _RoundActions({required this.session});
 
   final GameSession session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = gameNotifierProvider(session: session);
     final (status, hasOpponent) = ref.watch(
-      provider.select((asyncGame) => (asyncGame.valueOrNull?.status, asyncGame.valueOrNull?.toId != null)),
+      gameProvider(session).select((asyncGame) => (asyncGame.value?.status, asyncGame.value?.toId != null)),
     );
+    final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
+    GameActions actions() => ref.read(gameActionsProvider(session).notifier);
     final i18n = I18n.of(context);
 
     return Container(
@@ -297,11 +331,11 @@ class _GameActions extends ConsumerWidget {
       alignment: Alignment.centerRight,
       child: switch (status) {
         GameStatus.setup when hasOpponent => FilledButton(
-          onPressed: () => ref.read(provider.notifier).startGame(),
+          onPressed: busy ? null : () => actions().startGame(),
           child: Text(i18n.startGame),
         ),
         GameStatus.finished => OutlinedButton(
-          onPressed: () => ref.read(provider.notifier).startNewRound(),
+          onPressed: busy ? null : () => actions().startNewRound(),
           child: Text(i18n.playAgain),
         ),
         _ => const SizedBox.shrink(),

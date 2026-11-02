@@ -16,6 +16,9 @@ abstract interface class GameRepositoryInterface {
 /// Games played on this device, both players sharing the screen.
 abstract interface class LocalGameRepositoryInterface implements GameRepositoryInterface {
   Future<GameId> createGame({required String guestName, required String hostName, required bool vsAi});
+
+  /// Forgets a game once nobody plays it anymore.
+  void endGame(GameId gameId);
 }
 
 /// Games played between two devices, joined with the game id.

@@ -3,32 +3,25 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
-part 'game_repository_provider.g.dart';
-
-@riverpod
-OnlineGameRepositoryInterface onlineGameRepository(Ref ref) => GameRepository(firestore: FirebaseFirestore.instance);
-
-final class GameRepository implements OnlineGameRepositoryInterface {
-  const GameRepository({
-    @visibleForTesting AsyncCallback? beforeMakeMove,
+final class FirestoreGameRepository implements OnlineGameRepositoryInterface {
+  const FirestoreGameRepository({
     @visibleForTesting Clock clock = const Clock(),
     required FirebaseFirestore firestore,
     @visibleForTesting GameRules rules = const GameRules(),
-  }) : _beforeMakeMove = beforeMakeMove,
-       _clock = clock,
+  }) : _clock = clock,
        _firestore = firestore,
        _rules = rules;
 
-  final AsyncCallback? _beforeMakeMove;
+  /// How long a game stays on the server: a TTL policy on `expiresAt` deletes it, see README.
+  static const lifetime = Duration(days: 30);
+
   final Clock _clock;
   final FirebaseFirestore _firestore;
   final GameRules _rules;
@@ -39,10 +32,11 @@ final class GameRepository implements OnlineGameRepositoryInterface {
   Future<void> createGame(GameId gameId, {required PlayerId host, required String hostName}) async {
     final gameRef = _gameRef(gameId);
 
-    await _firestore.runTransaction((transaction) async {
+    await _runTransaction((transaction) async {
       if ((await transaction.get(gameRef)).exists) throw StateError('A game already uses the id ${gameId.value}');
 
-      transaction.set(gameRef, CreateGameCommand(host: host, hostName: hostName).toFirestore());
+      final expiresAt = _clock.now().add(lifetime);
+      transaction.set(gameRef, CreateGameCommand(expiresAt: expiresAt, host: host, hostName: hostName).toFirestore());
     });
   }
 
@@ -50,7 +44,7 @@ final class GameRepository implements OnlineGameRepositoryInterface {
   Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName}) async {
     final gameRef = _gameRef(gameId);
 
-    await _firestore.runTransaction((transaction) async {
+    await _runTransaction((transaction) async {
       final snapshot = await transaction.get(gameRef);
       if (!snapshot.exists) throw GameNotFoundException();
 
@@ -142,9 +136,7 @@ final class GameRepository implements OnlineGameRepositoryInterface {
     required int row,
     required int col,
   }) async {
-    await _beforeMakeMove?.call();
-
-    await _firestore.runTransaction((transaction) async {
+    await _runTransaction((transaction) async {
       final gameRef = _gameRef(gameId);
       final currentGame = _parseGame(await transaction.get(gameRef));
       final updatedGame = _rules.applyMove(
@@ -161,14 +153,16 @@ final class GameRepository implements OnlineGameRepositoryInterface {
       final moveSnapshot = await transaction.get(moveRef);
       if (moveSnapshot.exists) throw MoveCellAlreadyTakenException();
 
-      transaction.set(moveRef, MoveEventCommand(move: move).toFirestore());
+      // The rules require a move to expire with its game.
+      final expiresAt = currentGame.expiresAt ?? (throw StateError('The game ${gameId.value} has no expiry date'));
+      transaction.set(moveRef, MoveEventCommand(expiresAt: expiresAt, move: move).toFirestore());
       transaction.update(gameRef, MovePlayedCommand(game: updatedGame).toFirestore());
     });
   }
 
   @override
   Future<void> startNewRound({required GameId gameId}) async {
-    await _firestore.runTransaction((transaction) async {
+    await _runTransaction((transaction) async {
       final gameRef = _gameRef(gameId);
       final currentGame = _parseGame(await transaction.get(gameRef));
 
@@ -182,7 +176,7 @@ final class GameRepository implements OnlineGameRepositoryInterface {
 
   @override
   Future<void> startGame({required GameId gameId}) async {
-    await _firestore.runTransaction((transaction) async {
+    await _runTransaction((transaction) async {
       final gameRef = _gameRef(gameId);
       final currentGame = _parseGame(await transaction.get(gameRef));
 
@@ -193,6 +187,18 @@ final class GameRepository implements OnlineGameRepositoryInterface {
     });
   }
 
+  /// A transaction that read the game before the other player changed it is refused by the rules, which check the
+  /// write against the new game, rather than retried by Firestore: it runs once more, against the game as it is now.
+  Future<void> _runTransaction(TransactionHandler<void> write) async {
+    try {
+      await _firestore.runTransaction(write);
+    } on FirebaseException catch (error) {
+      if (error.code != 'permission-denied') rethrow;
+
+      await _firestore.runTransaction(write);
+    }
+  }
+
   Game _parseGame(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     return switch (snapshot.data()) {
       null => throw GameNotFoundException(),
@@ -201,6 +207,7 @@ final class GameRepository implements OnlineGameRepositoryInterface {
         'id': snapshot.id,
         'createdAt': _dateOf(data['createdAt']) ?? _clock.now().toIso8601String(),
         'updatedAt': _dateOf(data['updatedAt']) ?? _clock.now().toIso8601String(),
+        'expiresAt': _dateOf(data['expiresAt']),
         'lastPlayAt': _dateOf(data['lastPlayAt']),
       }),
     };

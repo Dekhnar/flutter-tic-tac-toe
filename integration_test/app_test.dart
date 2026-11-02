@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/game_repository_provider.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/dto/commands.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/main.dart' as app;
@@ -55,6 +57,7 @@ void main() {
   group('Online game', () {
     late _Device opponent;
     late _Device cheater;
+    late _Device latecomer;
 
     setUpAll(() async {
       if (!online) return;
@@ -63,6 +66,7 @@ void main() {
       await FirebaseEnvironment.initialize(FirebaseEnvironment.emulatorOptions);
       opponent = await _Device.signIn('opponent');
       cheater = await _Device.signIn('cheater');
+      latecomer = await _Device.signIn('latecomer');
     });
 
     testWidgets('the host plays a full round against another device', (tester) async {
@@ -108,6 +112,39 @@ void main() {
       await robot.joinOnlineGame(gameId, guestName: 'Jessy');
 
       await robot.waitFor(find.text(I18n.current.gameAlreadyFull));
+    }, skip: !online);
+
+    test('both players pressing the same button at once start the game, then the next round, once each', () async {
+      final gameId = GameId(const Uuid().v4());
+      await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+      await cheater.repository.joinGame(gameId, guest: cheater.id, guestName: 'Wario');
+
+      await Future.wait([opponent.repository.startGame(gameId: gameId), cheater.repository.startGame(gameId: gameId)]);
+      for (final (turn, cell) in [0, 3, 1, 4, 2].indexed) {
+        final device = turn.isEven ? opponent : cheater;
+        await device.repository.makeMove(gameId: gameId, playerId: device.id, row: cell ~/ 3, col: cell % 3);
+      }
+      await Future.wait([
+        opponent.repository.startNewRound(gameId: gameId),
+        cheater.repository.startNewRound(gameId: gameId),
+      ]);
+
+      final game = (await opponent.gameRef(gameId).get()).data();
+      expect((game?['currentRoundIndex'], game?['status'], game?['fromWinCount']), (1, 'playing', 1));
+    }, skip: !online);
+
+    test('two players joining at once: one takes the seat, the other is told the game is full', () async {
+      final gameId = GameId(const Uuid().v4());
+      await opponent.repository.createGame(gameId, host: opponent.id, hostName: 'Luigi');
+
+      Future<Object?> join(_Device device, String name) => device.repository
+          .joinGame(gameId, guest: device.id, guestName: name)
+          .then<Object?>((_) => device.id, onError: (Object error) => error);
+      final outcomes = await Future.wait([join(cheater, 'Wario'), join(latecomer, 'Waluigi')]);
+
+      final seated = (await opponent.gameRef(gameId).get()).data()?['toId'];
+      expect(outcomes.where((outcome) => outcome is PlayerId && outcome.value == seated), hasLength(1));
+      expect(outcomes.whereType<GameAlreadyFullException>(), hasLength(1));
     }, skip: !online);
 
     group('The security rules refuse', () {
@@ -166,6 +203,22 @@ void main() {
         await expectDenied(opponent.gameRef(gameId).update({'fromWinCount': 5}));
       }, skip: !online);
 
+      test('a game with a field the app never writes, or that would outlive its 30 days', () async {
+        final created =
+            CreateGameCommand(
+              expiresAt: DateTime.timestamp().add(FirestoreGameRepository.lifetime),
+              host: cheater.id,
+              hostName: 'Wario',
+            ).toFirestore();
+        final forever = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 3650)));
+
+        await expectDenied(cheater.gameRef(GameId(const Uuid().v4())).set({...created, 'vsAi': true}));
+        await expectDenied(cheater.gameRef(GameId(const Uuid().v4())).set({...created, 'expiresAt': forever}));
+
+        // The game as the app writes it goes through: the refusals above come from the extra field and the expiry.
+        await cheater.gameRef(GameId(const Uuid().v4())).set(created);
+      }, skip: !online);
+
       test('deleting a game', () async {
         await expectDenied(opponent.gameRef(gameId).delete());
       }, skip: !online);
@@ -190,11 +243,11 @@ Map<String, Object> _boardAfter(List<(int, int)> moves) {
 
 /// Another device: its own Firebase app and anonymous account, on the same emulators.
 final class _Device {
-  _Device._(this.firestore, this.id) : repository = GameRepository(firestore: firestore);
+  _Device._(this.firestore, this.id) : repository = FirestoreGameRepository(firestore: firestore);
 
   final FirebaseFirestore firestore;
   final PlayerId id;
-  final GameRepository repository;
+  final FirestoreGameRepository repository;
 
   static Future<_Device> signIn(String name) async {
     final firebaseApp = await Firebase.initializeApp(name: name, options: FirebaseEnvironment.emulatorOptions);
@@ -214,9 +267,12 @@ final class _Device {
     required int turn,
     required Map<String, Object> board,
     Map<String, Object?> outcome = const {},
-  }) {
+  }) async {
+    final game = await gameRef(gameId).get();
     final batch = firestore.batch();
     batch.set(gameRef(gameId).collection('moves').doc('0:$index'), {
+      'createdAt': FieldValue.serverTimestamp(),
+      'expiresAt': game.data()?['expiresAt'],
       'index': index,
       'mark': mark,
       'playerId': id.value,

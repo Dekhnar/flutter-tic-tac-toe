@@ -23,11 +23,11 @@ dependencies:
   intl: ^0.20.2
 
   # State Management
-  flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.6.1
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
 
   # Routing
-  auto_route: 10.0.1
+  auto_route: ^10.2.4
 
   # UI
   google_fonts: ^6.3.1
@@ -42,13 +42,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  build_runner: ^2.5.4
-  auto_route_generator: 10.0.1
-  custom_lint: ^0.7.5
-  riverpod_generator: ^2.6.5
-  riverpod_lint: ^2.6.5
-  json_serializable: ^6.7.1
-  freezed: ^3.1.0
+  build_runner: ^2.7.0
+  auto_route_generator: ^10.2.4
+  custom_lint: ^0.8.0
+  riverpod_generator: ^3.0.3
+  # 3.1 runs as an analyzer plugin and no longer under custom_lint.
+  riverpod_lint: ">=3.0.3 <3.1.0"
+  json_serializable: ^6.11.0
+  freezed: ^3.2.0
   fake_cloud_firestore: ^4.3.0
   alchemist: ^0.14.0
   integration_test:

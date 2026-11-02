@@ -28,9 +28,7 @@ class I18n {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<I18n> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
+    final name = (locale.countryCode?.isEmpty ?? false) ? locale.languageCode : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -71,42 +69,22 @@ class I18n {
 
   /// `Play against AI.`
   String get playAgainstAi {
-    return Intl.message(
-      'Play against AI.',
-      name: 'playAgainstAi',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Play against AI.', name: 'playAgainstAi', desc: '', args: []);
   }
 
   /// `Play your friend online.`
   String get playFriendOnline {
-    return Intl.message(
-      'Play your friend online.',
-      name: 'playFriendOnline',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Play your friend online.', name: 'playFriendOnline', desc: '', args: []);
   }
 
   /// `It's not your turn.`
   String get notYourTurn {
-    return Intl.message(
-      'It\'s not your turn.',
-      name: 'notYourTurn',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('It\'s not your turn.', name: 'notYourTurn', desc: '', args: []);
   }
 
   /// `This cell is already taken.`
   String get cellAlreadyTaken {
-    return Intl.message(
-      'This cell is already taken.',
-      name: 'cellAlreadyTaken',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('This cell is already taken.', name: 'cellAlreadyTaken', desc: '', args: []);
   }
 
   /// `Paste`
@@ -136,22 +114,12 @@ class I18n {
 
   /// `Waiting for an opponent…`
   String get waitingForOpponent {
-    return Intl.message(
-      'Waiting for an opponent…',
-      name: 'waitingForOpponent',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Waiting for an opponent…', name: 'waitingForOpponent', desc: '', args: []);
   }
 
   /// `Invalid cell index.`
   String get invalidCellIndex {
-    return Intl.message(
-      'Invalid cell index.',
-      name: 'invalidCellIndex',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Invalid cell index.', name: 'invalidCellIndex', desc: '', args: []);
   }
 
   /// `Play`
@@ -161,42 +129,22 @@ class I18n {
 
   /// `Play on the same device.`
   String get playOnSameDevice {
-    return Intl.message(
-      'Play on the same device.',
-      name: 'playOnSameDevice',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Play on the same device.', name: 'playOnSameDevice', desc: '', args: []);
   }
 
   /// `The round is over.`
   String get roundIsOver {
-    return Intl.message(
-      'The round is over.',
-      name: 'roundIsOver',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('The round is over.', name: 'roundIsOver', desc: '', args: []);
   }
 
   /// `The game has not started yet.`
   String get gameNotStartedYet {
-    return Intl.message(
-      'The game has not started yet.',
-      name: 'gameNotStartedYet',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('The game has not started yet.', name: 'gameNotStartedYet', desc: '', args: []);
   }
 
   /// `Start the game`
   String get startGame {
-    return Intl.message(
-      'Start the game',
-      name: 'startGame',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Start the game', name: 'startGame', desc: '', args: []);
   }
 
   /// `Link copied`
@@ -206,22 +154,12 @@ class I18n {
 
   /// `Share link to paste`
   String get shareLinkToPaste {
-    return Intl.message(
-      'Share link to paste',
-      name: 'shareLinkToPaste',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Share link to paste', name: 'shareLinkToPaste', desc: '', args: []);
   }
 
   /// `Shareable link`
   String get shareLinkToShare {
-    return Intl.message(
-      'Shareable link',
-      name: 'shareLinkToShare',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Shareable link', name: 'shareLinkToShare', desc: '', args: []);
   }
 
   /// `Online game`
@@ -231,52 +169,27 @@ class I18n {
 
   /// `Game not found.`
   String get gameNotFound {
-    return Intl.message(
-      'Game not found.',
-      name: 'gameNotFound',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Game not found.', name: 'gameNotFound', desc: '', args: []);
   }
 
   /// `Clipboard is empty`
   String get emptyClipboard {
-    return Intl.message(
-      'Clipboard is empty',
-      name: 'emptyClipboard',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Clipboard is empty', name: 'emptyClipboard', desc: '', args: []);
   }
 
   /// `Player first name`
   String get playerFirstName {
-    return Intl.message(
-      'Player first name',
-      name: 'playerFirstName',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Player first name', name: 'playerFirstName', desc: '', args: []);
   }
 
   /// `Player 1 first name`
   String get playerOneFirstName {
-    return Intl.message(
-      'Player 1 first name',
-      name: 'playerOneFirstName',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Player 1 first name', name: 'playerOneFirstName', desc: '', args: []);
   }
 
   /// `Player 2 first name`
   String get playerTwoFirstName {
-    return Intl.message(
-      'Player 2 first name',
-      name: 'playerTwoFirstName',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Player 2 first name', name: 'playerTwoFirstName', desc: '', args: []);
   }
 
   /// `Join`
@@ -296,32 +209,17 @@ class I18n {
 
   /// `An opponent must join the game.`
   String get opponentMustJoin {
-    return Intl.message(
-      'An opponent must join the game.',
-      name: 'opponentMustJoin',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('An opponent must join the game.', name: 'opponentMustJoin', desc: '', args: []);
   }
 
   /// `Please provide a link`
   String get pleaseProvideLink {
-    return Intl.message(
-      'Please provide a link',
-      name: 'pleaseProvideLink',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Please provide a link', name: 'pleaseProvideLink', desc: '', args: []);
   }
 
   /// `Please enter a first name`
   String get pleaseEnterFirstName {
-    return Intl.message(
-      'Please enter a first name',
-      name: 'pleaseEnterFirstName',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Please enter a first name', name: 'pleaseEnterFirstName', desc: '', args: []);
   }
 
   /// `Draw`
@@ -331,12 +229,7 @@ class I18n {
 
   /// `Please retry`
   String get pleaseRetry {
-    return Intl.message(
-      'Please retry',
-      name: 'pleaseRetry',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Please retry', name: 'pleaseRetry', desc: '', args: []);
   }
 
   /// `Error`
@@ -346,12 +239,7 @@ class I18n {
 
   /// `An error occurred, please try again later.`
   String get errorRetryLater {
-    return Intl.message(
-      'An error occurred, please try again later.',
-      name: 'errorRetryLater',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('An error occurred, please try again later.', name: 'errorRetryLater', desc: '', args: []);
   }
 
   /// `Close`
@@ -361,62 +249,32 @@ class I18n {
 
   /// `Cell {row} {column} empty`
   String boardCellEmpty(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column empty',
-      name: 'boardCellEmpty',
-      desc: '',
-      args: [row, column],
-    );
+    return Intl.message('Cell $row $column empty', name: 'boardCellEmpty', desc: '', args: [row, column]);
   }
 
   /// `Cell {row} {column} cross`
   String boardCellCross(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column cross',
-      name: 'boardCellCross',
-      desc: '',
-      args: [row, column],
-    );
+    return Intl.message('Cell $row $column cross', name: 'boardCellCross', desc: '', args: [row, column]);
   }
 
   /// `Cell {row} {column} circle`
   String boardCellCircle(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column circle',
-      name: 'boardCellCircle',
-      desc: '',
-      args: [row, column],
-    );
+    return Intl.message('Cell $row $column circle', name: 'boardCellCircle', desc: '', args: [row, column]);
   }
 
   /// `Turn: {player}`
   String turnOf(Object player) {
-    return Intl.message(
-      'Turn: $player',
-      name: 'turnOf',
-      desc: '',
-      args: [player],
-    );
+    return Intl.message('Turn: $player', name: 'turnOf', desc: '', args: [player]);
   }
 
   /// `Online mode is unavailable in this build.`
   String get onlineUnavailable {
-    return Intl.message(
-      'Online mode is unavailable in this build.',
-      name: 'onlineUnavailable',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Online mode is unavailable in this build.', name: 'onlineUnavailable', desc: '', args: []);
   }
 
   /// `This game already has two players.`
   String get gameAlreadyFull {
-    return Intl.message(
-      'This game already has two players.',
-      name: 'gameAlreadyFull',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('This game already has two players.', name: 'gameAlreadyFull', desc: '', args: []);
   }
 
   /// `AI`
@@ -431,32 +289,17 @@ class I18n {
 
   /// `{name} ({mark})`
   String playerWithMark(Object name, Object mark) {
-    return Intl.message(
-      '$name ($mark)',
-      name: 'playerWithMark',
-      desc: '',
-      args: [name, mark],
-    );
+    return Intl.message('$name ($mark)', name: 'playerWithMark', desc: '', args: [name, mark]);
   }
 
   /// `Game code: {code}`
   String gameCodeValue(Object code) {
-    return Intl.message(
-      'Game code: $code',
-      name: 'gameCodeValue',
-      desc: '',
-      args: [code],
-    );
+    return Intl.message('Game code: $code', name: 'gameCodeValue', desc: '', args: [code]);
   }
 
   /// `{player} wins`
   String playerWins(Object player) {
-    return Intl.message(
-      '$player wins',
-      name: 'playerWins',
-      desc: '',
-      args: [player],
-    );
+    return Intl.message('$player wins', name: 'playerWins', desc: '', args: [player]);
   }
 
   /// `Your turn`
@@ -469,10 +312,7 @@ class AppLocalizationDelegate extends LocalizationsDelegate<I18n> {
   const AppLocalizationDelegate();
 
   List<Locale> get supportedLocales {
-    return const <Locale>[
-      Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'fr'),
-    ];
+    return const <Locale>[Locale.fromSubtags(languageCode: 'en'), Locale.fromSubtags(languageCode: 'fr')];
   }
 
   @override

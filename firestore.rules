@@ -39,13 +39,25 @@ service cloud.firestore {
       }
 
       function isEmptyBoard(board) {
-        return board.row == [0, 0, 0] && board.col == [0, 0, 0] && board.diag == 0 && board.anti == 0
+        return board.keys().hasOnly(['anti', 'col', 'diag', 'moveCount', 'row'])
+          && board.row == [0, 0, 0] && board.col == [0, 0, 0] && board.diag == 0 && board.anti == 0
           && board.moveCount == 0;
       }
 
+      // A TTL policy deletes the game at `expiresAt` (see README): the app sets it 30 days ahead, a day of clock skew
+      // allowed.
       function isCreatedByHost() {
         let game = request.resource.data;
         return signedIn()
+          && game.keys().hasOnly([
+            'boardState', 'createdAt', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'expiresAt', 'fromId',
+            'fromName', 'fromWinCount', 'status', 'toId', 'toName', 'toWinCount', 'updatedAt'
+          ])
+          && game.createdAt == request.time
+          && game.updatedAt == request.time
+          && game.expiresAt is timestamp
+          && game.expiresAt > request.time
+          && game.expiresAt <= request.time + duration.value(31, 'd')
           && game.fromId == request.auth.uid
           && isValidName(game.fromName)
           && game.toId == null
@@ -172,10 +184,14 @@ service cloud.firestore {
           return request.auth != null && (request.auth.uid == game.fromId || request.auth.uid == game.toId);
         }
 
-        // The game update written in the same batch must point at this move (see isMove above).
+        // The game update written in the same batch must point at this move (see isMove above). The move expires with
+        // its game.
         function isMoveOfTheTurn(game, gameAfter) {
           let move = request.resource.data;
           return request.auth != null
+            && move.keys().hasOnly(['createdAt', 'expiresAt', 'index', 'mark', 'playerId', 'round', 'turn'])
+            && move.createdAt == request.time
+            && move.expiresAt == game.expiresAt
             && game.status == 'playing'
             && move.playerId == request.auth.uid
             && move.playerId == game.currentPlayerId

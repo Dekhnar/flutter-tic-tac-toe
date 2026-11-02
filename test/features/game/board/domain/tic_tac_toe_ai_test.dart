@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/tic_tac_toe_ai.dart';
 
 const _player = PlayerId('host');
@@ -38,6 +39,42 @@ void main() {
     expect(ai.nextMove(_game(xCells: [0], oCells: [], currentPlayerId: _ai)), 4);
     expect(ai.nextMove(_game(xCells: [4], oCells: [], currentPlayerId: _ai)), 0);
   });
+
+  for (final (opener, firstPlayer) in [('the player', _player), ('the AI', _ai)]) {
+    test('the AI never loses, whatever the player does, when $opener opens the round', () {
+      const rules = GameRules();
+      final finishedGames = <Game>[];
+
+      Game play(Game game, PlayerId player, int cell) => rules.applyMove(
+        game: game,
+        playerId: player,
+        row: cell ~/ GameRules.boardSize,
+        col: cell % GameRules.boardSize,
+        currentDate: DateTime(2025, 1, 1),
+      );
+
+      void playEveryAnswer(Game game) {
+        if (game.status == GameStatus.finished) {
+          finishedGames.add(game);
+          return;
+        }
+        if (game.isAiTurn) {
+          final cell = ai.nextMove(game) ?? (throw TestFailure('The AI passed its turn on ${game.moves}'));
+          return playEveryAnswer(play(game, _ai, cell));
+        }
+
+        final takenCells = {for (final move in game.moves) move.index};
+        for (final cell in Iterable.generate(9).where((cell) => !takenCells.contains(cell))) {
+          playEveryAnswer(play(game, _player, cell));
+        }
+      }
+
+      playEveryAnswer(_game(xCells: [], oCells: [], currentPlayerId: firstPlayer));
+
+      expect(finishedGames, isNotEmpty);
+      expect(finishedGames.where((game) => game.currentWinnerId == _player), isEmpty);
+    });
+  }
 }
 
 Game _game({required List<int> xCells, required List<int> oCells, required PlayerId currentPlayerId}) {

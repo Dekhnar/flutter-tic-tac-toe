@@ -2,28 +2,16 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/tic_tac_toe_ai.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
-part 'game_local_repository_provider.g.dart';
-
-/// Kept alive: it is the in-memory database of the local games, created on the home screen and played on the board.
-@Riverpod(keepAlive: true)
-LocalGameRepositoryInterface localGameRepository(Ref ref) {
-  final repository = GameLocalRepository(stores: <GameId, InMemoryStore<Game>>{});
-  ref.onDispose(repository.dispose);
-  return repository;
-}
-
-final class GameLocalRepository implements LocalGameRepositoryInterface {
-  const GameLocalRepository({
+final class InMemoryGameRepository implements LocalGameRepositoryInterface {
+  const InMemoryGameRepository({
     @visibleForTesting TicTacToeAI ai = const TicTacToeAI(),
     @visibleForTesting Duration aiMoveDelay = const Duration(seconds: 1),
     @visibleForTesting Clock clock = const Clock(),
@@ -101,6 +89,9 @@ final class GameLocalRepository implements LocalGameRepositoryInterface {
   }) async {
     _applyMove(_storeOf(gameId), playerId: playerId, row: row, col: col);
   }
+
+  @override
+  void endGame(GameId gameId) => _stores.remove(gameId)?.close();
 
   void dispose() {
     for (final store in _stores.values) {

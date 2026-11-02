@@ -6,157 +6,224 @@ part of 'game_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gameNotifierHash() => r'545860712b3d49879a0cf7427b0fac4a08a89c98';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
+@ProviderFor(sessionGameRepository)
+const sessionGameRepositoryProvider = SessionGameRepositoryFamily._();
 
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
+final class SessionGameRepositoryProvider
+    extends $FunctionalProvider<GameRepositoryInterface, GameRepositoryInterface, GameRepositoryInterface>
+    with $Provider<GameRepositoryInterface> {
+  const SessionGameRepositoryProvider._({
+    required SessionGameRepositoryFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: null,
+         name: r'sessionGameRepositoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$sessionGameRepositoryHash();
+
+  @override
+  String toString() {
+    return r'sessionGameRepositoryProvider'
+        ''
+        '($argument)';
   }
 
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
+  @$internal
+  @override
+  $ProviderElement<GameRepositoryInterface> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
-abstract class _$GameNotifier extends BuildlessAutoDisposeStreamNotifier<Game> {
-  late final GameSession session;
-
-  Stream<Game> build({required GameSession session});
-}
-
-/// See also [GameNotifier].
-@ProviderFor(GameNotifier)
-const gameNotifierProvider = GameNotifierFamily();
-
-/// See also [GameNotifier].
-class GameNotifierFamily extends Family<AsyncValue<Game>> {
-  /// See also [GameNotifier].
-  const GameNotifierFamily();
-
-  /// See also [GameNotifier].
-  GameNotifierProvider call({required GameSession session}) {
-    return GameNotifierProvider(session: session);
+  @override
+  GameRepositoryInterface create(Ref ref) {
+    final argument = this.argument as GameSession;
+    return sessionGameRepository(ref, argument);
   }
 
-  @override
-  GameNotifierProvider getProviderOverride(
-    covariant GameNotifierProvider provider,
-  ) {
-    return call(session: provider.session);
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'gameNotifierProvider';
-}
-
-/// See also [GameNotifier].
-class GameNotifierProvider
-    extends AutoDisposeStreamNotifierProviderImpl<GameNotifier, Game> {
-  /// See also [GameNotifier].
-  GameNotifierProvider({required GameSession session})
-    : this._internal(
-        () => GameNotifier()..session = session,
-        from: gameNotifierProvider,
-        name: r'gameNotifierProvider',
-        debugGetCreateSourceHash:
-            const bool.fromEnvironment('dart.vm.product')
-                ? null
-                : _$gameNotifierHash,
-        dependencies: GameNotifierFamily._dependencies,
-        allTransitiveDependencies:
-            GameNotifierFamily._allTransitiveDependencies,
-        session: session,
-      );
-
-  GameNotifierProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.session,
-  }) : super.internal();
-
-  final GameSession session;
-
-  @override
-  Stream<Game> runNotifierBuild(covariant GameNotifier notifier) {
-    return notifier.build(session: session);
-  }
-
-  @override
-  Override overrideWith(GameNotifier Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: GameNotifierProvider._internal(
-        () => create()..session = session,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        session: session,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeStreamNotifierProviderElement<GameNotifier, Game> createElement() {
-    return _GameNotifierProviderElement(this);
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GameRepositoryInterface value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GameRepositoryInterface>(value));
   }
 
   @override
   bool operator ==(Object other) {
-    return other is GameNotifierProvider && other.session == session;
+    return other is SessionGameRepositoryProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, session.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin GameNotifierRef on AutoDisposeStreamNotifierProviderRef<Game> {
-  /// The parameter `session` of this provider.
-  GameSession get session;
-}
+String _$sessionGameRepositoryHash() => r'4d66c29ea71c96861f678602907a4eccab63025e';
 
-class _GameNotifierProviderElement
-    extends AutoDisposeStreamNotifierProviderElement<GameNotifier, Game>
-    with GameNotifierRef {
-  _GameNotifierProviderElement(super.provider);
+final class SessionGameRepositoryFamily extends $Family
+    with $FunctionalFamilyOverride<GameRepositoryInterface, GameSession> {
+  const SessionGameRepositoryFamily._()
+    : super(
+        retry: null,
+        name: r'sessionGameRepositoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  SessionGameRepositoryProvider call(GameSession session) =>
+      SessionGameRepositoryProvider._(argument: session, from: this);
 
   @override
-  GameSession get session => (origin as GameNotifierProvider).session;
+  String toString() => r'sessionGameRepositoryProvider';
 }
 
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+@ProviderFor(game)
+const gameProvider = GameFamily._();
+
+final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Stream<Game>>
+    with $FutureModifier<Game>, $StreamProvider<Game> {
+  const GameProvider._({required GameFamily super.from, required GameSession super.argument})
+    : super(
+        retry: _noRetry,
+        name: r'gameProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gameHash();
+
+  @override
+  String toString() {
+    return r'gameProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<Game> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<Game> create(Ref ref) {
+    final argument = this.argument as GameSession;
+    return game(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is GameProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$gameHash() => r'5732a176b245e7add54ef3c36ed63dbe2500f862';
+
+final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Game>, GameSession> {
+  const GameFamily._()
+    : super(
+        retry: _noRetry,
+        name: r'gameProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  GameProvider call(GameSession session) => GameProvider._(argument: session, from: this);
+
+  @override
+  String toString() => r'gameProvider';
+}
+
+/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+
+@ProviderFor(GameActions)
+const gameActionsProvider = GameActionsFamily._();
+
+/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void> {
+  /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+  const GameActionsProvider._({required GameActionsFamily super.from, required GameSession super.argument})
+    : super(
+        retry: null,
+        name: r'gameActionsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gameActionsHash();
+
+  @override
+  String toString() {
+    return r'gameActionsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  GameActions create() => GameActions();
+
+  @override
+  bool operator ==(Object other) {
+    return other is GameActionsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$gameActionsHash() => r'ffed9b780a0513694082719eaa1adc190db4160e';
+
+/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+
+final class GameActionsFamily extends $Family
+    with $ClassFamilyOverride<GameActions, AsyncValue<void>, void, FutureOr<void>, GameSession> {
+  const GameActionsFamily._()
+    : super(
+        retry: null,
+        name: r'gameActionsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+
+  GameActionsProvider call(GameSession session) => GameActionsProvider._(argument: session, from: this);
+
+  @override
+  String toString() => r'gameActionsProvider';
+}
+
+/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+
+abstract class _$GameActions extends $AsyncNotifier<void> {
+  late final _$args = ref.$arg as GameSession;
+  GameSession get session => _$args;
+
+  FutureOr<void> build(GameSession session);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    build(_$args);
+    final ref = this.ref as $Ref<AsyncValue<void>, void>;
+    final element =
+        ref.element as $ClassProviderElement<AnyNotifier<AsyncValue<void>, void>, AsyncValue<void>, Object?, Object?>;
+    element.handleValue(ref, null);
+  }
+}

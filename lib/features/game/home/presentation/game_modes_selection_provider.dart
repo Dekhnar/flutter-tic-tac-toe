@@ -1,63 +1,33 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_session_starter.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/start_game_session.dart';
-import 'package:tic_tac_toe_app/features/game/home/presentation/game_modes_selection_state.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
-import 'package:tic_tac_toe_app/shared/notifications/message_notifier.dart';
 
 part 'game_modes_selection_provider.g.dart';
 
-typedef OpenGameCreationDialogCallback = Future<GameCreateInput?> Function();
-
-/// Whether a game is being created or joined, between the dialog closing and the board opening.
+/// Creating or joining the game the player chose: loading meanwhile, the error when it failed.
 @riverpod
 final class GameModesSelectionNotifier extends _$GameModesSelectionNotifier {
   @override
-  bool build() => false;
+  FutureOr<void> build() {}
 
-  bool _requesting = false;
+  /// The session to open the board with, or null when it failed: the state then holds the error.
+  Future<GameSession?> startSession(GameCreateInput input) async {
+    // The loading barrier covers the modes while a game starts.
+    if (state.isLoading) return null;
 
-  Future<GameSession?> requestGame(
-    GameMode mode, {
-    required OpenGameCreationDialogCallback openOfflineGameCreationDialog,
-    required OpenGameCreationDialogCallback openOfflineVsAiGameCreationDialog,
-    required OpenGameCreationDialogCallback openOnlineGameCreationDialog,
-  }) async {
-    if (_requesting) return null;
+    final starter = ref.read(gameSessionStarterProvider);
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(() => starter.start(input));
+    if (!ref.mounted) return null;
 
-    if (mode == GameMode.online1v1 && !ref.read(isOnlineAvailableProvider)) {
-      _showMessage(InfoMessage.onlineUnavailable);
-      return null;
+    if (result case AsyncError(:final error, :final stackTrace)) {
+      ref.read(errorLoggerServiceProvider).log(error, stackTrace);
     }
-
-    _requesting = true;
-    try {
-      final input =
-          await switch (mode) {
-            GameMode.offline1v1 => openOfflineGameCreationDialog,
-            GameMode.offlineVSAi => openOfflineVsAiGameCreationDialog,
-            GameMode.online1v1 => openOnlineGameCreationDialog,
-          }();
-      if (input == null) return null;
-
-      state = true;
-      return await ref.read(startGameSessionProvider)(input);
-    } on AppException catch (refusal) {
-      ref.read(errorLoggerServiceProvider).logAppException(refusal);
-      _showMessage(InfoMessage.explaining(refusal));
-      return null;
-    } catch (error, stackTrace) {
-      ref.read(errorLoggerServiceProvider).logError(error, stackTrace);
-      _showMessage(InfoMessage.pleaseRetry);
-      return null;
-    } finally {
-      _requesting = false;
-      state = false;
-    }
+    state = result.whenData((_) {});
+    return result.value;
   }
-
-  void _showMessage(InfoMessage message) => ref.read(messageNotifierProvider.notifier).showMessage(message);
 }

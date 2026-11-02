@@ -40,31 +40,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "boardCellCircle": m0,
     "boardCellCross": m1,
     "boardCellEmpty": m2,
-    "cellAlreadyTaken": MessageLookupByLibrary.simpleMessage(
-      "This cell is already taken.",
-    ),
+    "cellAlreadyTaken": MessageLookupByLibrary.simpleMessage("This cell is already taken."),
     "copy": MessageLookupByLibrary.simpleMessage("Copy"),
     "create": MessageLookupByLibrary.simpleMessage("Create"),
     "createGame": MessageLookupByLibrary.simpleMessage("Create game"),
     "draw": MessageLookupByLibrary.simpleMessage("Draw"),
-    "emptyClipboard": MessageLookupByLibrary.simpleMessage(
-      "Clipboard is empty",
-    ),
-    "errorRetryLater": MessageLookupByLibrary.simpleMessage(
-      "An error occurred, please try again later.",
-    ),
+    "emptyClipboard": MessageLookupByLibrary.simpleMessage("Clipboard is empty"),
+    "errorRetryLater": MessageLookupByLibrary.simpleMessage("An error occurred, please try again later."),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
-    "gameAlreadyFull": MessageLookupByLibrary.simpleMessage(
-      "This game already has two players.",
-    ),
+    "gameAlreadyFull": MessageLookupByLibrary.simpleMessage("This game already has two players."),
     "gameCodeValue": m3,
     "gameNotFound": MessageLookupByLibrary.simpleMessage("Game not found."),
-    "gameNotStartedYet": MessageLookupByLibrary.simpleMessage(
-      "The game has not started yet.",
-    ),
-    "invalidCellIndex": MessageLookupByLibrary.simpleMessage(
-      "Invalid cell index.",
-    ),
+    "gameNotStartedYet": MessageLookupByLibrary.simpleMessage("The game has not started yet."),
+    "invalidCellIndex": MessageLookupByLibrary.simpleMessage("Invalid cell index."),
     "join": MessageLookupByLibrary.simpleMessage("Join"),
     "linkCopied": MessageLookupByLibrary.simpleMessage("Link copied"),
     "loading": MessageLookupByLibrary.simpleMessage("Loading"),
@@ -72,54 +60,32 @@ class MessageLookup extends MessageLookupByLibrary {
     "notYourTurn": MessageLookupByLibrary.simpleMessage("It\'s not your turn."),
     "online1v1": MessageLookupByLibrary.simpleMessage("Online 1v1"),
     "onlineGame": MessageLookupByLibrary.simpleMessage("Online game"),
-    "onlineUnavailable": MessageLookupByLibrary.simpleMessage(
-      "Online mode is unavailable in this build.",
-    ),
-    "opponentMustJoin": MessageLookupByLibrary.simpleMessage(
-      "An opponent must join the game.",
-    ),
+    "onlineUnavailable": MessageLookupByLibrary.simpleMessage("Online mode is unavailable in this build."),
+    "opponentMustJoin": MessageLookupByLibrary.simpleMessage("An opponent must join the game."),
     "paste": MessageLookupByLibrary.simpleMessage("Paste"),
     "play": MessageLookupByLibrary.simpleMessage("Play"),
     "playAgain": MessageLookupByLibrary.simpleMessage("Play again"),
     "playAgainstAi": MessageLookupByLibrary.simpleMessage("Play against AI."),
-    "playFriendOnline": MessageLookupByLibrary.simpleMessage(
-      "Play your friend online.",
-    ),
-    "playOnSameDevice": MessageLookupByLibrary.simpleMessage(
-      "Play on the same device.",
-    ),
-    "playerFirstName": MessageLookupByLibrary.simpleMessage(
-      "Player first name",
-    ),
-    "playerOneFirstName": MessageLookupByLibrary.simpleMessage(
-      "Player 1 first name",
-    ),
-    "playerTwoFirstName": MessageLookupByLibrary.simpleMessage(
-      "Player 2 first name",
-    ),
+    "playFriendOnline": MessageLookupByLibrary.simpleMessage("Play your friend online."),
+    "playOnSameDevice": MessageLookupByLibrary.simpleMessage("Play on the same device."),
+    "playerFirstName": MessageLookupByLibrary.simpleMessage("Player first name"),
+    "playerOneFirstName": MessageLookupByLibrary.simpleMessage("Player 1 first name"),
+    "playerTwoFirstName": MessageLookupByLibrary.simpleMessage("Player 2 first name"),
     "playerWins": m4,
     "playerWithMark": m5,
-    "pleaseEnterFirstName": MessageLookupByLibrary.simpleMessage(
-      "Please enter a first name",
-    ),
-    "pleaseProvideLink": MessageLookupByLibrary.simpleMessage(
-      "Please provide a link",
-    ),
+    "pleaseEnterFirstName": MessageLookupByLibrary.simpleMessage("Please enter a first name"),
+    "pleaseProvideLink": MessageLookupByLibrary.simpleMessage("Please provide a link"),
     "pleaseRetry": MessageLookupByLibrary.simpleMessage("Please retry"),
     "quit": MessageLookupByLibrary.simpleMessage("Close"),
     "retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "roundIsOver": MessageLookupByLibrary.simpleMessage("The round is over."),
-    "shareLinkToPaste": MessageLookupByLibrary.simpleMessage(
-      "Share link to paste",
-    ),
+    "shareLinkToPaste": MessageLookupByLibrary.simpleMessage("Share link to paste"),
     "shareLinkToShare": MessageLookupByLibrary.simpleMessage("Shareable link"),
     "soloVsAi": MessageLookupByLibrary.simpleMessage("Solo vs AI"),
     "start": MessageLookupByLibrary.simpleMessage("Start"),
     "startGame": MessageLookupByLibrary.simpleMessage("Start the game"),
     "turnOf": m6,
-    "waitingForOpponent": MessageLookupByLibrary.simpleMessage(
-      "Waiting for an opponent…",
-    ),
+    "waitingForOpponent": MessageLookupByLibrary.simpleMessage("Waiting for an opponent…"),
     "yourTurn": MessageLookupByLibrary.simpleMessage("Your turn"),
   };
 }

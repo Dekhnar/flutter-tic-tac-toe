@@ -5,10 +5,14 @@ import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 // One command per kind of write `firestore.rules` accepts: each writes exactly the fields its rule allows.
 
 final class CreateGameCommand {
+  final DateTime _expiresAt;
   final PlayerId _host;
   final String _hostName;
 
-  const CreateGameCommand({required PlayerId host, required String hostName}) : _host = host, _hostName = hostName;
+  const CreateGameCommand({required DateTime expiresAt, required PlayerId host, required String hostName})
+    : _expiresAt = expiresAt,
+      _host = host,
+      _hostName = hostName;
 
   Map<String, Object?> toFirestore() => {
     'boardState': const BoardState().toJson(),
@@ -16,6 +20,7 @@ final class CreateGameCommand {
     'currentPlayerId': _host.value,
     'currentRoundIndex': 0,
     'currentWinnerId': null,
+    'expiresAt': Timestamp.fromDate(_expiresAt),
     'fromId': _host.value,
     'fromName': _hostName,
     'fromWinCount': 0,
@@ -47,12 +52,14 @@ final class StartGameCommand {
 }
 
 final class MoveEventCommand {
+  final DateTime _expiresAt;
   final Move _move;
 
-  const MoveEventCommand({required Move move}) : _move = move;
+  const MoveEventCommand({required DateTime expiresAt, required Move move}) : _expiresAt = expiresAt, _move = move;
 
   Map<String, Object?> toFirestore() => {
     'createdAt': FieldValue.serverTimestamp(),
+    'expiresAt': Timestamp.fromDate(_expiresAt),
     'index': _move.index,
     'mark': _move.mark.name,
     'playerId': _move.playerId.value,

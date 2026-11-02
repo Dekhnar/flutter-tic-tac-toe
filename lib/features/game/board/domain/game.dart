@@ -17,6 +17,7 @@ final class Game with _$Game {
     required this.currentPlayerId,
     this.currentRoundIndex = 0,
     this.currentWinnerId,
+    this.expiresAt,
     required this.fromId,
     required this.fromName,
     this.fromWinCount = 0,
@@ -45,6 +46,10 @@ final class Game with _$Game {
 
   @override
   final PlayerId? currentWinnerId;
+
+  /// When the server deletes an online game; local games never expire.
+  @override
+  final DateTime? expiresAt;
 
   @override
   final PlayerId fromId;
@@ -125,6 +130,8 @@ final class Move with _$Move {
   Map<String, Object?> toJson() => _$MoveToJson(this);
 }
 
+/// Per line, the X marks minus the O marks: a line holds three of a kind at ±3. The moves are what the board shows;
+/// these counters are what the Firestore rules check, which cannot loop over the moves.
 @freezed
 @JsonSerializable()
 final class BoardState with _$BoardState {

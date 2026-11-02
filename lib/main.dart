@@ -4,12 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:tic_tac_toe_app/app.dart';
+import 'package:tic_tac_toe_app/composition.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,13 +28,13 @@ Future<ProviderContainer> createAppContainer({ErrorLoggerService errorLogger = c
   final isOnlineAvailable = await _initializeFirebase(errorLogger);
 
   final container = ProviderContainer(
-    overrides: [isOnlineAvailableProvider.overrideWithValue(isOnlineAvailable)],
+    overrides: bindGameProviders(isOnlineAvailable: isOnlineAvailable),
     observers: [const AsyncErrorLogger()],
   );
   try {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   } catch (error, stackTrace) {
-    errorLogger.logError(error, stackTrace);
+    errorLogger.log(error, stackTrace);
   }
 
   return container;
@@ -48,7 +48,7 @@ Future<bool> _initializeFirebase(ErrorLoggerService errorLogger) async {
     await FirebaseEnvironment.initialize(options);
     return true;
   } catch (error, stackTrace) {
-    errorLogger.logError(error, stackTrace);
+    errorLogger.log(error, stackTrace);
     return false;
   }
 }
@@ -60,11 +60,11 @@ void _registerErrorHandlers(ErrorLoggerService errorLogger) {
   // * Show some error UI if any uncaught exception happens
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    errorLogger.logError(details.exception, details.stack);
+    errorLogger.log(details.exception, details.stack);
   };
   // * Handle errors from the underlying platform/OS
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    errorLogger.logError(error, stack);
+    errorLogger.log(error, stack);
     return true;
   };
   // * Show some error UI when any widget in the app fails to build

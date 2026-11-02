@@ -1,6 +1,8 @@
 // Every ProviderScope below is the root of its test tree, built through a helper the lint cannot follow.
 // ignore_for_file: scoped_providers_should_specify_dependencies
 
+import 'dart:async';
+
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,16 +11,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/design_system/components/data_display/base/card.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_repository_provider.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/game_repository_provider.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_providers.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_repository_interface.dart';
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
-import 'package:tic_tac_toe_app/shared/notifications/message_displayer.dart';
-import 'package:tic_tac_toe_app/shared/notifications/message_notifier.dart';
 
 import '../../../../shared/golden_test_utils/material_golden.dart';
 import '../../../../shared/tic_tac_toe_widget_test_wrapper.dart';
@@ -69,6 +70,15 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       robot.expectMarkedCellCount(2);
+    });
+
+    testWidgets('closing the board ends the game: nobody can come back to it', (tester) async {
+      final robot = _GameBoardScreenRobot(tester);
+      final session = await robot.pumpLocalGame(guestName: 'Mario', hostName: 'Jessy');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(robot.localRepository.watchGame(session.gameId), emitsError(isA<GameNotFoundException>()));
     });
   });
 
@@ -129,7 +139,7 @@ void main() {
 
         await robot.pumpStartedOnlineGame();
 
-        harness.beforeMakeMove = () => harness.seedForRefusal(refusal);
+        harness.appRepository.beforeMakeMove = () => harness.seedForRefusal(refusal);
         await robot.tapCell(0);
         await tester.pumpAndSettle();
 
@@ -145,7 +155,7 @@ void main() {
       final robot = _GameBoardScreenRobot(tester, harness: harness);
 
       await robot.pumpStartedOnlineGame();
-      harness.beforeMakeMove = () async => throw Exception('network unreachable');
+      harness.appRepository.beforeMakeMove = () async => throw Exception('network unreachable');
 
       await robot.tapCell(0);
       await tester.pumpAndSettle();
@@ -156,6 +166,24 @@ void main() {
       await tester.pumpAndSettle();
 
       robot.expectText(I18n.current.pleaseRetry);
+    });
+
+    testWidgets('the board takes no other move while the server handles one', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      final serverAnswer = Completer<void>();
+      harness.appRepository.beforeMakeMove = () => serverAnswer.future;
+
+      await robot.tapCell(0);
+      await robot.tapCell(1);
+      serverAnswer.complete();
+      await tester.pumpAndSettle();
+
+      robot.expectCellHasMark(0, 'X');
+      robot.expectCellEmpty(1);
+      robot.expectText(I18n.current.turnOf('Luigi (O)'));
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('a game deleted while being played shows a blocking error that only offers to leave', (tester) async {
@@ -177,12 +205,10 @@ void main() {
       var attempts = 0;
       final robot = _GameBoardScreenRobot(tester);
 
-      await robot.pumpWithGame(
-        _FakeGameNotifier.from(() {
-          attempts++;
-          return attempts == 1 ? Stream.error(Exception('offline')) : Stream.value(_buildPlayingGame());
-        }),
-      );
+      await robot.pumpWithGame(() {
+        attempts++;
+        return attempts == 1 ? Stream.error(Exception('offline')) : Stream.value(_buildPlayingGame());
+      });
       robot.expectText(I18n.current.errorRetryLater);
 
       await tester.tap(find.text(I18n.current.retry));
@@ -197,75 +223,83 @@ void main() {
     screenTestGolden(
       'The board while waiting for an opponent',
       fileName: 'game_board_screen_setup',
-      builder: () => _goldenBoard(_FakeGameNotifier.data(_buildSetupGame())),
+      builder: () => _goldenBoard(() => Stream.value(_buildSetupGame())),
     );
 
     screenTestGolden(
       'The board during a round',
       fileName: 'game_board_screen_playing',
-      builder: () => _goldenBoard(_FakeGameNotifier.data(_buildPlayingGame())),
+      builder: () => _goldenBoard(() => Stream.value(_buildPlayingGame())),
     );
 
     screenTestGolden(
       'The board once a player won',
       fileName: 'game_board_screen_finished',
-      builder: () => _goldenBoard(_FakeGameNotifier.data(_buildFinishedGame())),
+      builder: () => _goldenBoard(() => Stream.value(_buildFinishedGame())),
     );
 
     screenTestGolden(
       'The board with a retry message',
       fileName: 'game_board_screen_error',
       whilePerforming: (tester) async {
-        final context = tester.element(find.byType(MessageDisplayer));
-        final container = ProviderScope.containerOf(context);
-        container.read(messageNotifierProvider.notifier).showMessage(InfoMessage.pleaseRetry);
+        await tester.tap(find.byKey(const Key('cell_1')));
         await tester.pumpAndSettle();
         return null;
       },
-      builder: () => _goldenBoard(_FakeGameNotifier.data(_buildPlayingGame())),
+      builder: () => _goldenBoard(() => Stream.value(_buildPlayingGame())),
     );
 
     screenTestGolden(
       'The board when the game cannot load',
       fileName: 'game_board_screen_error_dialog',
-      builder: () => _goldenBoard(_FakeGameNotifier.error(GameNotFoundException())),
+      builder: () => _goldenBoard(() => Stream.error(GameNotFoundException())),
     );
   });
 }
 
-Widget _goldenBoard(_FakeGameNotifier notifier) => ProviderScope(
-  overrides: [gameNotifierProvider(session: _onlineSession).overrideWith(() => notifier)],
+/// The board of [game], on a device that cannot reach the server: a move fails and asks to retry.
+Widget _goldenBoard(Stream<Game> Function() game) => ProviderScope(
+  overrides: [
+    gameProvider(_onlineSession).overrideWith((ref) => game()),
+    onlineGameRepositoryProvider.overrideWithValue(
+      _AppRepository(FirestoreGameRepository(firestore: FakeFirebaseFirestore()))
+        ..beforeMakeMove = () async => throw Exception('network unreachable'),
+    ),
+  ],
   child: const GameBoardScreen(session: _onlineSession),
 );
 
 /// Test DSL for the board screen: scenarios read as player actions, selectors live in one place.
 /// See https://www.verygood.ventures/blog/robot-testing-in-flutter.
 class _GameBoardScreenRobot {
-  const _GameBoardScreenRobot(this.tester, {this.harness});
+  _GameBoardScreenRobot(this.tester, {this.harness});
 
   final WidgetTester tester;
   final _FirestoreTestHarness? harness;
 
   _FirestoreTestHarness get _harness => harness ?? (throw StateError('Online scenarios need a Firestore harness'));
 
-  Future<void> pumpLocalGame({String guestName = '', required String hostName, bool vsAi = false}) async {
-    final repository = GameLocalRepository(stores: <GameId, InMemoryStore<Game>>{}, aiMoveDelay: Duration.zero);
-    final gameId = await repository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
+  final localRepository = InMemoryGameRepository(stores: {}, aiMoveDelay: Duration.zero);
+
+  Future<GameSession> pumpLocalGame({String guestName = '', required String hostName, bool vsAi = false}) async {
+    final gameId = await localRepository.createGame(guestName: guestName, hostName: hostName, vsAi: vsAi);
+    final session = GameSession.local(gameId: gameId);
 
     await tester.pumpScreen(
       ProviderScope(
-        overrides: [localGameRepositoryProvider.overrideWithValue(repository)],
-        child: GameBoardScreen(session: GameSession.local(gameId: gameId)),
+        overrides: [localGameRepositoryProvider.overrideWithValue(localRepository)],
+        child: GameBoardScreen(session: session),
       ),
     );
     await tester.pumpAndSettle();
+    return session;
   }
 
   Future<void> pumpOnlineGameAsHost() async {
     await _harness.host.createGame(_gameId, host: _jessy, hostName: 'Jessy');
     await tester.pumpScreen(
       ProviderScope(
-        overrides: [onlineGameRepositoryProvider.overrideWithValue(_harness.appRepository())],
+        overrides: [onlineGameRepositoryProvider.overrideWithValue(_harness.appRepository)],
         child: const GameBoardScreen(session: _onlineSession),
       ),
     );
@@ -281,10 +315,10 @@ class _GameBoardScreenRobot {
     await tester.pumpAndSettle();
   }
 
-  Future<void> pumpWithGame(_FakeGameNotifier notifier) async {
+  Future<void> pumpWithGame(Stream<Game> Function() game) async {
     await tester.pumpScreen(
       ProviderScope(
-        overrides: [gameNotifierProvider(session: _onlineSession).overrideWith(() => notifier)],
+        overrides: [gameProvider(_onlineSession).overrideWith((ref) => game())],
         child: const GameBoardScreen(session: _onlineSession),
       ),
     );
@@ -348,23 +382,21 @@ class _GameBoardScreenRobot {
 class _FirestoreTestHarness {
   final firestore = FakeFirebaseFirestore();
 
-  AsyncCallback? beforeMakeMove;
-
   /// The host's own device, creating the game before the board opens.
-  late final host = GameRepository(firestore: firestore);
+  late final host = FirestoreGameRepository(firestore: firestore);
 
   /// The other player's device, writing to the same database as the app under test.
-  late final opponent = GameRepository(firestore: firestore);
+  late final opponent = FirestoreGameRepository(firestore: firestore);
 
-  GameRepository appRepository() =>
-      GameRepository(firestore: firestore, beforeMakeMove: () async => beforeMakeMove?.call());
+  /// The repository of the board under test.
+  late final appRepository = _AppRepository(FirestoreGameRepository(firestore: firestore));
 
   Future<void> opponentJoins() => opponent.joinGame(_gameId, guest: _luigi, guestName: 'Luigi');
 
   Future<void> deleteGame() => firestore.collection('games').doc(_gameId.value).delete();
 
   /// Puts the stored game in the state the server would refuse a move for.
-  Future<void> seedForRefusal(AppException refusal) async {
+  Future<void> seedForRefusal(GameException refusal) async {
     final gameRef = firestore.collection('games').doc(_gameId.value);
 
     switch (refusal) {
@@ -390,17 +422,42 @@ class _FirestoreTestHarness {
   }
 }
 
-class _FakeGameNotifier extends GameNotifier {
-  _FakeGameNotifier.data(Game game) : _game = (() => Stream.value(game));
+/// The app's repository, on a device whose game may change on the server between the tap and the write.
+final class _AppRepository implements OnlineGameRepositoryInterface {
+  _AppRepository(this._repository);
 
-  _FakeGameNotifier.error(Object error) : _game = (() => Stream.error(error));
+  final OnlineGameRepositoryInterface _repository;
 
-  _FakeGameNotifier.from(this._game);
-
-  final Stream<Game> Function() _game;
+  /// Runs once the player tapped a cell, before the move reaches the server.
+  AsyncCallback? beforeMakeMove;
 
   @override
-  Stream<Game> build({required GameSession session}) => _game();
+  Future<void> createGame(GameId gameId, {required PlayerId host, required String hostName}) =>
+      _repository.createGame(gameId, host: host, hostName: hostName);
+
+  @override
+  Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName}) =>
+      _repository.joinGame(gameId, guest: guest, guestName: guestName);
+
+  @override
+  Future<void> makeMove({
+    required GameId gameId,
+    required PlayerId playerId,
+    required int row,
+    required int col,
+  }) async {
+    await beforeMakeMove?.call();
+    await _repository.makeMove(gameId: gameId, playerId: playerId, row: row, col: col);
+  }
+
+  @override
+  Future<void> startGame({required GameId gameId}) => _repository.startGame(gameId: gameId);
+
+  @override
+  Future<void> startNewRound({required GameId gameId}) => _repository.startNewRound(gameId: gameId);
+
+  @override
+  Stream<Game> watchGame(GameId gameId) => _repository.watchGame(gameId);
 }
 
 Game _buildSetupGame() => Game(

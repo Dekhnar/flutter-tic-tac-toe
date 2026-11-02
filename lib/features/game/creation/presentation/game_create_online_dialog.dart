@@ -10,9 +10,7 @@ import 'package:uuid/uuid.dart';
 
 @RoutePage()
 class GameCreateOnlineDialog extends StatefulWidget {
-  const GameCreateOnlineDialog({super.key, Uuid uuid = const Uuid()}) : _uuid = uuid;
-
-  final Uuid _uuid;
+  const GameCreateOnlineDialog({super.key});
 
   @override
   State<GameCreateOnlineDialog> createState() => _GameCreateOnlineDialogState();
@@ -20,7 +18,7 @@ class GameCreateOnlineDialog extends StatefulWidget {
 
 class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
   late final TextEditingController _shareLinkCtrl;
-  late final _shareLink = widget._uuid.v4();
+  final _shareLink = const Uuid().v4();
 
   final _formKey = GlobalKey<FormState>();
   final _labelCtrl = TextEditingController();

@@ -1,9 +1,11 @@
+import 'package:clock/clock.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/game_repository_provider.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
 const _gameId = GameId('ABCDEF');
 const _jessy = PlayerId('jessy-uid');
@@ -12,13 +14,13 @@ const _mario = PlayerId('mario-uid');
 
 void main() {
   late FakeFirebaseFirestore firestore;
-  late GameRepository host;
-  late GameRepository guest;
+  late FirestoreGameRepository host;
+  late FirestoreGameRepository guest;
 
   setUp(() {
     firestore = FakeFirebaseFirestore();
-    host = GameRepository(firestore: firestore);
-    guest = GameRepository(firestore: firestore);
+    host = FirestoreGameRepository(firestore: firestore);
+    guest = FirestoreGameRepository(firestore: firestore);
   });
 
   Future<void> startedGame() async {
@@ -60,7 +62,7 @@ void main() {
       await guest.joinGame(_gameId, guest: _luigi, guestName: 'Luigi');
 
       await expectLater(
-        GameRepository(firestore: firestore).joinGame(_gameId, guest: _mario, guestName: 'Mario'),
+        FirestoreGameRepository(firestore: firestore).joinGame(_gameId, guest: _mario, guestName: 'Mario'),
         throwsA(isA<GameAlreadyFullException>()),
       );
       expect((await storedGame()).toId, _luigi);
@@ -79,6 +81,21 @@ void main() {
     await host.createGame(_gameId, host: _jessy, hostName: 'Jessy');
 
     expect(guest.createGame(_gameId, host: _mario, hostName: 'Mario'), throwsA(isA<StateError>()));
+  });
+
+  test('a game and its moves are deleted by the server thirty days after the creation', () async {
+    final createdAt = DateTime.utc(2026, 11, 2, 10);
+    final repository = FirestoreGameRepository(clock: Clock.fixed(createdAt), firestore: firestore);
+    await repository.createGame(_gameId, host: _jessy, hostName: 'Jessy');
+    await guest.joinGame(_gameId, guest: _luigi, guestName: 'Luigi');
+    await repository.startGame(gameId: _gameId);
+
+    await repository.makeMove(gameId: _gameId, playerId: _jessy, row: 0, col: 0);
+
+    final expiresAt = Timestamp.fromDate(DateTime.utc(2026, 12, 2, 10));
+    final gameRef = firestore.collection('games').doc(_gameId.value);
+    expect((await gameRef.get()).data()?['expiresAt'], expiresAt);
+    expect((await gameRef.collection('moves').get()).docs.single.data()['expiresAt'], expiresAt);
   });
 
   test('watching a game deleted from the server ends in an error', () async {

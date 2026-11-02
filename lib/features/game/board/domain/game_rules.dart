@@ -1,13 +1,13 @@
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
 final class GameRules {
   const GameRules();
 
   static const boardSize = 3;
 
-  /// The game after the move, or throws the [AppException] that says why the move is refused.
+  /// The game after the move, or throws the [GameException] that says why the move is refused.
   Game applyMove({
     required Game game,
     required PlayerId playerId,

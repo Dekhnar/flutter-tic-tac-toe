@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_repository_provider.dart';
+import 'package:tic_tac_toe_app/features/game/board/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_exceptions.dart';
 
-const _host = GameLocalRepository.hostId;
-const _guest = GameLocalRepository.guestId;
+const _host = InMemoryGameRepository.hostId;
+const _guest = InMemoryGameRepository.guestId;
 
 void main() {
-  late GameLocalRepository repository;
+  late InMemoryGameRepository repository;
 
   setUp(() {
-    repository = GameLocalRepository(stores: <GameId, InMemoryStore<Game>>{}, aiMoveDelay: Duration.zero);
+    repository = InMemoryGameRepository(stores: <GameId, InMemoryStore<Game>>{}, aiMoveDelay: Duration.zero);
   });
 
   tearDown(() => repository.dispose());
@@ -83,6 +83,16 @@ void main() {
       repository.makeMove(gameId: unknown, playerId: _host, row: 0, col: 0),
       throwsA(isA<GameNotFoundException>()),
     );
+  });
+
+  test('a game ended by its players is forgotten, and its board stops receiving updates', () async {
+    final gameId = await startGame();
+    final updates = repository.watchGame(gameId).toList();
+
+    repository.endGame(gameId);
+
+    await expectLater(updates, completes);
+    expect(repository.watchGame(gameId), emitsError(isA<GameNotFoundException>()));
   });
 
   test('the AI stops playing once the games are closed', () async {

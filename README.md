@@ -97,7 +97,7 @@ One document per game, `games/{gameId}`: the game id is the code players share, 
 - **freezed** for the immutable domain model
 - **Firebase Auth** (anonymous) + **Cloud Firestore** for the online mode, **Crashlytics** and **App Check** on a real project
 - **share_plus** to send the game code
-- **intl** + ARB files for i18n (English, French); theme and language follow the device
+- **gen-l10n** + ARB files for i18n (English, French); theme and language follow the device
 - **google_fonts** (Raleway, bundled in `assets/google_fonts`)
 
 ---
@@ -108,7 +108,8 @@ One document per game, `games/{gameId}`: the game id is the code players share, 
 # Generated code (freezed, riverpod, auto_route)
 dart run build_runner build
 
-# Translations: edit lib/l10n/intl_*.arb; the Flutter Intl IDE plugin regenerates lib/generated
+# Translations: edit lib/l10n/intl_*.arb (intl_en.arb declares the placeholders), then
+flutter gen-l10n   # also run by flutter pub get, run and build; writes lib/generated
 
 # Static analysis, including riverpod_lint
 flutter analyze

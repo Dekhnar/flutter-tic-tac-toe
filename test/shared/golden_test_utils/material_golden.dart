@@ -1,6 +1,5 @@
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
@@ -125,14 +124,9 @@ class MaterialGolden extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      localizationsDelegates: const [
-        I18n.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: I18n.localizationsDelegates,
       debugShowCheckedModeBanner: false,
-      supportedLocales: I18n.delegate.supportedLocales,
+      supportedLocales: I18n.supportedLocales,
       locale: const Locale('fr'),
       themeMode: themeMode,
       theme: ThemeBuilder.buildLightThemeData().copyWith(platform: platform),

@@ -1,4 +1,5 @@
 {
+  "@@locale": "en",
   "retry": "Retry",
   "online1v1": "Online 1v1",
   "local1v1": "Local 1v1",
@@ -35,23 +36,98 @@
   "errorRetryLater": "An error occurred, please try again later.",
   "quit": "Quit",
   "boardCellEmpty": "Cell {row} {column} empty",
+  "@boardCellEmpty": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
   "boardCellCross": "Cell {row} {column} cross",
+  "@boardCellCross": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
   "boardCellCircle": "Cell {row} {column} circle",
+  "@boardCellCircle": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
   "turnOf": "Turn: {player}",
+  "@turnOf": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
   "onlineUnavailable": "Online mode is unavailable in this build.",
   "gameAlreadyFull": "This game already has two players.",
   "ai": "AI",
   "loading": "Loading",
   "playerWithMark": "{name} ({mark})",
+  "@playerWithMark": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "gameCodeValue": "Game code: {code}",
+  "@gameCodeValue": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "playerWins": "{player} wins",
+  "@playerWins": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
   "yourTurn": "Your turn",
   "codeCopied": "Code copied",
   "gameCode": "Game code",
   "pleaseEnterGameCode": "Please enter the game code",
   "nameTooLong": "{max} characters at most",
+  "@nameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "share": "Share",
   "shareInvitation": "Join my tic-tac-toe game with the code {code}",
+  "@shareInvitation": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "opponentLeft": "Your opponent left the game.",
   "gameAbandoned": "This game is over: a player left it.",
   "leaveGameTitle": "Leave the game?",

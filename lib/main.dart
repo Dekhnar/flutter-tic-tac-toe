@@ -42,7 +42,10 @@ class _BrokenWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final message = kDebugMode ? details.toString() : I18n.maybeOf(context)?.errorRetryLater ?? 'An error occurred.';
+    final message =
+        kDebugMode
+            ? details.toString()
+            : Localizations.of<I18n>(context, I18n)?.errorRetryLater ?? 'An error occurred.';
 
     return Material(
       color: colors.error,

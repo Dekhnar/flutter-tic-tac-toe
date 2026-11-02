@@ -17,6 +17,9 @@ import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 
 /// Runs the real app on a device. The online scenarios need the emulators (see README):
 /// `flutter test integration_test --dart-define-from-file=firebase_emulator.json`.
+/// The strings in the language the device runs the app in, read once the app launched.
+late I18n i18n;
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -27,30 +30,30 @@ void main() {
       final robot = _AppRobot(tester);
       await robot.launch();
 
-      await robot.chooseMode(I18n.current.local1v1);
+      await robot.chooseMode(i18n.local1v1);
       await robot.enterNames(['Jessy', 'Mario']);
-      await robot.tapText(I18n.current.start);
-      await robot.tapText(I18n.current.startGame);
+      await robot.tapText(i18n.start);
+      await robot.tapText(i18n.startGame);
 
       await robot.play([0, 3, 1, 4, 2]);
-      await robot.waitFor(find.text(I18n.current.playerWins('Jessy (X)')));
+      await robot.waitFor(find.text(i18n.playerWins('Jessy (X)')));
 
-      await robot.tapText(I18n.current.playAgain);
-      await robot.waitFor(find.text(I18n.current.turnOf('Mario (O)')));
+      await robot.tapText(i18n.playAgain);
+      await robot.waitFor(find.text(i18n.turnOf('Mario (O)')));
     });
 
     testWidgets('the AI answers the player', (tester) async {
       final robot = _AppRobot(tester);
       await robot.launch();
 
-      await robot.chooseMode(I18n.current.soloVsAi);
+      await robot.chooseMode(i18n.soloVsAi);
       await robot.enterNames(['Jessy']);
-      await robot.tapText(I18n.current.start);
-      await robot.tapText(I18n.current.startGame);
+      await robot.tapText(i18n.start);
+      await robot.tapText(i18n.startGame);
 
       await robot.play([0]);
       await robot.waitFor(find.text('O'));
-      await robot.waitFor(find.text(I18n.current.turnOf('Jessy (X)')));
+      await robot.waitFor(find.text(i18n.turnOf('Jessy (X)')));
     });
   });
 
@@ -74,22 +77,22 @@ void main() {
       await robot.launch();
 
       final gameId = await robot.createOnlineGame(hostName: 'Jessy');
-      await robot.waitFor(find.text(I18n.current.waitingForOpponent));
+      await robot.waitFor(find.text(i18n.waitingForOpponent));
 
       await opponent.repository.joinGame(gameId, guest: opponent.id, guestName: 'Luigi');
       await robot.waitFor(find.text('Luigi (O)'));
-      await robot.tapText(I18n.current.startGame);
-      await robot.waitFor(find.text(I18n.current.yourTurn));
+      await robot.tapText(i18n.startGame);
+      await robot.waitFor(find.text(i18n.yourTurn));
 
       for (final (mine, theirs) in [(0, 3), (1, 4)]) {
         await robot.play([mine]);
-        await robot.waitFor(find.text(I18n.current.turnOf('Luigi (O)')));
+        await robot.waitFor(find.text(i18n.turnOf('Luigi (O)')));
         await opponent.repository.makeMove(gameId: gameId, playerId: opponent.id, cell: Cell(theirs));
-        await robot.waitFor(find.text(I18n.current.yourTurn));
+        await robot.waitFor(find.text(i18n.yourTurn));
       }
       await robot.play([2]);
 
-      await robot.waitFor(find.text(I18n.current.playerWins('Jessy (X)')));
+      await robot.waitFor(find.text(i18n.playerWins('Jessy (X)')));
     }, skip: !online);
 
     for (final code in ['no-such-game', 'no/such/game']) {
@@ -99,8 +102,8 @@ void main() {
 
         await robot.joinOnlineGame(GameId(code), guestName: 'Luigi');
 
-        await robot.waitFor(find.text(I18n.current.gameNotFound));
-        expect(find.text(I18n.current.local1v1), findsOneWidget);
+        await robot.waitFor(find.text(i18n.gameNotFound));
+        expect(find.text(i18n.local1v1), findsOneWidget);
       }, skip: !online);
     }
 
@@ -112,7 +115,7 @@ void main() {
 
       await robot.joinOnlineGame(gameId, guestName: 'Jessy');
 
-      await robot.waitFor(find.text(I18n.current.gameAlreadyFull));
+      await robot.waitFor(find.text(i18n.gameAlreadyFull));
     }, skip: !online);
 
     test('both players pressing the same button at once start the game, then the next round, once each', () async {
@@ -319,12 +322,13 @@ class _AppRobot {
   Future<void> launch() async {
     await tester.pumpWidget(UncontrolledProviderScope(container: await createAppContainer(), child: const App()));
     await tester.pumpAndSettle();
+    i18n = I18n.of(tester.element(find.byType(Scaffold).first));
   }
 
   Future<void> chooseMode(String title) => tapText(title);
 
   Future<void> enterNames(List<String> names) async {
-    final labels = [I18n.current.playerOneFirstName, I18n.current.playerTwoFirstName];
+    final labels = [i18n.playerOneFirstName, i18n.playerTwoFirstName];
     for (final (index, name) in names.indexed) {
       await tester.enterText(find.widgetWithText(TextFormField, labels[index]), name);
     }
@@ -333,22 +337,22 @@ class _AppRobot {
 
   /// Creates a game from the app, and reads its code where the board shows it to share.
   Future<GameId> createOnlineGame({required String hostName}) async {
-    await chooseMode(I18n.current.online1v1);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), hostName);
-    await tapText(I18n.current.createGame);
+    await chooseMode(i18n.online1v1);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), hostName);
+    await tapText(i18n.createGame);
 
-    final codeLabel = I18n.current.gameCodeValue('');
+    final codeLabel = i18n.gameCodeValue('');
     await waitFor(find.textContaining(codeLabel));
     return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
   }
 
   Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
-    await chooseMode(I18n.current.online1v1);
-    await tapText(I18n.current.join);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), guestName);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.gameCode), gameId.value);
+    await chooseMode(i18n.online1v1);
+    await tapText(i18n.join);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), guestName);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), gameId.value);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, I18n.current.join));
+    await tester.tap(find.widgetWithText(FilledButton, i18n.join));
     await tester.pumpAndSettle();
   }
 

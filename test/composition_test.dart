@@ -1,4 +1,5 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
@@ -16,6 +17,9 @@ import 'shared/golden_test_utils/devices.dart';
 
 const _jessy = PlayerId('jessy-uid');
 
+/// The app follows the device language, English in tests.
+final i18n = lookupI18n(const Locale('en'));
+
 void main() {
   ProviderContainer containerWith({required OnlineServices? online}) {
     final container = ProviderContainer(overrides: bindGameProviders(online: online));
@@ -32,10 +36,10 @@ void main() {
 
     await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const App()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(I18n.current.online1v1));
+    await tester.tap(find.text(i18n.online1v1));
     await tester.pumpAndSettle();
 
-    expect(find.text(I18n.current.onlineUnavailable), findsOneWidget);
+    expect(find.text(i18n.onlineUnavailable), findsOneWidget);
   });
 
   test('without online services, local games start and online ones are unavailable', () async {

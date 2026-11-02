@@ -25,6 +25,9 @@ import '../../../../shared/golden_test_utils/devices.dart';
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
 
+/// The app follows the device language, English in tests.
+final i18n = lookupI18n(const Locale('en'));
+
 void main() {
   late InMemoryGameRepository games;
 
@@ -54,7 +57,7 @@ void main() {
       }
 
       await expectAccessible();
-      for (final mode in [I18n.current.local1v1, I18n.current.online1v1]) {
+      for (final mode in [i18n.local1v1, i18n.online1v1]) {
         await robot.chooseMode(mode);
         await expectAccessible();
         await tester.tapAt(const Offset(4, 4));
@@ -74,7 +77,7 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 160);
     await tester.pumpAndSettle();
 
-    for (final mode in [I18n.current.local1v1, I18n.current.online1v1]) {
+    for (final mode in [i18n.local1v1, i18n.online1v1]) {
       await robot.chooseMode(mode);
       expect(tester.takeException(), isNull, reason: mode);
       await tester.tapAt(const Offset(4, 4));
@@ -90,7 +93,7 @@ void main() {
 
     await _HomeRobot(tester).launch(localRepository: games);
 
-    expect(find.text(I18n.current.local1v1), findsOneWidget);
+    expect(find.text(i18n.local1v1), findsOneWidget);
   });
 
   testWidgets('choosing to play online without Firebase says it is unavailable, without asking for a name', (
@@ -99,36 +102,36 @@ void main() {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
 
-    await robot.chooseMode(I18n.current.online1v1);
+    await robot.chooseMode(i18n.online1v1);
 
-    robot.expectSnackBar(I18n.current.onlineUnavailable);
-    expect(find.text(I18n.current.onlineGame), findsNothing);
+    robot.expectSnackBar(i18n.onlineUnavailable);
+    expect(find.text(i18n.onlineGame), findsNothing);
   });
 
   testWidgets('a local game set up in the dialog opens on its board', (tester) async {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
 
-    await robot.chooseMode(I18n.current.local1v1);
+    await robot.chooseMode(i18n.local1v1);
     await robot.enterNames(['Jessy', 'Mario']);
-    await robot.tapText(I18n.current.start);
+    await robot.tapText(i18n.start);
 
     expect(find.text('Jessy (X)'), findsOneWidget);
     expect(find.text('Mario (O)'), findsOneWidget);
-    expect(find.text(I18n.current.startGame), findsOneWidget);
+    expect(find.text(i18n.startGame), findsOneWidget);
   });
 
   testWidgets('leaving the board of a local game forgets the game', (tester) async {
     final robot = _HomeRobot(tester);
     final recorded = PendingLocalGameRepository(games)..created.complete();
     await robot.launch(localRepository: recorded);
-    await robot.chooseMode(I18n.current.local1v1);
+    await robot.chooseMode(i18n.local1v1);
     await robot.enterNames(['Jessy', 'Mario']);
-    await robot.tapText(I18n.current.start);
+    await robot.tapText(i18n.start);
 
     await robot.goBack();
 
-    expect(find.text(I18n.current.local1v1), findsOneWidget);
+    expect(find.text(i18n.local1v1), findsOneWidget);
     // The game streams run on real time: the test clock would never deliver a game that is still there.
     await tester.runAsync(
       () => expectLater(games.watchGame(recorded.createdGames.single).first, throwsA(isA<GameNotFoundException>())),
@@ -171,8 +174,8 @@ void main() {
       final gameId = await openBoard(tester, joined: true);
 
       await robot.goBack();
-      expect(find.text(I18n.current.leaveGameTitle), findsOneWidget);
-      await robot.tapText(I18n.current.stay);
+      expect(find.text(i18n.leaveGameTitle), findsOneWidget);
+      await robot.tapText(i18n.stay);
 
       expect(find.text('Luigi (O)'), findsOneWidget);
       expect((await seenByOpponent(tester, gameId))?.status, GameStatus.setup);
@@ -182,9 +185,9 @@ void main() {
       final gameId = await openBoard(tester, joined: true);
 
       await robot.goBack();
-      await robot.tapText(I18n.current.leave);
+      await robot.tapText(i18n.leave);
 
-      expect(find.text(I18n.current.local1v1), findsOneWidget);
+      expect(find.text(i18n.local1v1), findsOneWidget);
       expect((await seenByOpponent(tester, gameId))?.status, GameStatus.abandoned);
     });
 
@@ -193,8 +196,8 @@ void main() {
 
       await robot.goBack();
 
-      expect(find.text(I18n.current.leaveGameTitle), findsNothing);
-      expect(find.text(I18n.current.local1v1), findsOneWidget);
+      expect(find.text(i18n.leaveGameTitle), findsNothing);
+      expect(find.text(i18n.local1v1), findsOneWidget);
       expect((await seenByOpponent(tester, gameId))?.status, GameStatus.abandoned);
     });
   });
@@ -204,14 +207,14 @@ void main() {
     final pending = PendingLocalGameRepository(games);
     await robot.launch(localRepository: pending);
 
-    await robot.chooseMode(I18n.current.soloVsAi);
+    await robot.chooseMode(i18n.soloVsAi);
     await robot.enterNames(['Jessy']);
-    await tester.tap(find.text(I18n.current.start));
+    await tester.tap(find.text(i18n.start));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.bySemanticsLabel(I18n.current.loading), findsOneWidget);
-    await tester.tap(find.text(I18n.current.soloVsAi), warnIfMissed: false);
+    expect(find.bySemanticsLabel(i18n.loading), findsOneWidget);
+    await tester.tap(find.text(i18n.soloVsAi), warnIfMissed: false);
     expect(pending.creations, 1);
 
     pending.created.complete();
@@ -222,14 +225,14 @@ void main() {
   testWidgets('a name the server would refuse is refused in the form, before anything is created', (tester) async {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
-    await robot.chooseMode(I18n.current.local1v1);
+    await robot.chooseMode(i18n.local1v1);
 
     // Six flags are six characters on screen, but 24 UTF-16 code units for the server.
     await robot.enterNames(['🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷🇫🇷', 'Mario']);
-    await robot.tapText(I18n.current.start);
+    await robot.tapText(i18n.start);
 
-    expect(find.text(I18n.current.nameTooLong(PlayerName.maxLength)), findsOneWidget);
-    expect(find.text(I18n.current.startGame), findsNothing);
+    expect(find.text(i18n.nameTooLong(PlayerName.maxLength)), findsOneWidget);
+    expect(find.text(i18n.startGame), findsNothing);
   });
 
   testWidgets('joining a game that already has two players says so and stays on the home screen', (tester) async {
@@ -249,8 +252,8 @@ void main() {
     // Codes are case-insensitive for the player.
     await robot.joinOnlineGame(GameId(gameId.value.toLowerCase()), guestName: 'Luigi');
 
-    robot.expectSnackBar(I18n.current.gameAlreadyFull);
-    expect(find.text(I18n.current.local1v1), findsOneWidget);
+    robot.expectSnackBar(i18n.gameAlreadyFull);
+    expect(find.text(i18n.local1v1), findsOneWidget);
   });
 }
 
@@ -281,7 +284,7 @@ class _HomeRobot {
   Future<void> chooseMode(String title) => tapText(title);
 
   Future<void> enterNames(List<String> names) async {
-    final labels = [I18n.current.playerOneFirstName, I18n.current.playerTwoFirstName];
+    final labels = [i18n.playerOneFirstName, i18n.playerTwoFirstName];
     for (final (index, name) in names.indexed) {
       await tester.enterText(find.widgetWithText(TextFormField, labels[index]), name);
     }
@@ -290,11 +293,11 @@ class _HomeRobot {
 
   /// Creates a game from the app, and reads its code where the board shows it to share.
   Future<GameId> createOnlineGame({required String hostName}) async {
-    await chooseMode(I18n.current.online1v1);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), hostName);
-    await tapText(I18n.current.createGame);
+    await chooseMode(i18n.online1v1);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), hostName);
+    await tapText(i18n.createGame);
 
-    final codeLabel = I18n.current.gameCodeValue('');
+    final codeLabel = i18n.gameCodeValue('');
     return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
   }
 
@@ -304,12 +307,12 @@ class _HomeRobot {
   }
 
   Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
-    await chooseMode(I18n.current.online1v1);
-    await tapText(I18n.current.join);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.playerFirstName), guestName);
-    await tester.enterText(find.widgetWithText(TextFormField, I18n.current.gameCode), gameId.value);
+    await chooseMode(i18n.online1v1);
+    await tapText(i18n.join);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), guestName);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), gameId.value);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, I18n.current.join));
+    await tester.tap(find.widgetWithText(FilledButton, i18n.join));
     await tester.pumpAndSettle();
   }
 

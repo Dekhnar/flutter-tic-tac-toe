@@ -30,9 +30,10 @@ const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
 const _onlineSession = GameSession.online(gameId: _gameId, me: _jessy);
 
-void main() {
-  setUpAll(() async => I18n.load(const Locale('fr')));
+/// The board renders in French (see MaterialGolden).
+final i18n = lookupI18n(const Locale('fr'));
 
+void main() {
   group('Local game', () {
     testWidgets('two players finish a round, then the other one starts the next', (tester) async {
       final robot = _GameBoardScreenRobot(tester);
@@ -49,13 +50,13 @@ void main() {
         await robot.tapCell(cell);
       }
 
-      robot.expectText(I18n.current.playerWins('Jessy (X)'));
+      robot.expectText(i18n.playerWins('Jessy (X)'));
       expect(find.text('1'), findsOneWidget);
 
       await robot.tapReplayButton();
 
       robot.expectMarkedCellCount(0);
-      robot.expectText(I18n.current.turnOf('Mario (O)'));
+      robot.expectText(i18n.turnOf('Mario (O)'));
     });
 
     testWidgets('the AI answers the player', (tester) async {
@@ -63,7 +64,7 @@ void main() {
 
       await robot.pumpLocalGame(hostName: 'Jessy', vsAi: true);
 
-      robot.expectText('${I18n.current.ai} (O)');
+      robot.expectText('${i18n.ai} (O)');
 
       await robot.tapStartGame();
       await robot.tapCell(0);
@@ -80,13 +81,13 @@ void main() {
 
       await robot.pumpOnlineGameAsHost();
 
-      robot.expectText(I18n.current.waitingForOpponent);
-      robot.expectText(I18n.current.gameCodeValue(harness.gameId.value));
+      robot.expectText(i18n.waitingForOpponent);
+      robot.expectText(i18n.gameCodeValue(harness.gameId.value));
 
       await harness.opponentJoins();
       await tester.pumpAndSettle();
 
-      robot.expectTextNotPresent(I18n.current.waitingForOpponent);
+      robot.expectTextNotPresent(i18n.waitingForOpponent);
       robot.expectText('Luigi (O)');
     });
 
@@ -95,12 +96,12 @@ void main() {
       final robot = _GameBoardScreenRobot(tester, harness: harness);
 
       await robot.pumpStartedOnlineGame();
-      robot.expectText(I18n.current.yourTurn);
+      robot.expectText(i18n.yourTurn);
 
       await robot.tapCell(0);
       await tester.pumpAndSettle();
       robot.expectCellHasMark(0, 'X');
-      robot.expectText(I18n.current.turnOf('Luigi (O)'));
+      robot.expectText(i18n.turnOf('Luigi (O)'));
 
       await robot.tapCell(1);
       await tester.pumpAndSettle();
@@ -117,11 +118,11 @@ void main() {
 
     testWidgets('a move refused by the server says why', (tester) async {
       final refusals = [
-        (MoveCellAlreadyTakenException(), I18n.current.cellAlreadyTaken),
-        (MoveGameFinishedException(), I18n.current.roundIsOver),
-        (MoveGameNotStartedException(), I18n.current.gameNotStartedYet),
-        (MoveNotYourTurnException(), I18n.current.notYourTurn),
-        (MoveOpponentMissingException(), I18n.current.opponentMustJoin),
+        (MoveCellAlreadyTakenException(), i18n.cellAlreadyTaken),
+        (MoveGameFinishedException(), i18n.roundIsOver),
+        (MoveGameNotStartedException(), i18n.gameNotStartedYet),
+        (MoveNotYourTurnException(), i18n.notYourTurn),
+        (MoveOpponentMissingException(), i18n.opponentMustJoin),
       ];
 
       for (final (refusal, explanation) in refusals) {
@@ -150,13 +151,13 @@ void main() {
 
       await robot.tapCell(0);
       await tester.pumpAndSettle();
-      robot.expectText(I18n.current.pleaseRetry);
+      robot.expectText(i18n.pleaseRetry);
 
       await robot.dismissSnackbar();
       await robot.tapCell(0);
       await tester.pumpAndSettle();
 
-      robot.expectText(I18n.current.pleaseRetry);
+      robot.expectText(i18n.pleaseRetry);
     });
 
     testWidgets('the board takes no other move while the server handles one', (tester) async {
@@ -173,7 +174,7 @@ void main() {
 
       robot.expectCellHasMark(0, 'X');
       robot.expectCellEmpty(1);
-      robot.expectText(I18n.current.turnOf('Luigi (O)'));
+      robot.expectText(i18n.turnOf('Luigi (O)'));
       expect(find.byType(SnackBar), findsNothing);
     });
 
@@ -187,7 +188,7 @@ void main() {
       await robot.tapCell(0);
       await tester.pumpAndSettle();
 
-      robot.expectText(I18n.current.opponentLeft);
+      robot.expectText(i18n.opponentLeft);
       robot.expectCellEmpty(0);
     });
 
@@ -199,9 +200,9 @@ void main() {
       await harness.deleteGame();
       await tester.pumpAndSettle();
 
-      robot.expectText(I18n.current.gameNotFound);
-      robot.expectText(I18n.current.quit);
-      robot.expectTextNotPresent(I18n.current.retry);
+      robot.expectText(i18n.gameNotFound);
+      robot.expectText(i18n.quit);
+      robot.expectTextNotPresent(i18n.retry);
     });
   });
 
@@ -214,12 +215,12 @@ void main() {
         attempts++;
         return attempts == 1 ? Stream.error(Exception('offline')) : Stream.value(_buildPlayingGame());
       });
-      robot.expectText(I18n.current.errorRetryLater);
+      robot.expectText(i18n.errorRetryLater);
 
-      await tester.tap(find.text(I18n.current.retry));
+      await tester.tap(find.text(i18n.retry));
       await tester.pumpAndSettle();
 
-      robot.expectTextNotPresent(I18n.current.errorRetryLater);
+      robot.expectTextNotPresent(i18n.errorRetryLater);
       robot.expectCellHasMark(0, 'X');
     });
   });
@@ -364,7 +365,7 @@ class _GameBoardScreenRobot {
   }
 
   Future<void> tapStartGame() async {
-    final start = find.text(I18n.current.startGame);
+    final start = find.text(i18n.startGame);
     await tester.ensureVisible(start);
     expect(start, findsOneWidget);
     await tester.tap(start);
@@ -372,7 +373,7 @@ class _GameBoardScreenRobot {
   }
 
   Future<void> tapReplayButton() async {
-    final replay = find.text(I18n.current.playAgain);
+    final replay = find.text(i18n.playAgain);
     expect(replay, findsOneWidget);
     await tester.tap(replay);
     await tester.pumpAndSettle();

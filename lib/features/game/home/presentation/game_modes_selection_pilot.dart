@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
 
@@ -12,6 +13,6 @@ final class GameModesSelectionPilot {
   Future<GameCreateInputOffline?> openOfflineVsAiGameCreationDialog(StackRouter router) =>
       router.push(GameCreateOfflineDialogRoute(vsAi: true));
 
-  void navigateToGameBoard(StackRouter router, GameCreateInput input) =>
-      router.push(GameBoardScreenRoute(input: input));
+  void navigateToGameBoard(StackRouter router, GameSession session) =>
+      router.push(GameBoardScreenRoute(session: session));
 }

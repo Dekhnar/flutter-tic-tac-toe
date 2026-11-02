@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
+import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_repository_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/game_repository_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
@@ -21,66 +21,30 @@ class GameNotifier extends _$GameNotifier {
   bool _actionRunning = false;
   bool _disposed = false;
 
-  String get _myId => switch (gameCreateInput) {
-    GameCreateInputOffline1v1(:final fromLabel) => _playerId(CellMark.X, fromLabel),
-    GameCreateInputOfflineVsAi(:final fromLabel) => _playerId(CellMark.X, fromLabel),
-    GameCreateInputOnlineLobby(:final fromLabel) => _playerId(CellMark.X, fromLabel),
-    GameCreateInputJoinOnlineLobby(:final toLabel) => _playerId(CellMark.O, toLabel),
-  };
-
-  bool get _isOnline => gameCreateInput is GameCreateInputOnline;
-
   @override
-  Stream<Game> build({required GameCreateInput gameCreateInput}) async* {
+  Stream<Game> build({required GameSession session}) {
     _disposed = false;
     ref.onDispose(() => _disposed = true);
 
-    final Game game;
-    switch (gameCreateInput) {
-      case GameCreateInputOffline1v1(:final fromLabel, :final toLabel):
-        final repository = ref.watch(gameLocalRepositoryProvider);
-        _gameRepository = repository;
-        game = await repository.createGame(
-          fromId: _playerId(CellMark.X, fromLabel),
-          toId: _playerId(CellMark.O, toLabel),
-        );
-      case GameCreateInputOfflineVsAi(:final fromLabel, :final toLabel):
-        final repository = ref.watch(gameLocalRepositoryProvider);
-        _gameRepository = repository;
-        game = await repository.createGame(
-          fromId: _playerId(CellMark.X, fromLabel),
-          toId: _playerId(CellMark.O, toLabel),
-          vsAi: true,
-        );
-      case GameCreateInputOnlineLobby(:final shareLink):
-        final repository = ref.watch(gameRepositoryProvider);
-        _gameRepository = repository;
-        game = await repository.createGame(authorUid: _myId, shareLink: shareLink);
-      case GameCreateInputJoinOnlineLobby(:final shareLink):
-        final repository = ref.watch(gameRepositoryProvider);
-        _gameRepository = repository;
-        game = await repository.joinGame(shareLink: shareLink, joinerUid: _myId);
-    }
-
-    yield* _gameRepository.watchGame(game.id);
+    _gameRepository = switch (session) {
+      LocalGameSession() => ref.watch(localGameRepositoryProvider),
+      OnlineGameSession() => ref.watch(onlineGameRepositoryProvider),
+    };
+    return _gameRepository.watchGame(session.gameId);
   }
 
   void startGame() => unawaited(_runExclusively((game) => _gameRepository.startGame(gameId: game.id)));
 
   void makeMove(int row, int col) => unawaited(
     _runExclusively((game) async {
-      if (game.status != GameStatus.playing || game.isAiTurn) return;
+      final me = session.me;
+      if (!game.isPlayableBy(me)) return;
 
-      if (_isOnline && !game.isMyTurn(_myId)) return;
-
-      final playerId = _isOnline ? _myId : game.currentPlayerId;
-      await _gameRepository.makeMove(gameId: game.id, playerId: playerId, row: row, col: col);
+      await _gameRepository.makeMove(gameId: game.id, playerId: me ?? game.currentPlayerId, row: row, col: col);
     }),
   );
 
   void startNewRound() => unawaited(_runExclusively((game) => _gameRepository.startNewRound(gameId: game.id)));
-
-  static String _playerId(CellMark mark, String label) => '${mark.name}:$label';
 
   Future<void> _runExclusively(_GameAction action) async {
     final game = state.valueOrNull;

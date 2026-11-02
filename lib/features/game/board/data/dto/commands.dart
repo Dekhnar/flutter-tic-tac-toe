@@ -1,33 +1,43 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
+
+// One command per kind of write `firestore.rules` accepts: each writes exactly the fields its rule allows.
 
 final class CreateGameCommand {
-  final String _fromId;
-  final String? _shareLink;
+  final PlayerId _host;
+  final String _hostName;
 
-  const CreateGameCommand({required String fromId, final String? shareLink}) : _fromId = fromId, _shareLink = shareLink;
+  const CreateGameCommand({required PlayerId host, required String hostName}) : _host = host, _hostName = hostName;
 
   Map<String, Object?> toFirestore() => {
-    'fromId': _fromId,
-    'toId': null,
-    'status': GameStatus.setup.name,
     'boardState': const BoardState().toJson(),
-    if (_shareLink case final shareLink?) "shareLink": shareLink,
-    'currentPlayerId': _fromId,
-    'currentRoundIndex': 0,
-    'fromWinCount': 0,
-    'toWinCount': 0,
     'createdAt': FieldValue.serverTimestamp(),
+    'currentPlayerId': _host.value,
+    'currentRoundIndex': 0,
+    'currentWinnerId': null,
+    'fromId': _host.value,
+    'fromName': _hostName,
+    'fromWinCount': 0,
+    'status': GameStatus.setup.name,
+    'toId': null,
+    'toName': null,
+    'toWinCount': 0,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 }
 
 final class JoinGameCommand {
-  final String _joinerUid;
+  final PlayerId _guest;
+  final String _guestName;
 
-  JoinGameCommand({required String joinerUid}) : _joinerUid = joinerUid;
+  const JoinGameCommand({required PlayerId guest, required String guestName}) : _guest = guest, _guestName = guestName;
 
-  Map<String, Object?> toFirestore() => {'toId': _joinerUid, 'updatedAt': FieldValue.serverTimestamp()};
+  Map<String, Object?> toFirestore() => {
+    'toId': _guest.value,
+    'toName': _guestName,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 }
 
 final class StartGameCommand {
@@ -42,29 +52,46 @@ final class MoveEventCommand {
   const MoveEventCommand({required Move move}) : _move = move;
 
   Map<String, Object?> toFirestore() => {
-    'playerId': _move.playerId,
+    'createdAt': FieldValue.serverTimestamp(),
     'index': _move.index,
     'mark': _move.mark.name,
+    'playerId': _move.playerId.value,
     'round': _move.round,
     'turn': _move.turn,
-    'createdAt': FieldValue.serverTimestamp(),
   };
 }
 
-final class GameStateCommand {
+/// The game after a move; `lastMoveIndex` lets the rules check that the move document is written in the same batch.
+final class MovePlayedCommand {
   final Game _game;
 
-  const GameStateCommand({required Game game}) : _game = game;
+  const MovePlayedCommand({required Game game}) : _game = game;
 
   Map<String, Object?> toFirestore() => {
     'boardState': _game.boardState.toJson(),
-    'currentPlayerId': _game.currentPlayerId,
-    'currentRoundIndex': _game.currentRoundIndex,
-    'currentWinnerId': _game.currentWinnerId,
+    'currentPlayerId': _game.currentPlayerId.value,
+    'currentWinnerId': _game.currentWinnerId?.value,
     'fromWinCount': _game.fromWinCount,
+    'lastMoveIndex': _game.moves.last.index,
     'lastPlayAt': FieldValue.serverTimestamp(),
     'status': _game.status.name,
     'toWinCount': _game.toWinCount,
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+}
+
+final class RoundStartedCommand {
+  final Game _game;
+
+  const RoundStartedCommand({required Game game}) : _game = game;
+
+  Map<String, Object?> toFirestore() => {
+    'boardState': _game.boardState.toJson(),
+    'currentPlayerId': _game.currentPlayerId.value,
+    'currentRoundIndex': _game.currentRoundIndex,
+    'currentWinnerId': null,
+    'lastPlayAt': FieldValue.serverTimestamp(),
+    'status': _game.status.name,
     'updatedAt': FieldValue.serverTimestamp(),
   };
 }

@@ -17,6 +17,8 @@ class MessageDisplayer extends ConsumerWidget {
       final i18n = I18n.of(context);
       final text = switch (next.message) {
         InfoMessage.cellAlreadyTaken => i18n.cellAlreadyTaken,
+        InfoMessage.gameAlreadyFull => i18n.gameAlreadyFull,
+        InfoMessage.gameNotFound => i18n.gameNotFound,
         InfoMessage.gameNotStartedYet => i18n.gameNotStartedYet,
         InfoMessage.invalidCellIndex => i18n.invalidCellIndex,
         InfoMessage.notYourTurn => i18n.notYourTurn,

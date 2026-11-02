@@ -2,16 +2,13 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tic_tac_toe_app/design_system/components/data_display/animated_splash.dart';
-import 'package:tic_tac_toe_app/design_system/components/feedback/base_loading_retry_button.dart';
-import 'package:tic_tac_toe_app/design_system/foundations/assets.dart';
+import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/bootstrap/bootstrap_provider.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.dart';
 
-class App extends ConsumerStatefulWidget {
+/// Theme and language follow the device settings, including while the app runs.
+class App extends StatefulWidget {
   const App({super.key});
 
   static const localizationsDelegates = <LocalizationsDelegate>[
@@ -23,11 +20,13 @@ class App extends ConsumerStatefulWidget {
   ];
 
   @override
-  ConsumerState<App> createState() => _AppState();
+  State<App> createState() => _AppState();
 }
 
-class _AppState extends ConsumerState<App> {
+class _AppState extends State<App> {
   final _appRouter = AppRouter();
+  final _darkTheme = ThemeBuilder.buildDarkThemeData();
+  final _lightTheme = ThemeBuilder.buildLightThemeData();
 
   @override
   void dispose() {
@@ -37,28 +36,14 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    final bootstrapState = ref.watch(bootstrapServiceProvider);
-    final boostrapData = bootstrapState.valueOrNull;
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: App.localizationsDelegates,
       supportedLocales: I18n.delegate.supportedLocales,
-      theme: boostrapData?.theme,
-      darkTheme: boostrapData?.darkTheme,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       routerDelegate: _appRouter.delegate(navigatorObservers: () => [AutoRouteObserver()]),
       routeInformationParser: _appRouter.defaultRouteParser(),
-      builder: (context, child) {
-        return switch (bootstrapState) {
-          final state when state.isLoading => Scaffold(
-            body: Center(child: BaseAnimatedSplash(imagePath: Assets.images.appIcon)),
-          ),
-          AsyncError() => Scaffold(
-            body: Center(child: BaseLoadingRetryButton(onPressed: () => ref.refresh(bootstrapServiceProvider))),
-          ),
-          AsyncData() => child ?? const SizedBox.shrink(),
-          _ => const SizedBox.shrink(),
-        };
-      },
     );
   }
 }

@@ -1,79 +1,95 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/data/repository/game_local_repository_provider.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/shared/data/in_memory_store.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+
+const _host = GameLocalRepository.hostId;
+const _guest = GameLocalRepository.guestId;
 
 void main() {
   late GameLocalRepository repository;
 
   setUp(() {
-    repository = GameLocalRepository(stores: <String, InMemoryStore<Game>>{}, aiMoveDelay: Duration.zero);
+    repository = GameLocalRepository(stores: <GameId, InMemoryStore<Game>>{}, aiMoveDelay: Duration.zero);
   });
 
   tearDown(() => repository.dispose());
 
-  Future<Game> startGame({required String toId, bool vsAi = false}) async {
-    final game = await repository.createGame(fromId: 'X:Jessy', toId: toId, vsAi: vsAi);
-    await repository.startGame(gameId: game.id);
-    return game;
+  Future<GameId> startGame({bool vsAi = false}) async {
+    final gameId = await repository.createGame(guestName: vsAi ? '' : 'Mario', hostName: 'Jessy', vsAi: vsAi);
+    await repository.startGame(gameId: gameId);
+    return gameId;
   }
 
-  test('the AI answers the player move', () async {
-    final game = await startGame(toId: 'O:Ai', vsAi: true);
+  test('a new game seats the host as X, who plays first', () async {
+    final gameId = await repository.createGame(guestName: 'Mario', hostName: 'Jessy', vsAi: false);
 
-    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
-
-    final answered = await repository.watchGame(game.id).firstWhere((game) => game.moves.length == 2);
-    expect(answered.moves.last.playerId, 'O:Ai');
-    expect(answered.currentPlayerId, 'X:Jessy');
+    final game = await repository.watchGame(gameId).first;
+    expect(game.status, GameStatus.setup);
+    expect(game.currentPlayerId, _host);
+    expect((game.nameOf(_host), game.markOf(_host)), ('Jessy', CellMark.X));
+    expect((game.nameOf(_guest), game.markOf(_guest)), ('Mario', CellMark.O));
   });
 
-  test('a human opponent named "Ai" is not played by the AI', () async {
-    final game = await startGame(toId: 'O:Ai');
+  test('the AI answers the player move', () async {
+    final gameId = await startGame(vsAi: true);
 
-    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+    await repository.makeMove(gameId: gameId, playerId: _host, row: 0, col: 0);
+
+    final answered = await repository.watchGame(gameId).firstWhere((game) => game.moves.length == 2);
+    expect(answered.moves.last.playerId, _guest);
+    expect(answered.currentPlayerId, _host);
+  });
+
+  test('a local guest is never played by the AI', () async {
+    final gameId = await startGame();
+
+    await repository.makeMove(gameId: gameId, playerId: _host, row: 0, col: 0);
     await Future<void>.delayed(Duration.zero);
 
-    final current = await repository.watchGame(game.id).first;
+    final current = await repository.watchGame(gameId).first;
     expect(current.moves, hasLength(1));
-    expect(current.currentPlayerId, 'O:Ai');
+    expect(current.currentPlayerId, _guest);
   });
 
   test('a new round cannot start while the current one is being played', () async {
-    final game = await startGame(toId: 'O:Mario');
-    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+    final gameId = await startGame();
+    await repository.makeMove(gameId: gameId, playerId: _host, row: 0, col: 0);
 
-    await repository.startNewRound(gameId: game.id);
+    await repository.startNewRound(gameId: gameId);
 
-    final current = await repository.watchGame(game.id).first;
+    final current = await repository.watchGame(gameId).first;
     expect(current.currentRoundIndex, 0);
     expect(current.moves, hasLength(1));
   });
 
   test('a move on a cell already taken is refused, as it is online', () async {
-    final game = await startGame(toId: 'O:Mario');
-    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+    final gameId = await startGame();
+    await repository.makeMove(gameId: gameId, playerId: _host, row: 0, col: 0);
 
     expect(
-      repository.makeMove(gameId: game.id, playerId: 'O:Mario', row: 0, col: 0),
+      repository.makeMove(gameId: gameId, playerId: _guest, row: 0, col: 0),
       throwsA(isA<MoveCellAlreadyTakenException>()),
     );
   });
 
   test('a game that does not exist can be neither watched nor played', () {
-    expect(repository.watchGame('unknown'), emitsError(isA<GameNotFoundException>()));
+    const unknown = GameId('unknown');
+
+    expect(repository.watchGame(unknown), emitsError(isA<GameNotFoundException>()));
     expect(
-      repository.makeMove(gameId: 'unknown', playerId: 'X:Jessy', row: 0, col: 0),
+      repository.makeMove(gameId: unknown, playerId: _host, row: 0, col: 0),
       throwsA(isA<GameNotFoundException>()),
     );
   });
 
   test('the AI stops playing once the games are closed', () async {
-    final game = await startGame(toId: 'O:Ai', vsAi: true);
-    final updates = repository.watchGame(game.id).toList();
+    final gameId = await startGame(vsAi: true);
+    final updates = repository.watchGame(gameId).toList();
 
-    await repository.makeMove(gameId: game.id, playerId: 'X:Jessy', row: 0, col: 0);
+    await repository.makeMove(gameId: gameId, playerId: _host, row: 0, col: 0);
     repository.dispose();
     await Future<void>.delayed(Duration.zero);
 
@@ -81,8 +97,8 @@ void main() {
   });
 
   test('closing the repository ends the games being watched', () async {
-    final game = await startGame(toId: 'O:Mario');
-    final updates = repository.watchGame(game.id).toList();
+    final gameId = await startGame();
+    final updates = repository.watchGame(gameId).toList();
 
     repository.dispose();
 

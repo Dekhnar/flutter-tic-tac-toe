@@ -5,6 +5,8 @@ part 'message_notifier.g.dart';
 
 enum InfoMessage {
   cellAlreadyTaken,
+  gameAlreadyFull,
+  gameNotFound,
   gameNotStartedYet,
   invalidCellIndex,
   notYourTurn,
@@ -20,7 +22,8 @@ enum InfoMessage {
     MoveGameNotStartedException() => gameNotStartedYet,
     MoveNotYourTurnException() => notYourTurn,
     MoveOpponentMissingException() => opponentMustJoin,
-    GameAlreadyFullException() || GameCreationDataMissingException() || GameNotFoundException() => pleaseRetry,
+    GameAlreadyFullException() => gameAlreadyFull,
+    GameNotFoundException() => gameNotFound,
   };
 }
 

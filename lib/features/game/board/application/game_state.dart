@@ -1,4 +1,5 @@
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 
 extension GameState on Game {
   List<CellMark?> get board {
@@ -9,24 +10,24 @@ extension GameState on Game {
     return board;
   }
 
-  bool isMyTurn(String userId) => currentPlayerId == userId;
   String _counterIndicator(int count) => count > 999 ? "999+" : count.toString();
 
   String get fromWinCounterIndicator => _counterIndicator(fromWinCount);
   String get toWinCounterIndicator => _counterIndicator(toWinCount);
 }
 
+/// What the player chose in the creation dialogs.
 sealed class GameCreateInput {
   const GameCreateInput();
 
-  factory GameCreateInput.offline({required String fromLabel, required String toLabel}) = GameCreateInputOffline1v1._;
+  factory GameCreateInput.offline({required String guestName, required String hostName}) = GameCreateInputOffline1v1._;
 
-  factory GameCreateInput.offlineVsAi({required String fromLabel}) = GameCreateInputOfflineVsAi._;
+  factory GameCreateInput.offlineVsAi({required String hostName}) = GameCreateInputOfflineVsAi._;
 
-  factory GameCreateInput.createOnlineLobby({required String fromLabel, required String shareLink}) =
+  factory GameCreateInput.createOnlineLobby({required GameId gameId, required String hostName}) =
       GameCreateInputOnlineLobby._;
 
-  factory GameCreateInput.joinOnlineLobby({required String toLabel, required String shareLink}) =
+  factory GameCreateInput.joinOnlineLobby({required GameId gameId, required String guestName}) =
       GameCreateInputJoinOnlineLobby._;
 }
 
@@ -35,17 +36,16 @@ sealed class GameCreateInputOffline extends GameCreateInput {
 }
 
 final class GameCreateInputOffline1v1 extends GameCreateInputOffline {
-  final String fromLabel;
-  final String toLabel;
+  final String guestName;
+  final String hostName;
 
-  const GameCreateInputOffline1v1._({required this.fromLabel, required this.toLabel});
+  const GameCreateInputOffline1v1._({required this.guestName, required this.hostName});
 }
 
 final class GameCreateInputOfflineVsAi extends GameCreateInputOffline {
-  final String fromLabel;
-  final String toLabel;
+  final String hostName;
 
-  const GameCreateInputOfflineVsAi._({required this.fromLabel}) : toLabel = "Ai";
+  const GameCreateInputOfflineVsAi._({required this.hostName});
 }
 
 sealed class GameCreateInputOnline extends GameCreateInput {
@@ -53,15 +53,15 @@ sealed class GameCreateInputOnline extends GameCreateInput {
 }
 
 final class GameCreateInputOnlineLobby extends GameCreateInputOnline {
-  final String fromLabel;
-  final String shareLink;
+  final GameId gameId;
+  final String hostName;
 
-  const GameCreateInputOnlineLobby._({required this.fromLabel, required this.shareLink});
+  const GameCreateInputOnlineLobby._({required this.gameId, required this.hostName});
 }
 
 final class GameCreateInputJoinOnlineLobby extends GameCreateInputOnline {
-  final String toLabel;
-  final String shareLink;
+  final GameId gameId;
+  final String guestName;
 
-  const GameCreateInputJoinOnlineLobby._({required this.toLabel, required this.shareLink});
+  const GameCreateInputJoinOnlineLobby._({required this.gameId, required this.guestName});
 }

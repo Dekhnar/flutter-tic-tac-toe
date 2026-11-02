@@ -10,6 +10,8 @@ class Dimens {
 
   static const double standardAssetSize = 16;
 
+  static const double boardMaxWidth = 480;
+
   static const double sliderWidth = 600;
 
   static const double thinDividerThickness = 1;

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:uuid/uuid.dart';
 
@@ -50,8 +51,8 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
     final link = _shareLinkCtrl.text.trim();
 
     context.router.pop(switch (_isCreate) {
-      true => GameCreateInput.createOnlineLobby(fromLabel: label, shareLink: link),
-      false => GameCreateInput.joinOnlineLobby(toLabel: label, shareLink: link),
+      true => GameCreateInput.createOnlineLobby(gameId: GameId(link), hostName: label),
+      false => GameCreateInput.joinOnlineLobby(gameId: GameId(link), guestName: label),
     });
   }
 

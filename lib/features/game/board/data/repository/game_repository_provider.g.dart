@@ -6,23 +6,26 @@ part of 'game_repository_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gameRepositoryHash() => r'e2f1f177c0181236d3e4799b7fa5b0e9d8cf10e8';
+String _$onlineGameRepositoryHash() =>
+    r'3053dabab195977c10ab1e36d522b631e1cd864c';
 
-/// See also [gameRepository].
-@ProviderFor(gameRepository)
-final gameRepositoryProvider = AutoDisposeProvider<GameRepository>.internal(
-  gameRepository,
-  name: r'gameRepositoryProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$gameRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+/// See also [onlineGameRepository].
+@ProviderFor(onlineGameRepository)
+final onlineGameRepositoryProvider =
+    AutoDisposeProvider<OnlineGameRepositoryInterface>.internal(
+      onlineGameRepository,
+      name: r'onlineGameRepositoryProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$onlineGameRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef GameRepositoryRef = AutoDisposeProviderRef<GameRepository>;
+typedef OnlineGameRepositoryRef =
+    AutoDisposeProviderRef<OnlineGameRepositoryInterface>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

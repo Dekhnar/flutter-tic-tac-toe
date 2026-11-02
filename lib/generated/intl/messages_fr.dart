@@ -26,10 +26,17 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(row, column) => "Case ${row} ${column} vide";
 
-  static String m3(player) => "Tour : ${player}";
+  static String m3(code) => "Code de la partie : ${code}";
+
+  static String m4(player) => "Victoire de ${player}";
+
+  static String m5(name, mark) => "${name} (${mark})";
+
+  static String m6(player) => "Tour : ${player}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "ai": MessageLookupByLibrary.simpleMessage("IA"),
     "boardCellCircle": m0,
     "boardCellCross": m1,
     "boardCellEmpty": m2,
@@ -39,19 +46,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "copy": MessageLookupByLibrary.simpleMessage("Copier"),
     "create": MessageLookupByLibrary.simpleMessage("Créer"),
     "createGame": MessageLookupByLibrary.simpleMessage("Créer la partie"),
-    "datePatternLong": MessageLookupByLibrary.simpleMessage("EEEE dd MMMM"),
-    "datePatternLongWithYear": MessageLookupByLibrary.simpleMessage(
-      "EEEE dd MMMM yyyy",
-    ),
     "draw": MessageLookupByLibrary.simpleMessage("Égalité"),
     "emptyClipboard": MessageLookupByLibrary.simpleMessage(
       "Presse-papiers vide",
-    ),
-    "emptySnapshotAfterCreate": MessageLookupByLibrary.simpleMessage(
-      "Données de création introuvables (aucune donnée retournée).",
-    ),
-    "errorLoading": MessageLookupByLibrary.simpleMessage(
-      "Erreur de chargement",
     ),
     "errorRetryLater": MessageLookupByLibrary.simpleMessage(
       "Une erreur est survenue, veuillez réessayer plus tard.",
@@ -60,6 +57,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "gameAlreadyFull": MessageLookupByLibrary.simpleMessage(
       "Cette partie a déjà deux joueurs.",
     ),
+    "gameCodeValue": m3,
     "gameNotFound": MessageLookupByLibrary.simpleMessage("Partie introuvable."),
     "gameNotStartedYet": MessageLookupByLibrary.simpleMessage(
       "La partie n\'a pas encore commencé.",
@@ -69,11 +67,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "join": MessageLookupByLibrary.simpleMessage("Rejoindre"),
     "linkCopied": MessageLookupByLibrary.simpleMessage("Lien copié"),
+    "loading": MessageLookupByLibrary.simpleMessage("Chargement"),
     "local1v1": MessageLookupByLibrary.simpleMessage("1v1 local"),
     "notYourTurn": MessageLookupByLibrary.simpleMessage(
       "Ce n\'est pas ton tour.",
     ),
-    "offline1v1": MessageLookupByLibrary.simpleMessage("1v1 hors ligne"),
     "online1v1": MessageLookupByLibrary.simpleMessage("1v1 en ligne"),
     "onlineGame": MessageLookupByLibrary.simpleMessage("Partie en ligne"),
     "onlineUnavailable": MessageLookupByLibrary.simpleMessage(
@@ -93,14 +91,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Jouez à deux sur le même appareil.",
     ),
     "playerFirstName": MessageLookupByLibrary.simpleMessage("Prénom du Joueur"),
-    "playerOWins": MessageLookupByLibrary.simpleMessage("Victoire Joueur O"),
     "playerOneFirstName": MessageLookupByLibrary.simpleMessage(
       "Prénom du Joueur 1",
     ),
     "playerTwoFirstName": MessageLookupByLibrary.simpleMessage(
       "Prénom du Joueur 2",
     ),
-    "playerXWins": MessageLookupByLibrary.simpleMessage("Victoire Joueur X"),
+    "playerWins": m4,
+    "playerWithMark": m5,
     "pleaseEnterFirstName": MessageLookupByLibrary.simpleMessage(
       "Veuillez saisir un prénom",
     ),
@@ -122,12 +120,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "soloVsAi": MessageLookupByLibrary.simpleMessage("Solo vs IA"),
     "start": MessageLookupByLibrary.simpleMessage("Commencer"),
     "startGame": MessageLookupByLibrary.simpleMessage("Lancer la partie"),
-    "turnOf": m3,
-    "versusAiOffline": MessageLookupByLibrary.simpleMessage(
-      "Contre l’IA (hors ligne)",
-    ),
+    "turnOf": m6,
     "waitingForOpponent": MessageLookupByLibrary.simpleMessage(
       "En attente d\'un adversaire…",
     ),
+    "yourTurn": MessageLookupByLibrary.simpleMessage("À toi de jouer"),
   };
 }

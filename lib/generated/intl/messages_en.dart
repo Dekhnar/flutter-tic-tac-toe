@@ -26,10 +26,17 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(row, column) => "Cell ${row} ${column} empty";
 
-  static String m3(player) => "Turn: ${player}";
+  static String m3(code) => "Game code: ${code}";
+
+  static String m4(player) => "${player} wins";
+
+  static String m5(name, mark) => "${name} (${mark})";
+
+  static String m6(player) => "Turn: ${player}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "ai": MessageLookupByLibrary.simpleMessage("AI"),
     "boardCellCircle": m0,
     "boardCellCross": m1,
     "boardCellEmpty": m2,
@@ -39,18 +46,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "copy": MessageLookupByLibrary.simpleMessage("Copy"),
     "create": MessageLookupByLibrary.simpleMessage("Create"),
     "createGame": MessageLookupByLibrary.simpleMessage("Create game"),
-    "datePatternLong": MessageLookupByLibrary.simpleMessage("EEEE dd MMMM"),
-    "datePatternLongWithYear": MessageLookupByLibrary.simpleMessage(
-      "EEEE dd MMMM yyyy",
-    ),
     "draw": MessageLookupByLibrary.simpleMessage("Draw"),
     "emptyClipboard": MessageLookupByLibrary.simpleMessage(
       "Clipboard is empty",
     ),
-    "emptySnapshotAfterCreate": MessageLookupByLibrary.simpleMessage(
-      "Empty snapshot after create (no data returned).",
-    ),
-    "errorLoading": MessageLookupByLibrary.simpleMessage("Loading error"),
     "errorRetryLater": MessageLookupByLibrary.simpleMessage(
       "An error occurred, please try again later.",
     ),
@@ -58,6 +57,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "gameAlreadyFull": MessageLookupByLibrary.simpleMessage(
       "This game already has two players.",
     ),
+    "gameCodeValue": m3,
     "gameNotFound": MessageLookupByLibrary.simpleMessage("Game not found."),
     "gameNotStartedYet": MessageLookupByLibrary.simpleMessage(
       "The game has not started yet.",
@@ -67,9 +67,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "join": MessageLookupByLibrary.simpleMessage("Join"),
     "linkCopied": MessageLookupByLibrary.simpleMessage("Link copied"),
+    "loading": MessageLookupByLibrary.simpleMessage("Loading"),
     "local1v1": MessageLookupByLibrary.simpleMessage("Local 1v1"),
     "notYourTurn": MessageLookupByLibrary.simpleMessage("It\'s not your turn."),
-    "offline1v1": MessageLookupByLibrary.simpleMessage("Offline 1v1"),
     "online1v1": MessageLookupByLibrary.simpleMessage("Online 1v1"),
     "onlineGame": MessageLookupByLibrary.simpleMessage("Online game"),
     "onlineUnavailable": MessageLookupByLibrary.simpleMessage(
@@ -91,14 +91,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "playerFirstName": MessageLookupByLibrary.simpleMessage(
       "Player first name",
     ),
-    "playerOWins": MessageLookupByLibrary.simpleMessage("Player O wins"),
     "playerOneFirstName": MessageLookupByLibrary.simpleMessage(
       "Player 1 first name",
     ),
     "playerTwoFirstName": MessageLookupByLibrary.simpleMessage(
       "Player 2 first name",
     ),
-    "playerXWins": MessageLookupByLibrary.simpleMessage("Player X wins"),
+    "playerWins": m4,
+    "playerWithMark": m5,
     "pleaseEnterFirstName": MessageLookupByLibrary.simpleMessage(
       "Please enter a first name",
     ),
@@ -116,12 +116,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "soloVsAi": MessageLookupByLibrary.simpleMessage("Solo vs AI"),
     "start": MessageLookupByLibrary.simpleMessage("Start"),
     "startGame": MessageLookupByLibrary.simpleMessage("Start the game"),
-    "turnOf": m3,
-    "versusAiOffline": MessageLookupByLibrary.simpleMessage(
-      "Versus AI (offline)",
-    ),
+    "turnOf": m6,
     "waitingForOpponent": MessageLookupByLibrary.simpleMessage(
       "Waiting for an opponent…",
     ),
+    "yourTurn": MessageLookupByLibrary.simpleMessage("Your turn"),
   };
 }

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Game {
 
- String get id; String get fromId; String? get toId; GameStatus get status; String? get shareLink; List<Move> get moves; BoardState get boardState; int get fromWinCount; int get toWinCount; int get currentRoundIndex; String get currentPlayerId; String? get currentWinnerId; DateTime? get lastPlayAt; bool get vsAi; DateTime get updatedAt; DateTime get createdAt;
+ BoardState get boardState; DateTime get createdAt; PlayerId get currentPlayerId; int get currentRoundIndex; PlayerId? get currentWinnerId; PlayerId get fromId; String get fromName; int get fromWinCount; GameId get id; DateTime? get lastPlayAt; List<Move> get moves; GameStatus get status; PlayerId? get toId; String? get toName; int get toWinCount; DateTime get updatedAt; bool get vsAi;
 /// Create a copy of Game
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +26,16 @@ $GameCopyWith<Game> get copyWith => _$GameCopyWithImpl<Game>(this as Game, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Game&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.status, status) || other.status == status)&&(identical(other.shareLink, shareLink) || other.shareLink == shareLink)&&const DeepCollectionEquality().equals(other.moves, moves)&&(identical(other.boardState, boardState) || other.boardState == boardState)&&(identical(other.fromWinCount, fromWinCount) || other.fromWinCount == fromWinCount)&&(identical(other.toWinCount, toWinCount) || other.toWinCount == toWinCount)&&(identical(other.currentRoundIndex, currentRoundIndex) || other.currentRoundIndex == currentRoundIndex)&&(identical(other.currentPlayerId, currentPlayerId) || other.currentPlayerId == currentPlayerId)&&(identical(other.currentWinnerId, currentWinnerId) || other.currentWinnerId == currentWinnerId)&&(identical(other.lastPlayAt, lastPlayAt) || other.lastPlayAt == lastPlayAt)&&(identical(other.vsAi, vsAi) || other.vsAi == vsAi)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Game&&(identical(other.boardState, boardState) || other.boardState == boardState)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.currentPlayerId, currentPlayerId) || other.currentPlayerId == currentPlayerId)&&(identical(other.currentRoundIndex, currentRoundIndex) || other.currentRoundIndex == currentRoundIndex)&&(identical(other.currentWinnerId, currentWinnerId) || other.currentWinnerId == currentWinnerId)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.fromName, fromName) || other.fromName == fromName)&&(identical(other.fromWinCount, fromWinCount) || other.fromWinCount == fromWinCount)&&(identical(other.id, id) || other.id == id)&&(identical(other.lastPlayAt, lastPlayAt) || other.lastPlayAt == lastPlayAt)&&const DeepCollectionEquality().equals(other.moves, moves)&&(identical(other.status, status) || other.status == status)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.toName, toName) || other.toName == toName)&&(identical(other.toWinCount, toWinCount) || other.toWinCount == toWinCount)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vsAi, vsAi) || other.vsAi == vsAi));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fromId,toId,status,shareLink,const DeepCollectionEquality().hash(moves),boardState,fromWinCount,toWinCount,currentRoundIndex,currentPlayerId,currentWinnerId,lastPlayAt,vsAi,updatedAt,createdAt);
+int get hashCode => Object.hash(runtimeType,boardState,createdAt,currentPlayerId,currentRoundIndex,currentWinnerId,fromId,fromName,fromWinCount,id,lastPlayAt,const DeepCollectionEquality().hash(moves),status,toId,toName,toWinCount,updatedAt,vsAi);
 
 @override
 String toString() {
-  return 'Game(id: $id, fromId: $fromId, toId: $toId, status: $status, shareLink: $shareLink, moves: $moves, boardState: $boardState, fromWinCount: $fromWinCount, toWinCount: $toWinCount, currentRoundIndex: $currentRoundIndex, currentPlayerId: $currentPlayerId, currentWinnerId: $currentWinnerId, lastPlayAt: $lastPlayAt, vsAi: $vsAi, updatedAt: $updatedAt, createdAt: $createdAt)';
+  return 'Game(boardState: $boardState, createdAt: $createdAt, currentPlayerId: $currentPlayerId, currentRoundIndex: $currentRoundIndex, currentWinnerId: $currentWinnerId, fromId: $fromId, fromName: $fromName, fromWinCount: $fromWinCount, id: $id, lastPlayAt: $lastPlayAt, moves: $moves, status: $status, toId: $toId, toName: $toName, toWinCount: $toWinCount, updatedAt: $updatedAt, vsAi: $vsAi)';
 }
 
 
@@ -46,7 +46,7 @@ abstract mixin class $GameCopyWith<$Res>  {
   factory $GameCopyWith(Game value, $Res Function(Game) _then) = _$GameCopyWithImpl;
 @useResult
 $Res call({
- String id, String fromId, String? toId, GameStatus status, String? shareLink, List<Move> moves, BoardState boardState, String currentPlayerId, int fromWinCount, int toWinCount, int currentRoundIndex, String? currentWinnerId, DateTime? lastPlayAt, bool vsAi, DateTime createdAt, DateTime updatedAt
+ BoardState boardState, DateTime createdAt, PlayerId currentPlayerId, int currentRoundIndex, PlayerId? currentWinnerId, PlayerId fromId, String fromName, int fromWinCount, GameId id, DateTime? lastPlayAt, List<Move> moves, GameStatus status, PlayerId? toId, String? toName, int toWinCount, DateTime updatedAt, bool vsAi
 });
 
 
@@ -63,25 +63,26 @@ class _$GameCopyWithImpl<$Res>
 
 /// Create a copy of Game
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fromId = null,Object? toId = freezed,Object? status = null,Object? shareLink = freezed,Object? moves = null,Object? boardState = null,Object? currentPlayerId = null,Object? fromWinCount = null,Object? toWinCount = null,Object? currentRoundIndex = null,Object? currentWinnerId = freezed,Object? lastPlayAt = freezed,Object? vsAi = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? boardState = null,Object? createdAt = null,Object? currentPlayerId = null,Object? currentRoundIndex = null,Object? currentWinnerId = freezed,Object? fromId = null,Object? fromName = null,Object? fromWinCount = null,Object? id = null,Object? lastPlayAt = freezed,Object? moves = null,Object? status = null,Object? toId = freezed,Object? toName = freezed,Object? toWinCount = null,Object? updatedAt = null,Object? vsAi = null,}) {
   return _then(Game(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
-as String,toId: freezed == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
-as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as GameStatus,shareLink: freezed == shareLink ? _self.shareLink : shareLink // ignore: cast_nullable_to_non_nullable
-as String?,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
-as List<Move>,boardState: null == boardState ? _self.boardState : boardState // ignore: cast_nullable_to_non_nullable
-as BoardState,currentPlayerId: null == currentPlayerId ? _self.currentPlayerId : currentPlayerId // ignore: cast_nullable_to_non_nullable
-as String,fromWinCount: null == fromWinCount ? _self.fromWinCount : fromWinCount // ignore: cast_nullable_to_non_nullable
-as int,toWinCount: null == toWinCount ? _self.toWinCount : toWinCount // ignore: cast_nullable_to_non_nullable
-as int,currentRoundIndex: null == currentRoundIndex ? _self.currentRoundIndex : currentRoundIndex // ignore: cast_nullable_to_non_nullable
+boardState: null == boardState ? _self.boardState : boardState // ignore: cast_nullable_to_non_nullable
+as BoardState,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,currentPlayerId: null == currentPlayerId ? _self.currentPlayerId : currentPlayerId // ignore: cast_nullable_to_non_nullable
+as PlayerId,currentRoundIndex: null == currentRoundIndex ? _self.currentRoundIndex : currentRoundIndex // ignore: cast_nullable_to_non_nullable
 as int,currentWinnerId: freezed == currentWinnerId ? _self.currentWinnerId : currentWinnerId // ignore: cast_nullable_to_non_nullable
-as String?,lastPlayAt: freezed == lastPlayAt ? _self.lastPlayAt : lastPlayAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,vsAi: null == vsAi ? _self.vsAi : vsAi // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as PlayerId?,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as PlayerId,fromName: null == fromName ? _self.fromName : fromName // ignore: cast_nullable_to_non_nullable
+as String,fromWinCount: null == fromWinCount ? _self.fromWinCount : fromWinCount // ignore: cast_nullable_to_non_nullable
+as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as GameId,lastPlayAt: freezed == lastPlayAt ? _self.lastPlayAt : lastPlayAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
+as List<Move>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as GameStatus,toId: freezed == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as PlayerId?,toName: freezed == toName ? _self.toName : toName // ignore: cast_nullable_to_non_nullable
+as String?,toWinCount: null == toWinCount ? _self.toWinCount : toWinCount // ignore: cast_nullable_to_non_nullable
+as int,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vsAi: null == vsAi ? _self.vsAi : vsAi // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -216,7 +217,7 @@ case _:
 /// @nodoc
 mixin _$Move {
 
- String get playerId; int get index; CellMark get mark; int get round; int get turn;
+ int get index; CellMark get mark; PlayerId get playerId; int get round; int get turn;
 /// Create a copy of Move
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -227,16 +228,16 @@ $MoveCopyWith<Move> get copyWith => _$MoveCopyWithImpl<Move>(this as Move, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Move&&(identical(other.playerId, playerId) || other.playerId == playerId)&&(identical(other.index, index) || other.index == index)&&(identical(other.mark, mark) || other.mark == mark)&&(identical(other.round, round) || other.round == round)&&(identical(other.turn, turn) || other.turn == turn));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Move&&(identical(other.index, index) || other.index == index)&&(identical(other.mark, mark) || other.mark == mark)&&(identical(other.playerId, playerId) || other.playerId == playerId)&&(identical(other.round, round) || other.round == round)&&(identical(other.turn, turn) || other.turn == turn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,playerId,index,mark,round,turn);
+int get hashCode => Object.hash(runtimeType,index,mark,playerId,round,turn);
 
 @override
 String toString() {
-  return 'Move(playerId: $playerId, index: $index, mark: $mark, round: $round, turn: $turn)';
+  return 'Move(index: $index, mark: $mark, playerId: $playerId, round: $round, turn: $turn)';
 }
 
 
@@ -247,7 +248,7 @@ abstract mixin class $MoveCopyWith<$Res>  {
   factory $MoveCopyWith(Move value, $Res Function(Move) _then) = _$MoveCopyWithImpl;
 @useResult
 $Res call({
- String playerId, int index, CellMark mark, int round, int turn
+ int index, CellMark mark, PlayerId playerId, int round, int turn
 });
 
 
@@ -264,12 +265,12 @@ class _$MoveCopyWithImpl<$Res>
 
 /// Create a copy of Move
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? playerId = null,Object? index = null,Object? mark = null,Object? round = null,Object? turn = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = null,Object? mark = null,Object? playerId = null,Object? round = null,Object? turn = null,}) {
   return _then(Move(
-playerId: null == playerId ? _self.playerId : playerId // ignore: cast_nullable_to_non_nullable
-as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,mark: null == mark ? _self.mark : mark // ignore: cast_nullable_to_non_nullable
-as CellMark,round: null == round ? _self.round : round // ignore: cast_nullable_to_non_nullable
+as CellMark,playerId: null == playerId ? _self.playerId : playerId // ignore: cast_nullable_to_non_nullable
+as PlayerId,round: null == round ? _self.round : round // ignore: cast_nullable_to_non_nullable
 as int,turn: null == turn ? _self.turn : turn // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -406,7 +407,7 @@ case _:
 /// @nodoc
 mixin _$BoardState {
 
- List<int> get row; List<int> get col; int get diag; int get anti; int get moveCount;
+ int get anti; List<int> get col; int get diag; int get moveCount; List<int> get row;
 /// Create a copy of BoardState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -417,16 +418,16 @@ $BoardStateCopyWith<BoardState> get copyWith => _$BoardStateCopyWithImpl<BoardSt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BoardState&&const DeepCollectionEquality().equals(other.row, row)&&const DeepCollectionEquality().equals(other.col, col)&&(identical(other.diag, diag) || other.diag == diag)&&(identical(other.anti, anti) || other.anti == anti)&&(identical(other.moveCount, moveCount) || other.moveCount == moveCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BoardState&&(identical(other.anti, anti) || other.anti == anti)&&const DeepCollectionEquality().equals(other.col, col)&&(identical(other.diag, diag) || other.diag == diag)&&(identical(other.moveCount, moveCount) || other.moveCount == moveCount)&&const DeepCollectionEquality().equals(other.row, row));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(row),const DeepCollectionEquality().hash(col),diag,anti,moveCount);
+int get hashCode => Object.hash(runtimeType,anti,const DeepCollectionEquality().hash(col),diag,moveCount,const DeepCollectionEquality().hash(row));
 
 @override
 String toString() {
-  return 'BoardState(row: $row, col: $col, diag: $diag, anti: $anti, moveCount: $moveCount)';
+  return 'BoardState(anti: $anti, col: $col, diag: $diag, moveCount: $moveCount, row: $row)';
 }
 
 
@@ -437,7 +438,7 @@ abstract mixin class $BoardStateCopyWith<$Res>  {
   factory $BoardStateCopyWith(BoardState value, $Res Function(BoardState) _then) = _$BoardStateCopyWithImpl;
 @useResult
 $Res call({
- int diag, int anti, int moveCount, List<int> row, List<int> col
+ int anti, List<int> col, int diag, int moveCount, List<int> row
 });
 
 
@@ -454,13 +455,13 @@ class _$BoardStateCopyWithImpl<$Res>
 
 /// Create a copy of BoardState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? diag = null,Object? anti = null,Object? moveCount = null,Object? row = null,Object? col = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? anti = null,Object? col = null,Object? diag = null,Object? moveCount = null,Object? row = null,}) {
   return _then(BoardState(
-diag: null == diag ? _self.diag : diag // ignore: cast_nullable_to_non_nullable
-as int,anti: null == anti ? _self.anti : anti // ignore: cast_nullable_to_non_nullable
+anti: null == anti ? _self.anti : anti // ignore: cast_nullable_to_non_nullable
+as int,col: null == col ? _self.col : col // ignore: cast_nullable_to_non_nullable
+as List<int>,diag: null == diag ? _self.diag : diag // ignore: cast_nullable_to_non_nullable
 as int,moveCount: null == moveCount ? _self.moveCount : moveCount // ignore: cast_nullable_to_non_nullable
 as int,row: null == row ? _self.row : row // ignore: cast_nullable_to_non_nullable
-as List<int>,col: null == col ? _self.col : col // ignore: cast_nullable_to_non_nullable
 as List<int>,
   ));
 }

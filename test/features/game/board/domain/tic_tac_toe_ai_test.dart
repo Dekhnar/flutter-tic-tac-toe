@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/tic_tac_toe_ai.dart';
 
-const _player = 'X:Jessy';
-const _ai = 'O:Ai';
+const _player = PlayerId('host');
+const _ai = PlayerId('guest');
 
 void main() {
   const ai = TicTacToeAI();
@@ -39,20 +40,22 @@ void main() {
   });
 }
 
-Game _game({required List<int> xCells, required List<int> oCells, required String currentPlayerId}) {
+Game _game({required List<int> xCells, required List<int> oCells, required PlayerId currentPlayerId}) {
   final moves = [
-    for (final cell in xCells) Move(playerId: _player, index: cell, mark: CellMark.X, round: 0, turn: 0),
-    for (final cell in oCells) Move(playerId: _ai, index: cell, mark: CellMark.O, round: 0, turn: 0),
+    for (final cell in xCells) Move(index: cell, mark: CellMark.X, playerId: _player, round: 0, turn: 0),
+    for (final cell in oCells) Move(index: cell, mark: CellMark.O, playerId: _ai, round: 0, turn: 0),
   ];
   return Game(
-    id: 'game',
-    fromId: _player,
-    toId: _ai,
-    status: GameStatus.playing,
-    moves: moves,
-    currentPlayerId: currentPlayerId,
-    vsAi: true,
     createdAt: DateTime(2025, 1, 1),
+    currentPlayerId: currentPlayerId,
+    fromId: _player,
+    fromName: 'Jessy',
+    id: const GameId('game'),
+    moves: moves,
+    status: GameStatus.playing,
+    toId: _ai,
+    toName: '',
     updatedAt: DateTime(2025, 1, 1),
+    vsAi: true,
   );
 }

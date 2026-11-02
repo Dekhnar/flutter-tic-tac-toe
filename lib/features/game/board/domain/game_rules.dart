@@ -1,4 +1,5 @@
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
 final class GameRules {
@@ -9,7 +10,7 @@ final class GameRules {
   /// The game after the move, or throws the [AppException] that says why the move is refused.
   Game applyMove({
     required Game game,
-    required String playerId,
+    required PlayerId playerId,
     required int row,
     required int col,
     required DateTime currentDate,
@@ -42,16 +43,16 @@ final class GameRules {
     final hasLine = [nextRow[row], nextCol[col], nextDiag, nextAnti].any((count) => count.abs() == boardSize);
 
     final move = Move(
-      playerId: playerId,
       index: index,
       mark: game.markOf(playerId),
+      playerId: playerId,
       round: game.currentRoundIndex,
       turn: game.boardState.moveCount,
     );
 
     final updated = game.copyWith(
       moves: [...game.moves, move],
-      boardState: BoardState(row: nextRow, col: nextCol, diag: nextDiag, anti: nextAnti, moveCount: nextMoveCount),
+      boardState: BoardState(anti: nextAnti, col: nextCol, diag: nextDiag, moveCount: nextMoveCount, row: nextRow),
       lastPlayAt: currentDate,
       updatedAt: currentDate,
     );

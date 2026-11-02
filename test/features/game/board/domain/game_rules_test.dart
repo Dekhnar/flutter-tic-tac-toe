@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/board/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/board/domain/game_rules.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
 
-const _x = 'X:Jessy';
-const _o = 'O:Mario';
+const _x = PlayerId('jessy');
+const _o = PlayerId('mario');
 final _now = DateTime(2025, 1, 1);
 
 void main() {
@@ -16,14 +17,14 @@ void main() {
         rules.applyMove(game: game, playerId: game.currentPlayerId, row: cell ~/ 3, col: cell % 3, currentDate: _now),
   );
 
-  Game Function() move(Game game, {required String playerId, required int row, required int col}) =>
+  Game Function() move(Game game, {required PlayerId playerId, required int row, required int col}) =>
       () => rules.applyMove(game: game, playerId: playerId, row: row, col: col, currentDate: _now);
 
   group('A move', () {
     test('marks the cell with the player mark and passes the turn', () {
       final game = play(_startedGame(), [4]);
 
-      expect(game.moves.single, Move(playerId: _x, index: 4, mark: CellMark.X, round: 0, turn: 0));
+      expect(game.moves.single, const Move(index: 4, mark: CellMark.X, playerId: _x, round: 0, turn: 0));
       expect(game.currentPlayerId, _o);
       expect(game.status, GameStatus.playing);
     });
@@ -112,11 +113,13 @@ void main() {
 }
 
 Game _startedGame() => Game(
-  id: 'game',
-  fromId: _x,
-  toId: _o,
-  status: GameStatus.playing,
-  currentPlayerId: _x,
   createdAt: _now,
+  currentPlayerId: _x,
+  fromId: _x,
+  fromName: 'Jessy',
+  id: const GameId('game'),
+  status: GameStatus.playing,
+  toId: _o,
+  toName: 'Mario',
   updatedAt: _now,
 );

@@ -10,10 +10,6 @@ final class GameAlreadyFullException extends AppException {
   GameAlreadyFullException() : super(code: "game_already_full");
 }
 
-final class GameCreationDataMissingException extends AppException {
-  GameCreationDataMissingException() : super(code: "game_creation_data_missing_exception");
-}
-
 final class GameNotFoundException extends AppException {
   GameNotFoundException() : super(code: "game_not_found");
 }

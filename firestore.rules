@@ -1,71 +1,190 @@
 rules_version = '2';
 
-// Players are identified by the name they type: without Firebase Auth, these rules cannot tell who sends a write.
-// They enforce what the data allows instead: a game is joined once, a cell is played once, identities never change,
-// a move advances the game by exactly one turn and a score only grows by the round just won.
+// Players sign in anonymously: request.auth.uid is the player id stored in the game.
+// Each kind of write the app makes has its own rule, and a move is checked against the board: the counters move by
+// exactly the played cell, the round ends only on a real line or a full board, and only the winner scores.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /games/{gameId} {
-      allow read: if true;
+      // The game id is the code players share: anyone holding it may read the game, nobody may list games.
+      allow get: if signedIn();
+      allow list: if false;
 
-      allow create: if request.resource.data.status == 'setup'
-        && request.resource.data.fromId is string
-        && request.resource.data.toId == null
-        && request.resource.data.currentPlayerId == request.resource.data.fromId
-        && request.resource.data.currentRoundIndex == 0
-        && request.resource.data.fromWinCount == 0
-        && request.resource.data.toWinCount == 0;
-
-      allow update: if isJoin() || isGameUpdate();
-
+      allow create: if isCreatedByHost();
+      allow update: if isJoin() || isStart() || isMove() || isNewRound();
       allow delete: if false;
 
+      function signedIn() {
+        return request.auth != null;
+      }
+
+      function before() {
+        return resource.data;
+      }
+
+      function after() {
+        return request.resource.data;
+      }
+
       function changedKeys() {
-        return request.resource.data.diff(resource.data).affectedKeys();
+        return after().diff(before()).affectedKeys();
+      }
+
+      function isPlayer() {
+        return request.auth.uid == before().fromId || request.auth.uid == before().toId;
+      }
+
+      function isValidName(name) {
+        return name is string && name.size() > 0 && name.size() <= 20;
+      }
+
+      function isEmptyBoard(board) {
+        return board.row == [0, 0, 0] && board.col == [0, 0, 0] && board.diag == 0 && board.anti == 0
+          && board.moveCount == 0;
+      }
+
+      function isCreatedByHost() {
+        let game = request.resource.data;
+        return signedIn()
+          && game.fromId == request.auth.uid
+          && isValidName(game.fromName)
+          && game.toId == null
+          && game.status == 'setup'
+          && game.currentPlayerId == game.fromId
+          && game.currentRoundIndex == 0
+          && game.currentWinnerId == null
+          && game.fromWinCount == 0
+          && game.toWinCount == 0
+          && isEmptyBoard(game.boardState);
       }
 
       function isJoin() {
-        return resource.data.toId == null
-          && request.resource.data.toId is string
-          && changedKeys().hasOnly(['toId', 'updatedAt']);
+        return signedIn()
+          && before().toId == null
+          && request.auth.uid != before().fromId
+          && after().toId == request.auth.uid
+          && isValidName(after().toName)
+          && changedKeys().hasOnly(['toId', 'toName', 'updatedAt']);
       }
 
-      function isGameUpdate() {
-        return resource.data.toId != null
+      function isStart() {
+        return signedIn()
+          && isPlayer()
+          && before().status == 'setup'
+          && before().toId != null
+          && after().status == 'playing'
+          && changedKeys().hasOnly(['status', 'updatedAt']);
+      }
+
+      function isMove() {
+        let movePath = /databases/$(database)/documents/games/$(gameId)/moves/$(string(before().currentRoundIndex) + ':' + string(after().lastMoveIndex));
+        return signedIn()
+          && before().status == 'playing'
+          && request.auth.uid == before().currentPlayerId
           && changedKeys().hasOnly([
-            'boardState', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'fromWinCount',
-            'lastPlayAt', 'status', 'toWinCount', 'updatedAt'
+            'boardState', 'currentPlayerId', 'currentWinnerId', 'fromWinCount', 'lastMoveIndex', 'lastPlayAt', 'status',
+            'toWinCount', 'updatedAt'
           ])
-          && request.resource.data.currentPlayerId in [resource.data.fromId, resource.data.toId]
-          && isScoreKeptOrWon('fromWinCount')
-          && isScoreKeptOrWon('toWinCount');
+          && after().lastMoveIndex is int
+          && after().lastMoveIndex >= 0
+          && after().lastMoveIndex < 9
+          && !exists(movePath)
+          && existsAfter(movePath)
+          && isBoardAdvancedBy(after().lastMoveIndex, before().currentPlayerId == before().fromId ? 1 : -1)
+          && isOutcomeOf(after().lastMoveIndex, before().currentPlayerId == before().fromId ? 1 : -1);
       }
 
-      function isScoreKeptOrWon(score) {
-        let before = resource.data.get(score, 0);
-        let after = request.resource.data.get(score, 0);
-        return after == before || (after == before + 1 && request.resource.data.status == 'finished');
+      // The counters of the played cell's row, column and diagonals move by the player's sign; nothing else moves.
+      function isBoardAdvancedBy(index, sign) {
+        let row = int(math.floor(index / 3));
+        let col = index % 3;
+        let b = before().boardState;
+        let a = after().boardState;
+        return a.moveCount == b.moveCount + 1
+          && a.row[row] == b.row[row] + sign
+          && a.row[(row + 1) % 3] == b.row[(row + 1) % 3]
+          && a.row[(row + 2) % 3] == b.row[(row + 2) % 3]
+          && a.col[col] == b.col[col] + sign
+          && a.col[(col + 1) % 3] == b.col[(col + 1) % 3]
+          && a.col[(col + 2) % 3] == b.col[(col + 2) % 3]
+          && a.diag == b.diag + (row == col ? sign : 0)
+          && a.anti == b.anti + (row + col == 2 ? sign : 0);
+      }
+
+      function hasLine(index, sign) {
+        let row = int(math.floor(index / 3));
+        let col = index % 3;
+        let a = after().boardState;
+        return [a.row[row], a.col[col], a.diag, a.anti].hasAny([3 * sign]);
+      }
+
+      function isOutcomeOf(index, sign) {
+        let mover = before().currentPlayerId;
+        let opponent = mover == before().fromId ? before().toId : before().fromId;
+        return (!hasLine(index, sign) && after().boardState.moveCount < 9
+            && after().status == 'playing' && after().currentPlayerId == opponent
+            && after().currentWinnerId == null && scoresUnchanged())
+          || (hasLine(index, sign)
+            && after().status == 'finished' && after().currentPlayerId == mover
+            && after().currentWinnerId == mover && scoresWonBy(mover))
+          || (!hasLine(index, sign) && after().boardState.moveCount == 9
+            && after().status == 'finished' && after().currentPlayerId == mover
+            && after().currentWinnerId == null && scoresUnchanged());
+      }
+
+      function scoresUnchanged() {
+        return after().fromWinCount == before().fromWinCount && after().toWinCount == before().toWinCount;
+      }
+
+      function scoresWonBy(winner) {
+        return winner == before().fromId
+          ? after().fromWinCount == before().fromWinCount + 1 && after().toWinCount == before().toWinCount
+          : after().toWinCount == before().toWinCount + 1 && after().fromWinCount == before().fromWinCount;
+      }
+
+      function isNewRound() {
+        let nextRound = before().currentRoundIndex + 1;
+        return signedIn()
+          && isPlayer()
+          && before().status == 'finished'
+          && after().status == 'playing'
+          && after().currentRoundIndex == nextRound
+          && after().currentPlayerId == (nextRound % 2 == 0 ? before().fromId : before().toId)
+          && after().currentWinnerId == null
+          && isEmptyBoard(after().boardState)
+          && scoresUnchanged()
+          && changedKeys().hasOnly([
+            'boardState', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'lastPlayAt', 'status', 'updatedAt'
+          ]);
       }
 
       match /moves/{moveId} {
-        allow read: if true;
+        allow read: if isPlayerOf(get(/databases/$(database)/documents/games/$(gameId)).data);
 
-        allow create: if isOneTurnOfCurrentPlayer(
+        allow create: if isMoveOfTheTurn(
           get(/databases/$(database)/documents/games/$(gameId)).data,
           getAfter(/databases/$(database)/documents/games/$(gameId)).data
         );
 
         allow update, delete: if false;
 
-        function isOneTurnOfCurrentPlayer(game, gameAfter) {
+        function isPlayerOf(game) {
+          return request.auth != null && (request.auth.uid == game.fromId || request.auth.uid == game.toId);
+        }
+
+        // The game update written in the same batch must point at this move (see isMove above).
+        function isMoveOfTheTurn(game, gameAfter) {
           let move = request.resource.data;
-          return moveId == string(move.round) + ':' + string(move.index)
-            && move.index >= 0 && move.index < 9
+          return request.auth != null
             && game.status == 'playing'
-            && move.round == game.currentRoundIndex
+            && move.playerId == request.auth.uid
             && move.playerId == game.currentPlayerId
-            && gameAfter.boardState.moveCount == game.boardState.moveCount + 1
-            && (gameAfter.currentPlayerId != move.playerId || gameAfter.status == 'finished');
+            && moveId == string(game.currentRoundIndex) + ':' + string(move.index)
+            && move.round == game.currentRoundIndex
+            && move.turn == game.boardState.moveCount
+            && move.mark == (move.playerId == game.fromId ? 'X' : 'O')
+            && gameAfter.lastMoveIndex == move.index
+            && gameAfter.boardState.moveCount == game.boardState.moveCount + 1;
         }
       }
     }

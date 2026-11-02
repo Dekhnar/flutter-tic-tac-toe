@@ -59,24 +59,9 @@ class I18n {
     return Intl.message('Retry', name: 'retry', desc: '', args: []);
   }
 
-  /// `Loading error`
-  String get errorLoading {
-    return Intl.message(
-      'Loading error',
-      name: 'errorLoading',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Online 1v1`
   String get online1v1 {
     return Intl.message('Online 1v1', name: 'online1v1', desc: '', args: []);
-  }
-
-  /// `Offline 1v1`
-  String get offline1v1 {
-    return Intl.message('Offline 1v1', name: 'offline1v1', desc: '', args: []);
   }
 
   /// `Local 1v1`
@@ -134,16 +119,6 @@ class I18n {
     return Intl.message('Start', name: 'start', desc: '', args: []);
   }
 
-  /// `Versus AI (offline)`
-  String get versusAiOffline {
-    return Intl.message(
-      'Versus AI (offline)',
-      name: 'versusAiOffline',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Copy`
   String get copy {
     return Intl.message('Copy', name: 'copy', desc: '', args: []);
@@ -157,26 +132,6 @@ class I18n {
   /// `Create game`
   String get createGame {
     return Intl.message('Create game', name: 'createGame', desc: '', args: []);
-  }
-
-  /// `EEEE dd MMMM`
-  String get datePatternLong {
-    return Intl.message(
-      'EEEE dd MMMM',
-      name: 'datePatternLong',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `EEEE dd MMMM yyyy`
-  String get datePatternLongWithYear {
-    return Intl.message(
-      'EEEE dd MMMM yyyy',
-      name: 'datePatternLongWithYear',
-      desc: '',
-      args: [],
-    );
   }
 
   /// `Waiting for an opponent…`
@@ -369,39 +324,9 @@ class I18n {
     );
   }
 
-  /// `Player O wins`
-  String get playerOWins {
-    return Intl.message(
-      'Player O wins',
-      name: 'playerOWins',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Player X wins`
-  String get playerXWins {
-    return Intl.message(
-      'Player X wins',
-      name: 'playerXWins',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Draw`
   String get draw {
     return Intl.message('Draw', name: 'draw', desc: '', args: []);
-  }
-
-  /// `Empty snapshot after create (no data returned).`
-  String get emptySnapshotAfterCreate {
-    return Intl.message(
-      'Empty snapshot after create (no data returned).',
-      name: 'emptySnapshotAfterCreate',
-      desc: '',
-      args: [],
-    );
   }
 
   /// `Please retry`
@@ -492,6 +417,51 @@ class I18n {
       desc: '',
       args: [],
     );
+  }
+
+  /// `AI`
+  String get ai {
+    return Intl.message('AI', name: 'ai', desc: '', args: []);
+  }
+
+  /// `Loading`
+  String get loading {
+    return Intl.message('Loading', name: 'loading', desc: '', args: []);
+  }
+
+  /// `{name} ({mark})`
+  String playerWithMark(Object name, Object mark) {
+    return Intl.message(
+      '$name ($mark)',
+      name: 'playerWithMark',
+      desc: '',
+      args: [name, mark],
+    );
+  }
+
+  /// `Game code: {code}`
+  String gameCodeValue(Object code) {
+    return Intl.message(
+      'Game code: $code',
+      name: 'gameCodeValue',
+      desc: '',
+      args: [code],
+    );
+  }
+
+  /// `{player} wins`
+  String playerWins(Object player) {
+    return Intl.message(
+      '$player wins',
+      name: 'playerWins',
+      desc: '',
+      args: [player],
+    );
+  }
+
+  /// `Your turn`
+  String get yourTurn {
+    return Intl.message('Your turn', name: 'yourTurn', desc: '', args: []);
   }
 }
 

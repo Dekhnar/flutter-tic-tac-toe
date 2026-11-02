@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The Firebase Auth emulator speaks plain HTTP; release builds keep cleartext traffic off. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

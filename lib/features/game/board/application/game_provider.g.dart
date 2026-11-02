@@ -6,7 +6,7 @@ part of 'game_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gameNotifierHash() => r'01ce7a554b2663c5064026254769c9f600b07e1c';
+String _$gameNotifierHash() => r'545860712b3d49879a0cf7427b0fac4a08a89c98';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,9 +30,9 @@ class _SystemHash {
 }
 
 abstract class _$GameNotifier extends BuildlessAutoDisposeStreamNotifier<Game> {
-  late final GameCreateInput gameCreateInput;
+  late final GameSession session;
 
-  Stream<Game> build({required GameCreateInput gameCreateInput});
+  Stream<Game> build({required GameSession session});
 }
 
 /// See also [GameNotifier].
@@ -45,15 +45,15 @@ class GameNotifierFamily extends Family<AsyncValue<Game>> {
   const GameNotifierFamily();
 
   /// See also [GameNotifier].
-  GameNotifierProvider call({required GameCreateInput gameCreateInput}) {
-    return GameNotifierProvider(gameCreateInput: gameCreateInput);
+  GameNotifierProvider call({required GameSession session}) {
+    return GameNotifierProvider(session: session);
   }
 
   @override
   GameNotifierProvider getProviderOverride(
     covariant GameNotifierProvider provider,
   ) {
-    return call(gameCreateInput: provider.gameCreateInput);
+    return call(session: provider.session);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -75,9 +75,9 @@ class GameNotifierFamily extends Family<AsyncValue<Game>> {
 class GameNotifierProvider
     extends AutoDisposeStreamNotifierProviderImpl<GameNotifier, Game> {
   /// See also [GameNotifier].
-  GameNotifierProvider({required GameCreateInput gameCreateInput})
+  GameNotifierProvider({required GameSession session})
     : this._internal(
-        () => GameNotifier()..gameCreateInput = gameCreateInput,
+        () => GameNotifier()..session = session,
         from: gameNotifierProvider,
         name: r'gameNotifierProvider',
         debugGetCreateSourceHash:
@@ -87,7 +87,7 @@ class GameNotifierProvider
         dependencies: GameNotifierFamily._dependencies,
         allTransitiveDependencies:
             GameNotifierFamily._allTransitiveDependencies,
-        gameCreateInput: gameCreateInput,
+        session: session,
       );
 
   GameNotifierProvider._internal(
@@ -97,14 +97,14 @@ class GameNotifierProvider
     required super.allTransitiveDependencies,
     required super.debugGetCreateSourceHash,
     required super.from,
-    required this.gameCreateInput,
+    required this.session,
   }) : super.internal();
 
-  final GameCreateInput gameCreateInput;
+  final GameSession session;
 
   @override
   Stream<Game> runNotifierBuild(covariant GameNotifier notifier) {
-    return notifier.build(gameCreateInput: gameCreateInput);
+    return notifier.build(session: session);
   }
 
   @override
@@ -112,13 +112,13 @@ class GameNotifierProvider
     return ProviderOverride(
       origin: this,
       override: GameNotifierProvider._internal(
-        () => create()..gameCreateInput = gameCreateInput,
+        () => create()..session = session,
         from: from,
         name: null,
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
-        gameCreateInput: gameCreateInput,
+        session: session,
       ),
     );
   }
@@ -130,14 +130,13 @@ class GameNotifierProvider
 
   @override
   bool operator ==(Object other) {
-    return other is GameNotifierProvider &&
-        other.gameCreateInput == gameCreateInput;
+    return other is GameNotifierProvider && other.session == session;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, gameCreateInput.hashCode);
+    hash = _SystemHash.combine(hash, session.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -146,8 +145,8 @@ class GameNotifierProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin GameNotifierRef on AutoDisposeStreamNotifierProviderRef<Game> {
-  /// The parameter `gameCreateInput` of this provider.
-  GameCreateInput get gameCreateInput;
+  /// The parameter `session` of this provider.
+  GameSession get session;
 }
 
 class _GameNotifierProviderElement
@@ -156,8 +155,7 @@ class _GameNotifierProviderElement
   _GameNotifierProviderElement(super.provider);
 
   @override
-  GameCreateInput get gameCreateInput =>
-      (origin as GameNotifierProvider).gameCreateInput;
+  GameSession get session => (origin as GameNotifierProvider).session;
 }
 
 // ignore_for_file: type=lint

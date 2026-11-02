@@ -41,8 +41,8 @@ class _GameCreateOfflineDialogState extends State<GameCreateOfflineDialog> {
     final toName = _toNameController.text.trim();
 
     context.router.pop(switch (_isVsAi) {
-      true => GameCreateInput.offlineVsAi(fromLabel: fromName),
-      false => GameCreateInput.offline(fromLabel: fromName, toLabel: toName),
+      true => GameCreateInput.offlineVsAi(hostName: fromName),
+      false => GameCreateInput.offline(guestName: toName, hostName: fromName),
     });
   }
 
@@ -53,7 +53,7 @@ class _GameCreateOfflineDialogState extends State<GameCreateOfflineDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_isVsAi ? I18n.of(context).versusAiOffline : I18n.of(context).offline1v1),
+      title: Text(_isVsAi ? I18n.of(context).soloVsAi : I18n.of(context).local1v1),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

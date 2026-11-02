@@ -11,7 +11,7 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:auto_route/auto_route.dart' as _i8;
 import 'package:flutter/material.dart' as _i9;
-import 'package:tic_tac_toe_app/features/game/board/application/game_state.dart'
+import 'package:tic_tac_toe_app/features/game/board/application/game_session.dart'
     as _i10;
 import 'package:tic_tac_toe_app/features/game/board/presentation/game_board_screen.dart'
     as _i2;
@@ -47,11 +47,11 @@ class EmptyRouter extends _i8.PageRouteInfo<void> {
 class GameBoardScreenRoute extends _i8.PageRouteInfo<GameBoardScreenRouteArgs> {
   GameBoardScreenRoute({
     _i9.Key? key,
-    required _i10.GameCreateInput input,
+    required _i10.GameSession session,
     List<_i8.PageRouteInfo>? children,
   }) : super(
          GameBoardScreenRoute.name,
-         args: GameBoardScreenRouteArgs(key: key, input: input),
+         args: GameBoardScreenRouteArgs(key: key, session: session),
          initialChildren: children,
        );
 
@@ -61,21 +61,21 @@ class GameBoardScreenRoute extends _i8.PageRouteInfo<GameBoardScreenRouteArgs> {
     name,
     builder: (data) {
       final args = data.argsAs<GameBoardScreenRouteArgs>();
-      return _i2.GameBoardScreen(key: args.key, input: args.input);
+      return _i2.GameBoardScreen(key: args.key, session: args.session);
     },
   );
 }
 
 class GameBoardScreenRouteArgs {
-  const GameBoardScreenRouteArgs({this.key, required this.input});
+  const GameBoardScreenRouteArgs({this.key, required this.session});
 
   final _i9.Key? key;
 
-  final _i10.GameCreateInput input;
+  final _i10.GameSession session;
 
   @override
   String toString() {
-    return 'GameBoardScreenRouteArgs{key: $key, input: $input}';
+    return 'GameBoardScreenRouteArgs{key: $key, session: $session}';
   }
 }
 

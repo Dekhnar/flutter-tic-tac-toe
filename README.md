@@ -48,7 +48,7 @@ On a real project (never on the emulators), the app also turns on:
 - **Crashlytics**, collecting from release builds only. Android does not upload the R8 mapping, which needs `google-services.json`: enable `mappingFileUploadEnabled` in `android/app/build.gradle.kts` once the project has one. For symbolicated iOS reports, add Crashlytics' dSYM upload script to the Runner build phases.
 - **App Check**: Play Integrity on Android, App Attest on Apple platforms (DeviceCheck where App Attest is not supported), the debug providers in debug builds (allow their token in the console). iOS release builds carry the App Attest entitlement ([`Runner.entitlements`](ios/Runner/Runner.entitlements)); enable *App Attest* for the App ID in the Apple developer account. Register the apps in App Check, and turn on enforcement for Firestore and Auth only once the console's App Check metrics show nearly all requests verified.
 
-Each of these starts on its own: a failure leaves out only what depends on it, and is reported once the app knows where (through Crashlytics when it started). Online play stays on unless Firebase itself fails to start; the online mode then says it could not start.
+Each of these starts on its own, within 5 s: a failure leaves out only what depends on it, and is reported once the app knows where (through Crashlytics when it started). Online play stays on unless Firebase itself fails to start; the online mode then says it could not start.
 
 ### Release builds
 
@@ -74,7 +74,8 @@ lib/
  ├─ main.dart               # error handlers, then runs the app
  ├─ composition.dart        # startup (Firebase, Crashlytics, App Check), and the implementation behind each contract
  ├─ app.dart                # MaterialApp, themes, i18n, router
- ├─ shared/                 # Firebase environment, routing, errors and their logging
+ ├─ routing/                # the router, and the game's navigation implemented with it
+ ├─ shared/                 # Firebase environment, errors and their logging
  ├─ design_system/          # foundations (theme, dimensions) and components
  └─ features/game/
      ├─ domain/             # Game, Board, GameCode, GameRules, TicTacToeAI, GameException, repository contracts
@@ -86,19 +87,19 @@ lib/
          └─ board/          #   header, grid, round actions; the actions on the board (busy, error, time limit)
 ```
 
-**Layers.** The domain is plain Dart. The application uses the domain only, and exposes each contract as a provider that throws until [`composition.dart`](lib/composition.dart) binds it. Presentation never imports the data layer. [`architecture_test.dart`](test/architecture_test.dart) fails on an import that breaks one of these rules.
+**Layers.** The domain is plain Dart. The application uses the domain only, and exposes each contract as a provider that throws until [`composition.dart`](lib/composition.dart) binds it. Presentation never imports the data layer, and a feature never imports the app around it (router, composition). Shared code imports no feature. [`architecture_test.dart`](test/architecture_test.dart) fails on an import that breaks one of these rules.
 
 **Decisions**
 
 - **`GameRules` is the only place a game changes**: join, start, move, next round, leave. A refusal throws the `GameException` that says why. A request already fulfilled, which happens when both players ask at once, returns `GameChange.alreadyDone()` and writes nothing. Both repositories store what the rules return, and `firestore.rules` enforce the same rules on the server.
 - **`GameCode`** is the online game id: six characters without 0/O and 1/I. The join dialog checks a code on the device, and finds it in pasted text, such as the invitation the host shared.
 - **`OnlinePlay`** is either available, with the repository and identity it needs, or unavailable, with the reason. No code reaches the online services otherwise.
-- **State the screens show lives with them.** `GameSessionStartNotifier` (home) and `GameBoardActionsNotifier` (board) hold the loading and error states and run one action at a time. They stop waiting after 15 s and 10 s respectively, with `ServerNotAnsweringException`. A move ends only once the board shows the game it changed: online, that game comes on its own stream after the server's answer, so the board takes no other action until then, and `pendingMoveProvider` holds the cell of the move meanwhile. The application layer holds no UI state.
+- **State the screens show lives with them.** `GameSessionStartNotifier` (home) and `GameBoardActionsNotifier` (board) hold the loading and error states and run one action at a time. They stop waiting after 15 s and 10 s respectively, with `ServerNotAnsweringException`; so does the game stream when its first game takes over 10 s, and the board then offers to retry. A move ends only once the board shows the game it changed: online, that game comes on its own stream after the server's answer, so the board takes no other action until then, and `pendingMoveProvider` holds the cell of the move meanwhile. The application layer holds no UI state.
 - **A move from this device is for `GameSession.playsFor`**: this device's player online, the player whose turn it is on a local game, never the AI. The board's notifier checks the game as it is when a tap arrives, and ignores any other move: two taps can land in the same frame.
 - **A session that starts after the player stopped waiting opens no board.** A game created for it is left, since nobody else knows its code. A seat taken in someone else's game is kept: joining is idempotent, so the player's retry opens that game.
 - **The AI** watches the game of a local session against it and, after a thinking time, plays the move `TicTacToeAI` picks through the repository. It stops when the board closes.
 - **Leaving the board leaves the game**, however the player goes back. A local game is forgotten, and the opponent of an online one sees it abandoned, so the board asks first while an opponent is seated.
-- **Navigation:** screens are auto_route routes. Dialogs open with `showDialog` and close themselves with `Navigator.pop`. Closing the board goes through the router, and closes any dialog over it.
+- **Navigation:** screens are auto_route routes, but they do not import the router. They go through `GameNavigation`, a contract of the feature that `lib/routing/` implements with the router and composition binds. Closing the board closes any dialog over it. Dialogs open with `showDialog` and close themselves with `Navigator.pop`.
 
 **Errors.** `ExpectedException`s (refusals, the server not answering) are shown to the player and logged as breadcrumbs. Anything else is reported to Crashlytics. A write the server refuses outside the game's rules, such as an App Check failure or an outdated app, is a `ServerRefusedException`: it is reported, and the player is told the server refused the action.
 
@@ -111,7 +112,7 @@ One document per game, `games/{code}`. It holds the players (`hostId` plays X, `
 [`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write is a `GameWrite` listing the fields it changes, the same list [`firestore.rules`](firestore.rules) allow for that write. A test reads the rules to keep both lists equal, and checks that the server sets every time a write carries.
 
 The rules also enforce the following:
-- games can be read with their code, never listed;
+- games are created only under a code the app could draw, and read with it, never listed;
 - names are at most 20 UTF-16 code units, as the app counts them;
 - a move comes from the player whose turn it is, and is checked against the board: one empty cell takes the mark, the round ends only on a real line or a full board, and only the winner scores.
 

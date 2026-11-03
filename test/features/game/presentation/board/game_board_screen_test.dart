@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +18,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_screen.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_board_grid.dart';
@@ -28,6 +26,7 @@ import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_refused_exception.dart';
 
+import '../../../../shared/fakes/lagging_online_game_repository.dart';
 import '../../../../shared/golden_test_utils/material_golden.dart';
 import '../../../../shared/tic_tac_toe_widget_test_wrapper.dart';
 
@@ -381,6 +380,20 @@ void main() {
   });
 
   group('A game that cannot load', () {
+    testWidgets('in time says the server is not answering, and loads on retry', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      harness.appRepository.lag();
+
+      await robot.pumpOnlineGameAsHost();
+      robot.expectText(i18n.serverNotAnswering);
+
+      harness.appRepository.catchUp();
+      await tester.tap(find.text(i18n.retry));
+      await tester.pumpAndSettle();
+      robot.expectText(i18n.waitingForOpponent);
+    });
+
     testWidgets('can be loaded again', (tester) async {
       var attempts = 0;
       final robot = _GameBoardScreenRobot(tester);
@@ -484,7 +497,7 @@ Widget _goldenBoard(Stream<Game> Function() game) => ProviderScope(
   overrides: [
     gameProvider(_onlineSession).overrideWith((ref) => game()),
     onlineGameRepositoryProvider.overrideWithValue(
-      _AppRepository(FirestoreGameRepository(firestore: FakeFirebaseFirestore()))
+      LaggingOnlineGameRepository(FirestoreGameRepository(firestore: FakeFirebaseFirestore()))
         ..beforeMakeMove = () async => throw Exception('network unreachable'),
     ),
   ],
@@ -626,7 +639,7 @@ class _FirestoreTestHarness {
   late final opponent = FirestoreGameRepository(firestore: firestore);
 
   /// The repository of the board under test.
-  late final appRepository = _AppRepository(FirestoreGameRepository(firestore: firestore));
+  late final appRepository = LaggingOnlineGameRepository(FirestoreGameRepository(firestore: firestore));
 
   /// The game the host created.
   late GameCode gameId;
@@ -657,82 +670,6 @@ class _FirestoreTestHarness {
       default:
         throw UnsupportedError('No seed for $refusal');
     }
-  }
-}
-
-/// The app's repository, on a device whose game may change on the server between the tap and the write.
-final class _AppRepository implements OnlineGameRepository {
-  _AppRepository(this._repository);
-
-  final OnlineGameRepository _repository;
-
-  /// Runs once the player tapped a cell, before the move reaches the server.
-  AsyncCallback? beforeMakeMove;
-
-  bool _lagging = false;
-  final _catchUps = <VoidCallback>[];
-
-  /// From now on, the game stream holds back what the server sends, as a listener that lags behind does.
-  void lag() => _lagging = true;
-
-  /// The game stream delivers the latest game it held back: Firestore skips the states in between.
-  void catchUp() {
-    _lagging = false;
-    for (final catchUp in [..._catchUps]) {
-      catchUp();
-    }
-  }
-
-  @override
-  Future<GameCode> createGame({required PlayerId host, required String hostName}) =>
-      _repository.createGame(host: host, hostName: hostName);
-
-  @override
-  Future<void> leaveGame(GameId gameId) => _repository.leaveGame(gameId);
-
-  @override
-  Future<void> joinGame(GameCode code, {required PlayerId guest, required String guestName}) =>
-      _repository.joinGame(code, guest: guest, guestName: guestName);
-
-  @override
-  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async {
-    await beforeMakeMove?.call();
-    await _repository.makeMove(gameId: gameId, playerId: playerId, cell: cell);
-  }
-
-  @override
-  Future<void> startGame({required GameId gameId}) => _repository.startGame(gameId: gameId);
-
-  @override
-  Future<void> startNewRound({required GameId gameId}) => _repository.startNewRound(gameId: gameId);
-
-  @override
-  Stream<Game> watchGame(GameId gameId) {
-    late final StreamController<Game> controller;
-    StreamSubscription<Game>? server;
-    Game? heldBack;
-    void catchUp() {
-      if (heldBack case final game?) controller.add(game);
-      heldBack = null;
-    }
-
-    controller = StreamController<Game>(
-      onListen: () {
-        _catchUps.add(catchUp);
-        server = _repository
-            .watchGame(gameId)
-            .listen(
-              (game) => _lagging ? heldBack = game : controller.add(game),
-              onError: controller.addError,
-              onDone: controller.close,
-            );
-      },
-      onCancel: () {
-        _catchUps.remove(catchUp);
-        return server?.cancel();
-      },
-    );
-    return controller.stream;
   }
 }
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 
 /// `firestore.rules` and [GameWrite] describe the same protocol twice: this keeps them in step, write by write.
 void main() {
@@ -43,6 +44,11 @@ void main() {
         expect(checks.any(body.contains), isTrue, reason: '${write.name} writes ${field.name} unchecked');
       }
     }
+  });
+
+  test('a game is created only under a code the app could have drawn', () {
+    expect(rules.condition('create'), contains('isGameCode(gameId)'));
+    expect(rules.body('isGameCode'), contains("matches('[${GameCode.alphabet}]{${GameCode.length}}')"));
   });
 
   test('the reader finds a function by its braces, wherever it is and however it is laid out', () {

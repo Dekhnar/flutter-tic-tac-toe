@@ -13,8 +13,9 @@ import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_bo
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_header.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/round_actions.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/game_navigation.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
 /// Leaving the board leaves the game.
 @RoutePage()
@@ -75,7 +76,11 @@ class GameBoardScreen extends ConsumerWidget {
           canPop: false,
           child: AlertDialog(
             title: Text(i18n.errorTitle),
-            content: Text(gameIsGone ? i18n.gameNotFound : i18n.errorRetryLater),
+            content: Text(switch (error) {
+              GameNotFoundException() => i18n.gameNotFound,
+              ServerNotAnsweringException() => i18n.serverNotAnswering,
+              _ => i18n.errorRetryLater,
+            }),
             actions: [
               if (!gameIsGone)
                 TextButton(
@@ -86,12 +91,8 @@ class GameBoardScreen extends ConsumerWidget {
                   child: Text(i18n.retry),
                 ),
               TextButton(
-                onPressed: () {
-                  // Closes whatever else is open over the board too, like a confirmation to leave.
-                  context.router
-                    ..popUntilRouteWithName(GameBoardScreenRoute.name)
-                    ..pop();
-                },
+                // Closes whatever else is open over the board too, like a confirmation to leave.
+                onPressed: () => ref.read(gameNavigationProvider).closeBoard(context),
                 child: Text(i18n.quit),
               ),
             ],
@@ -121,7 +122,7 @@ class _LeaveGuard extends ConsumerWidget {
         }
 
         final confirmed = await _confirmLeave(context);
-        if (confirmed == true && context.mounted) context.router.pop();
+        if (confirmed == true && context.mounted) ref.read(gameNavigationProvider).closeBoard(context);
       },
       child: child,
     );

@@ -58,7 +58,7 @@ final class GameBoardActionsNotifierProvider
 }
 
 String _$gameBoardActionsNotifierHash() =>
-    r'd59cb1b670e04b94cd73b3b9ee898ea94e643ac4';
+    r'ec1a05f495c6cc392d1e5475486877cdaa66c5d7';
 
 /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
 /// One action at a time, each given [timeLimit] to complete.
@@ -225,17 +225,20 @@ abstract class _$PendingMoveNotifier extends $Notifier<Cell?> {
   }
 }
 
-/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+/// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+/// in an online game already; a game gone from the server ends for nobody.
 
 @ProviderFor(leaveNeedsConfirmation)
 const leaveNeedsConfirmationProvider = LeaveNeedsConfirmationFamily._();
 
-/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+/// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+/// in an online game already; a game gone from the server ends for nobody.
 
 final class LeaveNeedsConfirmationProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  /// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+  /// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+  /// in an online game already; a game gone from the server ends for nobody.
   const LeaveNeedsConfirmationProvider._({
     required LeaveNeedsConfirmationFamily super.from,
     required GameSession super.argument,
@@ -289,9 +292,10 @@ final class LeaveNeedsConfirmationProvider
 }
 
 String _$leaveNeedsConfirmationHash() =>
-    r'936375155f6de6c786e662c72488e595a9bd7918';
+    r'63a6e9b181bef62403dde64d3dd8c3f24b56451d';
 
-/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+/// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+/// in an online game already; a game gone from the server ends for nobody.
 
 final class LeaveNeedsConfirmationFamily extends $Family
     with $FunctionalFamilyOverride<bool, GameSession> {
@@ -304,7 +308,8 @@ final class LeaveNeedsConfirmationFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+  /// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+  /// in an online game already; a game gone from the server ends for nobody.
 
   LeaveNeedsConfirmationProvider call(GameSession session) =>
       LeaveNeedsConfirmationProvider._(argument: session, from: this);

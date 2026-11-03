@@ -38,7 +38,7 @@ class _GameCell extends ConsumerWidget {
 
   bool _isPlayable(AsyncValue<Game> asyncGame) => switch (asyncGame) {
     // A game that failed to load keeps showing its last board, but takes no move.
-    AsyncData(value: final game) => game.board[cell] == null && session.canPlay(game),
+    AsyncData(value: final game) => session.canPlayAt(game, cell),
     _ => false,
   };
 

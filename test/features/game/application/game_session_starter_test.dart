@@ -15,6 +15,8 @@ import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 
+import '../../../shared/fakes/signed_in_identity.dart';
+
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
 
@@ -52,7 +54,7 @@ void main() {
   }
 
   test('a local game is created on the device, both players sharing it', () async {
-    final container = containerSignedInAs(const _SignedIn(_jessy));
+    final container = containerSignedInAs(SignedInIdentity(_jessy));
 
     final session = await container
         .read(gameSessionStarterProvider)
@@ -65,7 +67,7 @@ void main() {
   });
 
   test('in a game against the AI, the AI plays the guest', () async {
-    final container = containerSignedInAs(const _SignedIn(_jessy));
+    final container = containerSignedInAs(SignedInIdentity(_jessy));
 
     final session = await container
         .read(gameSessionStarterProvider)
@@ -77,7 +79,7 @@ void main() {
   });
 
   test('an online game is created under the signed-in player, who then plays as the host', () async {
-    final container = containerSignedInAs(const _SignedIn(_jessy));
+    final container = containerSignedInAs(SignedInIdentity(_jessy));
 
     final session = await container
         .read(gameSessionStarterProvider)
@@ -90,7 +92,7 @@ void main() {
 
   test('joining an online game seats the signed-in player as the guest', () async {
     final gameId = await FirestoreGameRepository(firestore: firestore).createGame(host: _jessy, hostName: 'Jessy');
-    final container = containerSignedInAs(const _SignedIn(_luigi));
+    final container = containerSignedInAs(SignedInIdentity(_luigi));
 
     final session = await container
         .read(gameSessionStarterProvider)
@@ -103,7 +105,7 @@ void main() {
 
   group('A session that started once the player no longer waited for it', () {
     test('leaves the game created for it: nobody else knows the code', () async {
-      final starter = containerSignedInAs(const _SignedIn(_jessy)).read(gameSessionStarterProvider);
+      final starter = containerSignedInAs(SignedInIdentity(_jessy)).read(gameSessionStarterProvider);
       const input = GameCreateInput.createOnline(hostName: 'Jessy');
       final session = await starter.start(input);
 
@@ -117,7 +119,7 @@ void main() {
 
     test('keeps the seat taken in a friend\'s game, so that joining again opens it', () async {
       final code = await FirestoreGameRepository(firestore: firestore).createGame(host: _jessy, hostName: 'Jessy');
-      final starter = containerSignedInAs(const _SignedIn(_luigi)).read(gameSessionStarterProvider);
+      final starter = containerSignedInAs(SignedInIdentity(_luigi)).read(gameSessionStarterProvider);
       final input = GameCreateInput.joinOnline(code: code, guestName: 'Luigi');
       final session = await starter.start(input);
 
@@ -129,7 +131,7 @@ void main() {
     });
 
     test('forgets a local game', () async {
-      final starter = containerSignedInAs(const _SignedIn(_jessy)).read(gameSessionStarterProvider);
+      final starter = containerSignedInAs(SignedInIdentity(_jessy)).read(gameSessionStarterProvider);
       const input = GameCreateInput.localVsAi(hostName: 'Jessy');
       final session = await starter.start(input);
 
@@ -140,7 +142,7 @@ void main() {
   });
 
   test('an online game cannot be started without Firebase, and nothing is written', () async {
-    final container = containerSignedInAs(const _SignedIn(_jessy), isOnlineAvailable: false);
+    final container = containerSignedInAs(SignedInIdentity(_jessy), isOnlineAvailable: false);
 
     await expectLater(
       container.read(gameSessionStarterProvider).start(GameCreateInput.createOnline(hostName: 'Jessy')),
@@ -151,7 +153,7 @@ void main() {
 
   test('an online game is still created when nobody watches the creation any more by the time sign-in ends', () async {
     final signIn = Completer<PlayerId>();
-    final container = containerSignedInAs(_SigningIn(signIn.future));
+    final container = containerSignedInAs(SignedInIdentity.later(signIn.future));
 
     final session = container.read(gameSessionStarterProvider).start(GameCreateInput.createOnline(hostName: 'Jessy'));
     container.invalidate(gameSessionStarterProvider);
@@ -162,22 +164,4 @@ void main() {
     expect(created.me, _jessy);
     expect((await onlineGame(created.gameId)).host.id, _jessy);
   });
-}
-
-final class _SignedIn implements PlayerIdentity {
-  const _SignedIn(this._player);
-
-  final PlayerId _player;
-
-  @override
-  Future<PlayerId> signIn() async => _player;
-}
-
-final class _SigningIn implements PlayerIdentity {
-  const _SigningIn(this._player);
-
-  final Future<PlayerId> _player;
-
-  @override
-  Future<PlayerId> signIn() => _player;
 }

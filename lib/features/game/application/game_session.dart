@@ -37,6 +37,8 @@ extension GameSessionPlayers on GameSession {
 
   bool canPlay(Game game) => game.status == GameStatus.playing && playsFor(game) == game.currentPlayerId;
 
+  bool canPlayAt(Game game, Cell cell) => cell.isOnBoard && game.board[cell] == null && canPlay(game);
+
   bool leaveEndsGameForOpponent(Game game) => switch (this) {
     OnlineGameSession() => game.guest != null && game.status != GameStatus.abandoned,
     LocalGameSession() => false,

@@ -1,15 +1,12 @@
 import 'dart:async';
 
-import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 
-/// Local games that are created only once [created] completes, or never when it fails.
-final class PendingLocalGameRepository implements LocalGameRepository {
-  PendingLocalGameRepository(this._repository);
+import 'forwarding_repositories.dart';
 
-  final InMemoryGameRepository _repository;
+/// Local games that are created only once [created] completes.
+final class PendingLocalGameRepository extends ForwardingLocalGameRepository {
+  PendingLocalGameRepository(super.inner);
 
   final created = Completer<void>();
 
@@ -21,21 +18,8 @@ final class PendingLocalGameRepository implements LocalGameRepository {
   Future<GameId> createGame({required String guestName, required String hostName}) async {
     creations++;
     await created.future;
-    final gameId = await _repository.createGame(guestName: guestName, hostName: hostName);
+    final gameId = await inner.createGame(guestName: guestName, hostName: hostName);
     createdGames.add(gameId);
     return gameId;
   }
-
-  @override
-  Future<void> leaveGame(GameId gameId) => _repository.leaveGame(gameId);
-
-  @override
-  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) =>
-      _repository.makeMove(gameId: gameId, playerId: playerId, cell: cell);
-
-  @override
-  Future<void> startNewRound({required GameId gameId}) => _repository.startNewRound(gameId: gameId);
-
-  @override
-  Stream<Game> watchGame(GameId gameId) => _repository.watchGame(gameId);
 }

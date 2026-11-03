@@ -13,6 +13,9 @@ import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
+import '../../../shared/fakes/forwarding_repositories.dart';
+import '../../../shared/fakes/recording_error_logger.dart';
+
 const _almostDoneThinking = Duration(milliseconds: 999);
 const _lastMillisecond = Duration(milliseconds: 1);
 
@@ -25,7 +28,7 @@ void main() {
   }) => fakeAsync((time) {
     final memory = InMemoryGameRepository();
     final games = aiMovesFail ? _RefusingAiMoves(memory) : memory;
-    final errors = _RecordingLogger();
+    final errors = RecordingErrorLogger();
     final container = ProviderContainer(
       overrides: [errorLoggerProvider.overrideWithValue(errors), localGameRepositoryProvider.overrideWithValue(games)],
     );
@@ -38,7 +41,7 @@ void main() {
     final ai = container.listen(aiOpponentProvider(session), (_, _) {});
     time.flushMicrotasks();
 
-    body(time, _Board(container, games, errors.errors, session, ai));
+    body(time, _Board(container, games, errors, session, ai));
 
     container.dispose();
     memory.dispose();
@@ -91,7 +94,7 @@ void main() {
 
       time.elapse(const Duration(seconds: 1));
 
-      expect(board.errors, [isA<_AiMoveFailure>()]);
+      expect(board.errors.errors, [isA<_AiMoveFailure>()]);
     });
   });
 }
@@ -102,8 +105,7 @@ final class _Board {
   final ProviderContainer _container;
   final LocalGameRepository _games;
 
-  /// What was reported to the error logger.
-  final List<Object> errors;
+  final RecordingErrorLogger errors;
   final GameSession _session;
   final ProviderSubscription<void> _ai;
 
@@ -116,37 +118,15 @@ final class _Board {
 }
 
 /// Local games where the AI's moves fail.
-final class _RefusingAiMoves implements LocalGameRepository {
-  _RefusingAiMoves(this._games);
-
-  final InMemoryGameRepository _games;
+final class _RefusingAiMoves extends ForwardingLocalGameRepository {
+  _RefusingAiMoves(super.inner);
 
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async {
     if (playerId == InMemoryGameRepository.guestId) throw _AiMoveFailure();
 
-    await _games.makeMove(gameId: gameId, playerId: playerId, cell: cell);
+    await inner.makeMove(gameId: gameId, playerId: playerId, cell: cell);
   }
-
-  @override
-  Future<GameId> createGame({required String guestName, required String hostName}) =>
-      _games.createGame(guestName: guestName, hostName: hostName);
-
-  @override
-  Future<void> leaveGame(GameId gameId) => _games.leaveGame(gameId);
-
-  @override
-  Future<void> startNewRound({required GameId gameId}) => _games.startNewRound(gameId: gameId);
-
-  @override
-  Stream<Game> watchGame(GameId gameId) => _games.watchGame(gameId);
 }
 
 final class _AiMoveFailure implements Exception {}
-
-final class _RecordingLogger implements ErrorLogger {
-  final errors = <Object>[];
-
-  @override
-  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => errors.add(error);
-}

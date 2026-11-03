@@ -16,12 +16,15 @@ import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/game_navigation.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
+import 'package:tic_tac_toe_app/routing/router_game_navigation.dart';
 
+import '../../../../shared/fakes/lagging_online_game_repository.dart';
 import '../../../../shared/fakes/pending_local_game_repository.dart';
+import '../../../../shared/fakes/signed_in_identity.dart';
 import '../../../../shared/golden_test_utils/devices.dart';
 
 const _jessy = PlayerId('jessy-uid');
@@ -213,6 +216,26 @@ void main() {
       expect(find.text(i18n.local1v1), findsOneWidget);
     });
 
+    testWidgets('just joined, before the game shows, asks first: the host already sits in it', (tester) async {
+      final code = await opponent.createGame(host: _jessy, hostName: 'Jessy');
+      final device = LaggingOnlineGameRepository(FirestoreGameRepository(firestore: firestore))..lag();
+      robot = _HomeRobot(tester);
+      await robot.launch(localRepository: games, online: _onlineAs(_luigi, repository: device));
+      await robot.openJoinDialog(guestName: 'Luigi');
+      await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), code.value);
+
+      await tester.tap(find.widgetWithText(FilledButton, i18n.join));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.bySemanticsLabel(i18n.loading), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(i18n.leaveGameTitle), findsOneWidget);
+      expect((await seenByOpponent(tester, code))?.status, GameStatus.setup);
+    });
+
     testWidgets('nobody joined yet needs no confirmation, and nobody can join it any more', (tester) async {
       final gameId = await openBoard(tester, joined: false);
 
@@ -394,6 +417,7 @@ class _HomeRobot {
         overrides: [
           localGameRepositoryProvider.overrideWithValue(localRepository),
           onlinePlayProvider.overrideWithValue(online),
+          gameNavigationProvider.overrideWithValue(const RouterGameNavigation()),
         ],
         child: const App(),
       ),
@@ -459,15 +483,6 @@ class _HomeRobot {
 
 /// Online play on this device, signed in as [player].
 OnlinePlay _onlineAs(PlayerId player, {OnlineGameRepository? repository}) => OnlinePlayAvailable(
-  identity: _SignedIn(player),
+  identity: SignedInIdentity(player),
   repository: repository ?? FirestoreGameRepository(firestore: FakeFirebaseFirestore()),
 );
-
-final class _SignedIn implements PlayerIdentity {
-  const _SignedIn(this._player);
-
-  final PlayerId _player;
-
-  @override
-  Future<PlayerId> signIn() async => _player;
-}

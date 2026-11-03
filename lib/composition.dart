@@ -11,6 +11,8 @@ import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/auth/firebase_player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/game_navigation.dart';
+import 'package:tic_tac_toe_app/routing/router_game_navigation.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/firebase/crashlytics_error_logger.dart';
@@ -34,17 +36,19 @@ List<Override> bindGameProviders({required OnlinePlay onlinePlay}) => [
     return repository;
   }),
   onlinePlayProvider.overrideWithValue(onlinePlay),
+  gameNavigationProvider.overrideWithValue(const RouterGameNavigation()),
 ];
 
-/// Starts Firebase one step at a time: a failed step leaves out only what depends on it. Failures are reported once the
-/// error logger is known, through Crashlytics when it started.
+/// Starts Firebase one step at a time: a step that fails, or takes longer than [FirebaseStartup.stepTimeLimit], leaves
+/// out only what depends on it. Failures are reported once the error logger is known, through Crashlytics when it
+/// started.
 Future<(OnlinePlay, ErrorLogger)> _start(FirebaseStartup firebase) async {
   const console = DeveloperErrorLogger();
   final options = firebase.options;
   if (options == null) return (const OnlinePlayUnavailable(OnlineUnavailableReason.notConfigured), console);
 
   try {
-    await firebase.initializeApp(options);
+    await firebase.initializeApp(options).timeout(FirebaseStartup.stepTimeLimit);
   } catch (error, stackTrace) {
     // Crashlytics needs the app it failed to create: the console is the only place left to tell.
     console.log(error, stackTrace);
@@ -57,7 +61,7 @@ Future<(OnlinePlay, ErrorLogger)> _start(FirebaseStartup firebase) async {
   final failures = <(Object, StackTrace)>[];
   Future<T?> attempt<T>(Future<T> Function() step) async {
     try {
-      return await step();
+      return await step().timeout(FirebaseStartup.stepTimeLimit);
     } catch (error, stackTrace) {
       failures.add((error, stackTrace));
       return null;
@@ -75,6 +79,9 @@ Future<(OnlinePlay, ErrorLogger)> _start(FirebaseStartup firebase) async {
 /// The steps that start Firebase. A real project also gets crash reports and App Check; the emulators support neither.
 class FirebaseStartup {
   const FirebaseStartup({this.environment = FirebaseEnvironment.current});
+
+  /// The app's first frame waits for these steps: none may hold it back for long.
+  static const stepTimeLimit = Duration(seconds: 5);
 
   final FirebaseEnvironment environment;
 

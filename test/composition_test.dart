@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
@@ -6,16 +9,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/composition.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session_starter.dart';
 import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 
+import 'shared/fakes/recording_error_logger.dart';
+import 'shared/fakes/signed_in_identity.dart';
 import 'shared/golden_test_utils/devices.dart';
 
 const _jessy = PlayerId('jessy-uid');
@@ -65,11 +70,32 @@ void main() {
     });
 
     test('App Check failing to start leaves online play on, and is reported as a crash report', () async {
-      final crashReports = _RecordingLogger();
+      final crashReports = RecordingErrorLogger();
       final container = await _container(_FakeStartup(appCheckFails: true, crashReports: crashReports));
 
       expect(await _createOnlineGame(container), isA<OnlineGameSession>());
       expect(crashReports.errors, [isA<_AppCheckFailure>()]);
+    });
+
+    test('a step that never ends is given up, holding back only what depends on it', () {
+      fakeAsync((time) {
+        ProviderContainer? container;
+        unawaited(
+          createAppContainer(firebase: _FakeStartup(appCheckHangs: true)).then((started) => container = started),
+        );
+        time.elapse(FirebaseStartup.stepTimeLimit);
+        expect(container?.read(onlinePlayProvider), isA<OnlinePlayAvailable>());
+
+        unawaited(
+          createAppContainer(firebase: _FakeStartup(initializeAppHangs: true)).then((started) => container = started),
+        );
+        time.elapse(FirebaseStartup.stepTimeLimit);
+        expect(
+          container?.read(onlinePlayProvider),
+          const OnlinePlay.unavailable(OnlineUnavailableReason.failedToStart),
+        );
+        container?.dispose();
+      });
     });
 
     test('crash reports failing to start leave online play on, and errors go to the console', () async {
@@ -106,13 +132,17 @@ Future<void> _openOnlineMode(WidgetTester tester, FirebaseStartup firebase) asyn
 final class _FakeStartup extends FirebaseStartup {
   _FakeStartup({
     this.appCheckFails = false,
+    this.appCheckHangs = false,
     this.crashReports = const DeveloperErrorLogger(),
     this.crashReportsFail = false,
     FakeFirebaseFirestore? firestore,
     this.initializeAppFails = false,
+    this.initializeAppHangs = false,
   }) : _firestore = firestore ?? FakeFirebaseFirestore();
 
   final bool appCheckFails;
+  final bool appCheckHangs;
+  final bool initializeAppHangs;
   final ErrorLogger crashReports;
   final bool crashReportsFail;
   final bool initializeAppFails;
@@ -127,11 +157,12 @@ final class _FakeStartup extends FirebaseStartup {
   @override
   Future<void> initializeApp(FirebaseOptions options) async {
     if (initializeAppFails) throw FirebaseException(plugin: 'core', message: 'invalid options');
+    if (initializeAppHangs) await Completer<void>().future;
   }
 
   @override
   OnlinePlayAvailable onlinePlay() => OnlinePlayAvailable(
-    identity: const _SignedIn(_jessy),
+    identity: SignedInIdentity(_jessy),
     repository: FirestoreGameRepository(firestore: _firestore),
   );
 
@@ -142,23 +173,8 @@ final class _FakeStartup extends FirebaseStartup {
   @override
   Future<void> activateAppCheck() async {
     if (appCheckFails) throw _AppCheckFailure();
+    if (appCheckHangs) await Completer<void>().future;
   }
 }
 
 final class _AppCheckFailure implements Exception {}
-
-final class _RecordingLogger implements ErrorLogger {
-  final errors = <Object>[];
-
-  @override
-  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => errors.add(error);
-}
-
-final class _SignedIn implements PlayerIdentity {
-  const _SignedIn(this._player);
-
-  final PlayerId _player;
-
-  @override
-  Future<PlayerId> signIn() async => _player;
-}

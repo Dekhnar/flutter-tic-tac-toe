@@ -68,11 +68,21 @@ void main() {
     );
   });
 
-  test('the design system knows no feature', () {
+  test('the design system and the shared code know no feature', () {
     expectNoImport(
-      from: (file) => file.startsWith('lib/design_system/'),
+      from: (file) => file.startsWith('lib/design_system/') || file.startsWith('lib/shared/'),
       forbidden: (uri) => uri.contains('/features/'),
     );
+  });
+
+  test('a feature knows nothing of the app around it: its router, its composition', () {
+    const app = [
+      'package:tic_tac_toe_app/routing/',
+      'package:tic_tac_toe_app/composition.dart',
+      'package:tic_tac_toe_app/app.dart',
+    ];
+
+    expectNoImport(from: (file) => file.startsWith('lib/features/'), forbidden: (uri) => app.any(uri.startsWith));
   });
 }
 

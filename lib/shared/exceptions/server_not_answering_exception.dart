@@ -20,3 +20,23 @@ extension ServerTimeLimit<T> on Future<T> {
   Future<T> withinTimeLimit(Duration timeLimit) =>
       timeout(timeLimit, onTimeout: () => throw ServerNotAnsweringException.after(timeLimit));
 }
+
+extension ServerTimeLimitStream<T> on Stream<T> {
+  /// Fails once with a [ServerNotAnsweringException] when the first event takes longer than [timeLimit]. Later events
+  /// take as long as they take: a game waits for the other player.
+  Stream<T> firstWithinTimeLimit(Duration timeLimit) {
+    var waiting = true;
+    return map((event) {
+      waiting = false;
+      return event;
+    }).timeout(
+      timeLimit,
+      onTimeout: (sink) {
+        if (!waiting) return;
+
+        waiting = false;
+        sink.addError(ServerNotAnsweringException.after(timeLimit));
+      },
+    );
+  }
+}

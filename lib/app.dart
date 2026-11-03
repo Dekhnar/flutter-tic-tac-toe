@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/routing/auto_router.dart';
+import 'package:tic_tac_toe_app/routing/app_router.dart';
 
 class App extends StatefulWidget {
   const App({super.key});

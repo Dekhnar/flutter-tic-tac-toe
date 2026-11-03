@@ -15,12 +15,12 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
+import '../../../../shared/fakes/forwarding_repositories.dart';
 import '../../../../shared/fakes/pending_local_game_repository.dart';
+import '../../../../shared/fakes/signed_in_identity.dart';
 
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
@@ -44,7 +44,9 @@ void main() {
     container = ProviderContainer(
       overrides: [
         localGameRepositoryProvider.overrideWithValue(localRepository),
-        onlinePlayProvider.overrideWithValue(OnlinePlay.available(identity: const _SignedIn(), repository: server)),
+        onlinePlayProvider.overrideWithValue(
+          OnlinePlay.available(identity: SignedInIdentity(_luigi), repository: server),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -150,7 +152,7 @@ void main() {
     test('a seat taken late in a friend\'s game is kept: joining again opens that game', () {
       inFakeTime((time) {
         late GameCode code;
-        unawaited(server.repository.createGame(host: _jessy, hostName: 'Jessy').then((created) => code = created));
+        unawaited(server.inner.createGame(host: _jessy, hostName: 'Jessy').then((created) => code = created));
         time.flushMicrotasks();
         final join = GameCreateInput.joinOnline(code: code, guestName: 'Luigi');
 
@@ -176,42 +178,14 @@ void main() {
 }
 
 /// The online games, on a server that answers a join only once [answer] completes.
-final class _SlowServer implements OnlineGameRepository {
-  _SlowServer(this.repository);
+final class _SlowServer extends ForwardingOnlineGameRepository {
+  _SlowServer(super.inner);
 
-  final OnlineGameRepository repository;
   final answer = Completer<void>();
 
   @override
   Future<void> joinGame(GameCode code, {required PlayerId guest, required String guestName}) async {
     await answer.future;
-    await repository.joinGame(code, guest: guest, guestName: guestName);
+    await inner.joinGame(code, guest: guest, guestName: guestName);
   }
-
-  @override
-  Future<GameCode> createGame({required PlayerId host, required String hostName}) =>
-      repository.createGame(host: host, hostName: hostName);
-
-  @override
-  Future<void> leaveGame(GameId gameId) => repository.leaveGame(gameId);
-
-  @override
-  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) =>
-      repository.makeMove(gameId: gameId, playerId: playerId, cell: cell);
-
-  @override
-  Future<void> startGame({required GameId gameId}) => repository.startGame(gameId: gameId);
-
-  @override
-  Future<void> startNewRound({required GameId gameId}) => repository.startNewRound(gameId: gameId);
-
-  @override
-  Stream<Game> watchGame(GameId gameId) => repository.watchGame(gameId);
-}
-
-final class _SignedIn implements PlayerIdentity {
-  const _SignedIn();
-
-  @override
-  Future<PlayerId> signIn() async => _luigi;
 }

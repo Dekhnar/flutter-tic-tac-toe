@@ -28,7 +28,7 @@ class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
   /// answer.
   Future<void> makeMove(Cell cell) async {
     final game = ref.read(gameProvider(session)).value;
-    if (game == null || !cell.isOnBoard || game.board[cell] != null || !session.canPlay(game)) return;
+    if (game == null || !session.canPlayAt(game, cell)) return;
 
     await _run(move: cell, () async {
       await _repository.makeMove(gameId: game.id, playerId: game.currentPlayerId, cell: cell);
@@ -73,7 +73,8 @@ class PendingMoveNotifier extends _$PendingMoveNotifier {
   void show(Cell? move) => state = move;
 }
 
-/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
+/// Whether leaving ends the game the board last showed for an opponent. Before the first one shows, an opponent may sit
+/// in an online game already; a game gone from the server ends for nobody.
 @riverpod
 bool leaveNeedsConfirmation(Ref ref, GameSession session) {
   final game = ref.watch(gameProvider(session));
@@ -81,7 +82,7 @@ bool leaveNeedsConfirmation(Ref ref, GameSession session) {
 
   return switch (game.value) {
     final value? => session.leaveEndsGameForOpponent(value),
-    null => false,
+    null => session is OnlineGameSession,
   };
 }
 

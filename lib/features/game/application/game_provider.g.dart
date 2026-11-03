@@ -188,7 +188,7 @@ final class GameProvider
   }
 }
 
-String _$gameHash() => r'5732a176b245e7add54ef3c36ed63dbe2500f862';
+String _$gameHash() => r'1690103473974fe733f26dd2b4e1d396061b1532';
 
 final class GameFamily extends $Family
     with $FunctionalFamilyOverride<Stream<Game>, GameSession> {

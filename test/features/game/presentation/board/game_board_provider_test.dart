@@ -10,9 +10,10 @@ import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
+
+import '../../../../shared/fakes/forwarding_repositories.dart';
 
 const _gameId = GameId('ABCDEF');
 const _jessy = PlayerId('jessy-uid');
@@ -114,6 +115,10 @@ void main() {
 
     bool asks() => container.read(leaveNeedsConfirmationProvider(_online));
 
+    test('before an online game shows at all: an opponent may sit in it already', () {
+      expect(asks(), isTrue);
+    });
+
     test('while an opponent sits in the game it shows', () async {
       server.add(_withOpponent);
       await pumpEventQueue();
@@ -149,10 +154,9 @@ void main() {
 }
 
 /// Local games whose moves land once [answer] completes.
-final class _SlowMoves implements LocalGameRepository {
-  _SlowMoves(this._games);
+final class _SlowMoves extends ForwardingLocalGameRepository {
+  _SlowMoves(super.inner);
 
-  final InMemoryGameRepository _games;
   final answer = Completer<void>();
   final moves = <Cell>[];
 
@@ -165,19 +169,6 @@ final class _SlowMoves implements LocalGameRepository {
     await answer.future;
     if (refusal case final refusal?) throw refusal;
 
-    await _games.makeMove(gameId: gameId, playerId: playerId, cell: cell);
+    await inner.makeMove(gameId: gameId, playerId: playerId, cell: cell);
   }
-
-  @override
-  Future<GameId> createGame({required String guestName, required String hostName}) =>
-      _games.createGame(guestName: guestName, hostName: hostName);
-
-  @override
-  Future<void> leaveGame(GameId gameId) => _games.leaveGame(gameId);
-
-  @override
-  Future<void> startNewRound({required GameId gameId}) => _games.startNewRound(gameId: gameId);
-
-  @override
-  Stream<Game> watchGame(GameId gameId) => _games.watchGame(gameId);
 }

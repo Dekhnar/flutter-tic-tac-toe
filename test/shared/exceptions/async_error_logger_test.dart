@@ -15,13 +15,15 @@ import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_sta
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
+import '../fakes/recording_error_logger.dart';
+
 void main() {
-  late _RecordingLogger logger;
+  late RecordingErrorLogger logger;
   late InMemoryGameRepository games;
   late ProviderContainer container;
 
   setUp(() {
-    logger = _RecordingLogger();
+    logger = RecordingErrorLogger();
     games = InMemoryGameRepository();
     addTearDown(games.dispose);
     container = ProviderContainer(
@@ -68,11 +70,4 @@ void main() {
 
     expect(logger.errors, [isA<OnlineUnavailableException>()]);
   });
-}
-
-final class _RecordingLogger implements ErrorLogger {
-  final errors = <Object>[];
-
-  @override
-  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => errors.add(error);
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -256,28 +258,35 @@ void main() {
         await expectDenied(opponent.gameRef(gameId).update({GameField.hostWinCount.name: 5}));
       }, skip: !online);
 
-      test('a game with a field the app never writes, or that would outlive its 30 days', () async {
-        final created = GameDocument.write(
-          GameWrite.create,
-          Game(
-            currentPlayerId: cheater.id,
-            host: Player(id: cheater.id, name: 'Wario'),
-            id: gameId,
-            status: GameStatus.setup,
-          ),
-          expiresAt: DateTime.timestamp().add(FirestoreGameRepository.lifetime),
-        );
-        final forever = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 3650)));
+      test(
+        'a game with a field the app never writes, under an id that is not a code, or outliving its 30 days',
+        () async {
+          final created = GameDocument.write(
+            GameWrite.create,
+            Game(
+              currentPlayerId: cheater.id,
+              host: Player(id: cheater.id, name: 'Wario'),
+              id: gameId,
+              status: GameStatus.setup,
+            ),
+            expiresAt: DateTime.timestamp().add(FirestoreGameRepository.lifetime),
+          );
+          final forever = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 3650)));
 
-        await expectDenied(cheater.gameRef(_freshGameId()).set({...created, 'vsAi': true}));
-        await expectDenied(cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: forever}));
+          await expectDenied(cheater.gameRef(_freshGameId()).set({...created, 'vsAi': true}));
+          await expectDenied(
+            cheater.gameRef(GameId('CHEAT-${DateTime.timestamp().microsecondsSinceEpoch}')).set(created),
+          );
+          await expectDenied(cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: forever}));
 
-        // The game as the app writes it goes through: the refusals above come from the extra field and the expiry. So
-        // does the game of a device whose clock runs days ahead.
-        await cheater.gameRef(_freshGameId()).set(created);
-        final daysAhead = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 33)));
-        await cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: daysAhead});
-      }, skip: !online);
+          // The game as the app writes it goes through: the refusals above come from the extra field, the id and the expiry. So
+          // does the game of a device whose clock runs days ahead.
+          await cheater.gameRef(_freshGameId()).set(created);
+          final daysAhead = Timestamp.fromDate(DateTime.timestamp().add(const Duration(days: 33)));
+          await cheater.gameRef(_freshGameId()).set({...created, GameField.expiresAt.name: daysAhead});
+        },
+        skip: !online,
+      );
 
       test('deleting a game', () async {
         await expectDenied(opponent.gameRef(gameId).delete());
@@ -286,8 +295,8 @@ void main() {
   });
 }
 
-/// A game id nobody uses yet, for a cheater writing the document directly.
-GameId _freshGameId() => GameId('CHEAT-${DateTime.timestamp().microsecondsSinceEpoch}');
+/// A code nobody uses yet, for a cheater writing the document directly.
+GameId _freshGameId() => GameCode.random(Random());
 
 /// A board as the rules read it, with X and O on the given cells.
 List<String> _board({List<int> x = const [], List<int> o = const []}) => [

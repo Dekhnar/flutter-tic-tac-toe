@@ -1,8 +1,9 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
+import 'package:tic_tac_toe_app/routing/app_router.gr.dart';
 
-/// The app's screens, navigated with this router. Dialogs are not routes: a screen opens one with `showDialog` and
-/// awaits its result, which the dialog returns by closing itself with `Navigator.pop`.
+/// The app's screens. The screens do not import it: they navigate through the contract of their feature, which
+/// `RouterGameNavigation` implements. Dialogs are not routes: a screen opens one with `showDialog` and awaits its result,
+/// which the dialog returns by closing itself with `Navigator.pop`.
 @AutoRouterConfig(replaceInRouteName: null)
 class AppRouter extends RootStackRouter {
   static const boardPath = '/game';

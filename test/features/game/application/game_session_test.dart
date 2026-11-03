@@ -30,6 +30,15 @@ void main() {
       expect(_local.canPlay(playing), isTrue);
     });
 
+    test('a cell only while it is empty, on the board, and this device may play', () {
+      final marked = playing.copyWith(board: playing.board.play(const Cell(0), CellMark.X));
+
+      expect(_local.canPlayAt(marked, const Cell(1)), isTrue);
+      expect(_local.canPlayAt(marked, const Cell(0)), isFalse);
+      expect(_local.canPlayAt(marked, const Cell(9)), isFalse);
+      expect(_online.canPlayAt(marked, const Cell(1)), isFalse);
+    });
+
     test('nobody on the AI\'s turn', () {
       const vsAi = GameSession.local(gameId: _gameId, vsAi: true);
 

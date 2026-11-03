@@ -9,10 +9,10 @@ import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/creation/game_create_local_dialog.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/creation/game_create_online_dialog.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/game_navigation.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/home/game_mode.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
 
 @RoutePage()
 class GameModeSelectionScreen extends ConsumerWidget {
@@ -55,7 +55,6 @@ class GameModeSelectionScreen extends ConsumerWidget {
       }
     }
 
-    final router = context.router;
     final input = await showDialog<GameCreateInput>(
       context: context,
       builder:
@@ -70,7 +69,7 @@ class GameModeSelectionScreen extends ConsumerWidget {
     final session = await ref.read(gameSessionStartProvider.notifier).startSession(input);
     if (session == null || !context.mounted) return;
 
-    await router.push(GameBoardScreenRoute(session: session));
+    await ref.read(gameNavigationProvider).openBoard(context, session);
   }
 
   void _showMessage(BuildContext context, String message) =>

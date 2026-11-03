@@ -12,12 +12,17 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if false;
 
-      allow create: if isCreatedByHost();
+      allow create: if isGameCode(gameId) && isCreatedByHost();
       allow update: if isJoin() || isStart() || isMove() || isNewRound() || isLeave();
       allow delete: if false;
 
       function signedIn() {
         return request.auth != null;
+      }
+
+      // The characters and length of `GameCode` (lib/features/game/domain/game_code.dart): no 0/O or 1/I.
+      function isGameCode(id) {
+        return id.matches('[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}');
       }
 
       function before() {

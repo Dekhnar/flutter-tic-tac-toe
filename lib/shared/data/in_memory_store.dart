@@ -1,5 +1,6 @@
 import 'dart:async';
 
+/// A value and its stream: each listener gets the current value first, then every change until [close].
 class InMemoryStore<T> {
   InMemoryStore(T initial) : _value = initial, _controller = StreamController<T>.broadcast() {
     _stream = Stream<T>.multi((multi) {

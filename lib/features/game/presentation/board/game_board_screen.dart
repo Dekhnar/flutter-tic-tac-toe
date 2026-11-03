@@ -14,9 +14,9 @@ import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_he
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/round_actions.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
+import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
 
-/// Shows the game of [session] while the board is open; against the AI, the AI plays meanwhile. Leaving the board
-/// leaves the game.
+/// Shows the game of [session]; against the AI, the AI plays meanwhile. Leaving the board leaves the game.
 @RoutePage()
 class GameBoardScreen extends ConsumerWidget {
   const GameBoardScreen({super.key, required this.session});
@@ -35,7 +35,7 @@ class GameBoardScreen extends ConsumerWidget {
         });
       }
     });
-    ref.listen(gameActionsProvider(session), (_, next) {
+    ref.listen(gameBoardActionsProvider(session), (_, next) {
       if (next case AsyncError(:final error)) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).gameError(error))));
       }
@@ -63,7 +63,7 @@ class GameBoardScreen extends ConsumerWidget {
     );
   }
 
-  /// The board cannot show a game it failed to load: the dialog blocks the screen, offering to retry when it may help.
+  /// Blocks the board while it has no game to show; offers a retry unless the game is gone.
   Future<void> _showBlockingErrorDialog(BuildContext context, WidgetRef ref, Object error) {
     final i18n = I18n.of(context);
     final gameIsGone = error is GameNotFoundException;
@@ -85,11 +85,12 @@ class GameBoardScreen extends ConsumerWidget {
                   },
                   child: Text(i18n.retry),
                 ),
-              // Closes the board for sure: nothing is left to confirm leaving.
               TextButton(
                 onPressed: () {
-                  Navigator.of(dialogContext).pop();
-                  Navigator.of(context).pop();
+                  // Closes whatever else is open over the board too, like a confirmation to leave.
+                  context.router
+                    ..popUntilRouteWithName(GameBoardScreenRoute.name)
+                    ..pop();
                 },
                 child: Text(i18n.quit),
               ),
@@ -101,8 +102,7 @@ class GameBoardScreen extends ConsumerWidget {
   }
 }
 
-/// Every way out of the board — back button, back gesture, system back — leaves the game. An online game someone else
-/// plays then ends for them too: the player confirms it first.
+/// Every way back from the board leaves the game. When that ends it for an opponent, the player confirms first.
 class _LeaveGuard extends ConsumerWidget {
   const _LeaveGuard({required this.child, required this.session});
 
@@ -113,15 +113,15 @@ class _LeaveGuard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return PopScope(
       canPop: !ref.watch(leaveNeedsConfirmationProvider(session)),
-      // Called for every pop, the one that follows a confirmation included: that is where the game is left.
+      // Runs for every pop, including the one after a confirmation.
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) {
-          unawaited(ref.read(gameActionsProvider(session).notifier).leave());
+          unawaited(ref.read(gameBoardActionsProvider(session).notifier).leave());
           return;
         }
 
         final confirmed = await _confirmLeave(context);
-        if (confirmed == true && context.mounted) Navigator.of(context).pop();
+        if (confirmed == true && context.mounted) context.router.pop();
       },
       child: child,
     );

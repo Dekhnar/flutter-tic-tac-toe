@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/creation/player_name_field.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// Creates an online game, whose code the board then shows to share, or joins one with the code received.
+/// Creates an online game, or joins one with its code, typed or pasted with the invitation around it.
 class GameCreateOnlineDialog extends StatefulWidget {
   const GameCreateOnlineDialog({super.key});
 
@@ -35,24 +35,23 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
     if (_formKey.currentState?.validate() != true) return;
 
     final name = _nameController.text.trim();
-    Navigator.of(context).pop(switch (_isCreate) {
-      true => GameCreateInput.createOnlineLobby(hostName: name),
-      false => GameCreateInput.joinOnlineLobby(
-        gameId: GameId(_codeController.text.trim().toUpperCase()),
-        guestName: name,
-      ),
-    });
+    if (_isCreate) {
+      Navigator.of(context).pop(GameCreateInput.createOnline(hostName: name));
+    } else if (GameCode.tryParse(_codeController.text) case final code?) {
+      Navigator.of(context).pop(GameCreateInput.joinOnline(code: code, guestName: name));
+    }
   }
 
   Future<void> _pasteCode(BuildContext context) async {
-    final code = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
+    final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
     if (!context.mounted) return;
 
-    if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).emptyClipboard)));
-      return;
+    switch (GameCode.tryParse(clipboard?.text ?? '')) {
+      case final code?:
+        _codeController.text = code.value;
+      case null:
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).noGameCodeInClipboard)));
     }
-    _codeController.text = code;
   }
 
   @override
@@ -99,7 +98,12 @@ class _GameCreateOnlineDialogState extends State<GameCreateOnlineDialog> {
                     onPressed: () => _pasteCode(context),
                   ),
                 ),
-                validator: (value) => (value?.trim() ?? '').isEmpty ? i18n.pleaseEnterGameCode : null,
+                validator:
+                    (value) => switch (value?.trim() ?? '') {
+                      '' => i18n.pleaseEnterGameCode,
+                      final text when GameCode.tryParse(text) == null => i18n.invalidGameCode(GameCode.length),
+                      _ => null,
+                    },
                 onFieldSubmitted: (_) => _submit(context),
               ),
             ],

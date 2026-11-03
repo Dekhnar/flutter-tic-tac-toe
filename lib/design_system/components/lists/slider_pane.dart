@@ -21,7 +21,7 @@ enum SliderSlot {
   };
 }
 
-/// One pane, moving to its next slot as [swipe] runs: the highlighted colours go with the middle slot.
+/// One pane, moving to its next slot as [swipe] runs. The middle slot has the highlighted colours.
 class SliderPane<T> extends StatelessWidget {
   const SliderPane({
     super.key,

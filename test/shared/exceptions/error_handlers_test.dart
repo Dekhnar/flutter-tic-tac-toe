@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_handlers.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
@@ -42,6 +42,20 @@ void main() {
 
     expect(handled, isTrue);
     expect(logger.errors, [_isLogged(isA<Exception>(), fatal: true)]);
+  });
+
+  testWidgets('a widget that fails to build is replaced by a panel that shows the error in debug builds', (
+    tester,
+  ) async {
+    registerErrorHandlers(_RecordingLogger.new);
+    final brokenWidget = ErrorWidget.builder(FlutterErrorDetails(exception: StateError('layout broke')));
+    // The test framework checks its own handlers are back once the test body ends.
+    FlutterError.onError = frameworkHandler;
+    PlatformDispatcher.instance.onError = platformHandler;
+
+    await tester.pumpWidget(MaterialApp(home: brokenWidget));
+
+    expect(find.textContaining('layout broke'), findsOneWidget);
   });
 }
 

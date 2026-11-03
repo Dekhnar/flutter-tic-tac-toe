@@ -1,6 +1,6 @@
 import 'package:tic_tac_toe_app/shared/exceptions/expected_exception.dart';
 
-/// Why the game refused what the player asked: each one has its own message for the player.
+/// Why the game refused what a player asked.
 sealed class GameException implements ExpectedException {
   GameException({required this.code});
   final String code;

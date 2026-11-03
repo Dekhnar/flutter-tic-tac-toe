@@ -1,24 +1,18 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/expected_exception.dart';
 
-/// Whether this run of the app offers online play. The services it needs come with [OnlinePlayAvailable] only, so no
-/// code can reach them while it is off.
-sealed class OnlinePlay {
-  const OnlinePlay();
-}
+part 'online_play.freezed.dart';
 
-final class OnlinePlayAvailable extends OnlinePlay {
-  const OnlinePlayAvailable({required this.identity, required this.repository});
+/// Whether this run of the app offers online play. Only [OnlinePlayAvailable] carries the online services, so no code
+/// reaches them while it is off.
+@freezed
+sealed class OnlinePlay with _$OnlinePlay {
+  const factory OnlinePlay.available({required PlayerIdentity identity, required OnlineGameRepository repository}) =
+      OnlinePlayAvailable;
 
-  final PlayerIdentity identity;
-  final OnlineGameRepository repository;
-}
-
-final class OnlinePlayUnavailable extends OnlinePlay {
-  const OnlinePlayUnavailable(this.reason);
-
-  final OnlineUnavailableReason reason;
+  const factory OnlinePlay.unavailable(OnlineUnavailableReason reason) = OnlinePlayUnavailable;
 }
 
 enum OnlineUnavailableReason {

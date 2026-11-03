@@ -71,13 +71,16 @@ enum GameWrite {
   static const serverTimeFields = {GameField.createdAt, GameField.lastPlayAt, GameField.updatedAt};
 }
 
-/// Maps a [Game] to its Firestore document and back. The document also holds what only the server needs: when it was
-/// written, and when a TTL policy deletes it.
+/// Maps a [Game] to its Firestore document and back. The document also holds the times only the server needs.
 abstract final class GameDocument {
   /// The fields [write] changes, taken from [game] as it is once changed. Only a creation sets [expiresAt].
   static Map<String, Object?> write(GameWrite write, Game game, {DateTime? expiresAt}) => {
     for (final field in write.fields) field.name: _encode(field, game, expiresAt: expiresAt),
   };
+
+  /// Changes with every write: the server sets `updatedAt` to the time of each one.
+  static Object? versionOf(DocumentSnapshot<Map<String, dynamic>> snapshot) =>
+      snapshot.data()?[GameField.updatedAt.name];
 
   static Game read(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     final data = snapshot.data();

@@ -11,16 +11,10 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Tests render with a placeholder font unless the app's own is loaded: every test lays text out as the app does.
   await (FontLoader(ThemeBuilder.fontFamily)..addFont(rootBundle.load('assets/fonts/Raleway-Regular.ttf'))).load();
 
-  // A single set of goldens with the real text. Text rasterization differs between OSes: regenerate them on macOS.
+  // Two sets of goldens. `goldens/macos/` shows the real text; text rasterizes differently on each OS, so they are
+  // checked on macOS only. `goldens/ci/` draws text as boxes, the same on every OS.
   return AlchemistConfig.runWithConfig(
-    config: AlchemistConfig(
-      ciGoldensConfig: CiGoldensConfig(
-        filePathResolver: (fileName, _) => 'goldens/$fileName.png',
-        obscureText: false,
-        renderShadows: true,
-      ),
-      platformGoldensConfig: const PlatformGoldensConfig(enabled: false),
-    ),
+    config: AlchemistConfig(platformGoldensConfig: PlatformGoldensConfig(platforms: {HostPlatform.macOS})),
     run: testMain,
   );
 }

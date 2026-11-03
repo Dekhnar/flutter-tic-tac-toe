@@ -8,17 +8,17 @@ part of 'game_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The online games, for as long as online play is available: an online session only exists then.
+/// Throws while online play is off: no online session exists then.
 
 @ProviderFor(onlineGameRepository)
 const onlineGameRepositoryProvider = OnlineGameRepositoryProvider._();
 
-/// The online games, for as long as online play is available: an online session only exists then.
+/// Throws while online play is off: no online session exists then.
 
 final class OnlineGameRepositoryProvider
     extends $FunctionalProvider<OnlineGameRepository, OnlineGameRepository, OnlineGameRepository>
     with $Provider<OnlineGameRepository> {
-  /// The online games, for as long as online play is available: an online session only exists then.
+  /// Throws while online play is off: no online session exists then.
   const OnlineGameRepositoryProvider._()
     : super(
         from: null,
@@ -182,95 +182,4 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
 
   @override
   String toString() => r'gameProvider';
-}
-
-/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-/// or failed.
-
-@ProviderFor(GameActionsNotifier)
-const gameActionsProvider = GameActionsNotifierFamily._();
-
-/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-/// or failed.
-final class GameActionsNotifierProvider extends $AsyncNotifierProvider<GameActionsNotifier, void> {
-  /// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-  /// or failed.
-  const GameActionsNotifierProvider._({
-    required GameActionsNotifierFamily super.from,
-    required GameSession super.argument,
-  }) : super(
-         retry: null,
-         name: r'gameActionsProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$gameActionsNotifierHash();
-
-  @override
-  String toString() {
-    return r'gameActionsProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  GameActionsNotifier create() => GameActionsNotifier();
-
-  @override
-  bool operator ==(Object other) {
-    return other is GameActionsNotifierProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$gameActionsNotifierHash() => r'f8b33dd0a4689f49d4987db3a85355495b9a9b7f';
-
-/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-/// or failed.
-
-final class GameActionsNotifierFamily extends $Family
-    with $ClassFamilyOverride<GameActionsNotifier, AsyncValue<void>, void, FutureOr<void>, GameSession> {
-  const GameActionsNotifierFamily._()
-    : super(
-        retry: null,
-        name: r'gameActionsProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-  /// or failed.
-
-  GameActionsNotifierProvider call(GameSession session) => GameActionsNotifierProvider._(argument: session, from: this);
-
-  @override
-  String toString() => r'gameActionsProvider';
-}
-
-/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
-/// or failed.
-
-abstract class _$GameActionsNotifier extends $AsyncNotifier<void> {
-  late final _$args = ref.$arg as GameSession;
-  GameSession get session => _$args;
-
-  FutureOr<void> build(GameSession session);
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    build(_$args);
-    final ref = this.ref as $Ref<AsyncValue<void>, void>;
-    final element =
-        ref.element as $ClassProviderElement<AnyNotifier<AsyncValue<void>, void>, AsyncValue<void>, Object?, Object?>;
-    element.handleValue(ref, null);
-  }
 }

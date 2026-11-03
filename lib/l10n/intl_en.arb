@@ -21,7 +21,6 @@
   "startGame": "Start the game",
   "onlineGame": "Online game",
   "gameNotFound": "Game not found.",
-  "emptyClipboard": "Clipboard is empty",
   "playerFirstName": "Player first name",
   "playerOneFirstName": "Player 1 first name",
   "playerTwoFirstName": "Player 2 first name",
@@ -136,5 +135,26 @@
   "leave": "Leave",
   "cancel": "Cancel",
   "onlineFailedToStart": "Online mode could not start. Restart the app to try again.",
-  "serverNotAnswering": "The server is not answering. Check your connection and try again."
+  "serverNotAnswering": "The server is not answering. Check your connection and try again.",
+  "noGameCodeInClipboard": "The clipboard holds no game code.",
+  "invalidGameCode": "A game code has {length} letters and digits.",
+  "@invalidGameCode": {
+    "placeholders": {
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "boardCellPlaying": "Cell {row} {column} being played",
+  "@boardCellPlaying": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "serverRefused": "The server refused this action. Update the app, then try again."
 }

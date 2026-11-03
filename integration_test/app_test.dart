@@ -10,9 +10,11 @@ import 'package:tic_tac_toe_app/composition.dart';
 import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_refused_exception.dart';
 import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 
 /// Runs the real app on a device. The online scenarios need the emulators (see README):
@@ -23,7 +25,7 @@ late I18n i18n;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  final online = FirebaseEnvironment.usesEmulators;
+  final online = FirebaseEnvironment.current.usesEmulators;
 
   group('Local game', () {
     testWidgets('two players play a round, then the loser starts the next one', (tester) async {
@@ -64,7 +66,7 @@ void main() {
       if (!online) return;
 
       // Secondary apps need the default one, which the app under test initializes the same way.
-      await FirebaseEnvironment.initialize(FirebaseEnvironment.emulatorOptions);
+      await FirebaseEnvironment.current.initialize(FirebaseEnvironment.emulatorOptions);
       opponent = await _Device.signIn('opponent');
       cheater = await _Device.signIn('cheater');
       latecomer = await _Device.signIn('latecomer');
@@ -93,17 +95,15 @@ void main() {
       await robot.waitFor(find.text(i18n.playerWins('Jessy (X)')));
     }, skip: !online);
 
-    for (final code in ['no-such-game', 'no/such/game']) {
-      testWidgets('joining a game that does not exist ($code) stays on the home screen and says so', (tester) async {
-        final robot = _AppRobot(tester);
-        await robot.launch();
+    testWidgets('joining with a code no game uses stays on the home screen and says so', (tester) async {
+      final robot = _AppRobot(tester);
+      await robot.launch();
 
-        await robot.joinOnlineGame(GameId(code), guestName: 'Luigi');
+      await robot.joinOnlineGame('ZZ9ZZ9', guestName: 'Luigi');
 
-        await robot.waitFor(find.text(i18n.gameNotFound));
-        expect(find.text(i18n.local1v1), findsOneWidget);
-      }, skip: !online);
-    }
+      await robot.waitFor(find.text(i18n.gameNotFound));
+      expect(find.text(i18n.local1v1), findsOneWidget);
+    }, skip: !online);
 
     testWidgets('joining a game that already has two players stays on the home screen and says so', (tester) async {
       final gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
@@ -111,7 +111,7 @@ void main() {
       final robot = _AppRobot(tester);
       await robot.launch();
 
-      await robot.joinOnlineGame(gameId, guestName: 'Jessy');
+      await robot.joinOnlineGame(gameId.value, guestName: 'Jessy');
 
       await robot.waitFor(find.text(i18n.gameAlreadyFull));
     }, skip: !online);
@@ -148,7 +148,7 @@ void main() {
     }, skip: !online);
 
     group('The security rules refuse', () {
-      late GameId gameId;
+      late GameCode gameId;
 
       setUp(() async {
         if (!online) return;
@@ -156,8 +156,16 @@ void main() {
         gameId = await opponent.repository.createGame(host: opponent.id, hostName: 'Luigi');
       });
 
-      Future<void> expectDenied(Future<void> write) =>
-          expectLater(write, throwsA(isA<FirebaseException>().having((e) => e.code, 'code', 'permission-denied')));
+      /// A direct write fails with Firestore's own error; the app's repository reports the same refusal as its own.
+      Future<void> expectDenied(Future<void> write) => expectLater(
+        write,
+        throwsA(
+          anyOf(
+            isA<FirebaseException>().having((e) => e.code, 'code', 'permission-denied'),
+            isA<ServerRefusedException>(),
+          ),
+        ),
+      );
 
       test('listing the games, which would reveal their codes', () async {
         await expectDenied(cheater.firestore.collection('games').get());
@@ -296,7 +304,7 @@ final class _Device {
 
   static Future<_Device> signIn(String name) async {
     final firebaseApp = await Firebase.initializeApp(name: name, options: FirebaseEnvironment.emulatorOptions);
-    await FirebaseEnvironment.useEmulators(firebaseApp);
+    await FirebaseEnvironment.current.useEmulators(firebaseApp);
     final credential = await FirebaseAuth.instanceFor(app: firebaseApp).signInAnonymously();
 
     return _Device._(FirebaseFirestore.instanceFor(app: firebaseApp), PlayerId(credential.user?.uid ?? ''));
@@ -338,21 +346,21 @@ class _AppRobot {
   }
 
   /// Creates a game from the app, and reads its code where the board shows it to share.
-  Future<GameId> createOnlineGame({required String hostName}) async {
+  Future<GameCode> createOnlineGame({required String hostName}) async {
     await chooseMode(i18n.online1v1);
     await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), hostName);
     await tapText(i18n.createGame);
 
-    final codeLabel = i18n.gameCodeValue('');
-    await waitFor(find.textContaining(codeLabel));
-    return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
+    final codeLabel = find.textContaining(i18n.gameCodeValue(''));
+    await waitFor(codeLabel);
+    return GameCode.parse(tester.widget<Text>(codeLabel).data ?? '');
   }
 
-  Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
+  Future<void> joinOnlineGame(String code, {required String guestName}) async {
     await chooseMode(i18n.online1v1);
     await tapText(i18n.join);
     await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), guestName);
-    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), gameId.value);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), code);
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, i18n.join));
     await tester.pumpAndSettle();

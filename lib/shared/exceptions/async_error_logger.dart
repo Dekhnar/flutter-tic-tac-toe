@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
-/// The one place that logs provider failures: a failed build, an error in a stream, and an async notifier whose state
-/// becomes an error. Notifiers do not log what they put in their state.
+/// Logs every provider failure once: a failed build, a stream error, an error state. Notifiers do not log their own.
 final class AsyncErrorLogger extends ProviderObserver {
   const AsyncErrorLogger();
 

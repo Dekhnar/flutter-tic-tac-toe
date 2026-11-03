@@ -2,7 +2,7 @@
 
 A 3×3 tic-tac-toe game, playable:
 
-- **Online (1v1)** between two devices through **Cloud Firestore**, by sharing a six-character game code
+- **Online (1v1)** between two devices through **Cloud Firestore**: the host shares a six-character game code
 - **Locally (1v1)** on the same device
 - **Solo against an AI** that never loses: it searches the whole game tree (minimax with alpha-beta pruning)
 
@@ -45,10 +45,10 @@ Run the app on two simulators or emulators to play against yourself. The Android
 
 On a real project (never on the emulators), the app also turns on:
 
-- **Crashlytics**, collecting from release builds only; nothing is collected before the app enables it. Android does not upload the R8 mapping, which needs `google-services.json`: enable `mappingFileUploadEnabled` in `android/app/build.gradle.kts` once the project has one. For symbolicated iOS reports, add Crashlytics' dSYM upload script to the Runner build phases.
-- **App Check**, with Play Integrity on Android and App Attest (DeviceCheck as a fallback) on Apple platforms; debug builds use the debug providers, whose token the console must allow. Register the apps in App Check, then turn on enforcement for Firestore and Auth.
+- **Crashlytics**, collecting from release builds only. Android does not upload the R8 mapping, which needs `google-services.json`: enable `mappingFileUploadEnabled` in `android/app/build.gradle.kts` once the project has one. For symbolicated iOS reports, add Crashlytics' dSYM upload script to the Runner build phases.
+- **App Check**: Play Integrity on Android, App Attest on Apple platforms (DeviceCheck where App Attest is not supported), the debug providers in debug builds (allow their token in the console). iOS release builds carry the App Attest entitlement ([`Runner.entitlements`](ios/Runner/Runner.entitlements)); enable *App Attest* for the App ID in the Apple developer account. Register the apps in App Check, and turn on enforcement for Firestore and Auth only once the console's App Check metrics show nearly all requests verified.
 
-Each of these starts on its own: a failure leaves out only what depends on it, and is reported once the app knows where — through Crashlytics when that step went through. Online play stays on unless Firebase itself fails to start, and the online mode then says it could not start, not that the build lacks it.
+Each of these starts on its own: a failure leaves out only what depends on it, and is reported once the app knows where (through Crashlytics when it started). Online play stays on unless Firebase itself fails to start; the online mode then says it could not start.
 
 ### Release builds
 
@@ -69,41 +69,52 @@ Only Android, iOS and macOS read the Firebase options; other platforms run offli
 
 ## Architecture
 
-Feature-first, each feature split into layers:
-
 ```text
 lib/
  ├─ main.dart               # error handlers, then runs the app
- ├─ composition.dart        # startup (Firebase, Crashlytics, App Check) and the implementation behind each contract
+ ├─ composition.dart        # startup (Firebase, Crashlytics, App Check), and the implementation behind each contract
  ├─ app.dart                # MaterialApp, themes, i18n, router
- ├─ shared/                 # Firebase environment, routing, error logging
+ ├─ shared/                 # Firebase environment, routing, errors and their logging
  ├─ design_system/          # foundations (theme, dimensions) and components
  └─ features/game/
-     ├─ domain/             # Game, Player, Board, Cell, GameRules, TicTacToeAI, GameException, repository contracts
+     ├─ domain/             # Game, Board, GameCode, GameRules, TicTacToeAI, GameException, repository contracts
      ├─ data/               # Firestore and in-memory repositories, the Firestore game document, anonymous identity
-     ├─ application/        # OnlinePlay, GameSession and its rules, starting one, the game and the actions on it, the AI
-     └─ presentation/       # the message for each refusal, then one folder per screen:
-         ├─ home/           #   game mode selection: creates or joins the game, then opens the board
+     ├─ application/        # OnlinePlay, GameSession, GameSessionStarter, the game stream, the AI opponent
+     └─ presentation/       # error messages, then one folder per screen, with the notifiers of its state:
+         ├─ home/           #   game modes; starts the game (loading, cancel, time limit), then opens the board
          ├─ creation/       #   create / join dialogs, the player name field
-         └─ board/          #   board screen: header, grid, round actions; the header beside the board when it fits
+         └─ board/          #   header, grid, round actions; the actions on the board (busy, error, time limit)
 ```
 
-- **`GameRules`** is the single source of truth for every change a game goes through — joining, starting, a move, the next round, leaving — on a `Game` that only holds game concepts (players, board, scores, round). A refusal throws the `GameException` that says why. Both repositories only store what it returns, and the security rules check the same rules on the server.
-- **One composition root.** The domain is plain Dart: it declares the repositories and the player identity as interfaces, which the application exposes as providers that throw until bound (`game_dependencies.dart`). [`composition.dart`](lib/composition.dart) starts what the app needs before its first frame and binds every contract, and the one `ErrorLogger` the error handlers and the provider observer share (Crashlytics on a real project). Nothing else imports an implementation.
-- **Online play is one value**, `OnlinePlay`: available with the repository and the identity it needs, or unavailable with the reason — the build has no Firebase options, or Firebase failed to start. Nothing reaches the online services without going through it.
-- **The home screen starts a `GameSession`** through `GameSessionStarter`: it creates the local game, or signs in anonymously and creates or joins the online one. `GameSessionStartNotifier` is loading meanwhile — a barrier covers the modes, with a button to stop waiting — and holds the error when it fails (unknown code, game already full), which the screen shows. After 15 seconds the player is told the server is not answering, as when Firestore or Auth give up on a server they cannot reach (`ServerNotAnsweringException`). A session that comes once the player stopped waiting is left at once, so no opponent waits in a game nobody opens.
-- **On the board, `gameProvider` only watches the game** and **`GameActionsNotifier` acts on it**: loading while the repository handles a move, a start or a new round — the board takes no other action meanwhile — and the error when it refused, shown as a message. Only an online game waits to be started: a local one starts as soon as it is created. Notifiers that act live in the application layer, the AI using the board's; providers that only shape what a screen shows live with the screen.
-- **The AI is a player of the application layer**: `aiOpponentProvider` watches the game and, on the AI's turn, plays the move `TicTacToeAI` picks through `GameActionsNotifier`, after a thinking time. It stops when the board closes. Which seat the AI plays belongs to the `GameSession`, not to the game.
-- **Leaving the board leaves the game**, however the player goes back: a local game is forgotten, and the opponent of an online one sees it abandoned — so the board asks first while an opponent is seated. Leaving is an explicit action (`GameActionsNotifier.leave`), never a side effect of a provider being disposed. A device that is killed or loses its network does not leave: that would take a presence heartbeat.
-- **Repositories** implement `LocalGameRepository` (in memory) and `OnlineGameRepository` (Firestore) and only store. Every online write applies `GameRules` to the game read in a transaction.
-- **Players** sit in a game's two seats, host (X) and guest (O): a `Player` is a `PlayerId` — the anonymous Firebase uid online, a fixed seat on a local game — with a name and a win count. The Firestore document stores the seats flat, as the rules read them.
-- **Navigation:** screens are auto_route routes; dialogs are not, screens open them with `showDialog` and await their result.
+**Layers.** The domain is plain Dart. The application uses the domain only, and exposes each contract as a provider that throws until [`composition.dart`](lib/composition.dart) binds it. Presentation never imports the data layer. [`architecture_test.dart`](test/architecture_test.dart) fails on an import that breaks one of these rules.
+
+**Decisions**
+
+- **`GameRules` is the only place a game changes**: join, start, move, next round, leave. A refusal throws the `GameException` that says why. A request already fulfilled, which happens when both players ask at once, returns `GameChange.alreadyDone()` and writes nothing. Both repositories store what the rules return, and `firestore.rules` enforce the same rules on the server.
+- **`GameCode`** is the online game id: six characters without 0/O and 1/I. The join dialog checks a code on the device, and finds it in pasted text, such as the invitation the host shared.
+- **`OnlinePlay`** is either available, with the repository and identity it needs, or unavailable, with the reason. No code reaches the online services otherwise.
+- **State the screens show lives with them.** `GameSessionStartNotifier` (home) and `GameBoardActionsNotifier` (board) hold the loading and error states and run one action at a time. They stop waiting after 15 s and 10 s respectively, with `ServerNotAnsweringException`. The application layer holds no UI state.
+- **A session that starts after the player stopped waiting opens no board.** A game created for it is left, since nobody else knows its code. A seat taken in someone else's game is kept: joining is idempotent, so the player's retry opens that game.
+- **The AI** watches the game of a local session against it and, after a thinking time, plays the move `TicTacToeAI` picks through the repository. It stops when the board closes.
+- **Leaving the board leaves the game**, however the player goes back. A local game is forgotten, and the opponent of an online one sees it abandoned, so the board asks first while an opponent is seated.
+- **Navigation:** screens are auto_route routes. Dialogs open with `showDialog` and close themselves with `Navigator.pop`. Closing the board goes through the router, and closes any dialog over it.
+
+**Errors.** `ExpectedException`s (refusals, the server not answering) are shown to the player and logged as breadcrumbs. Anything else is reported to Crashlytics. A write the server refuses outside the game's rules, such as an App Check failure or an outdated app, is a `ServerRefusedException`: it is reported, and the player is asked to update the app.
+
+**Known limits.** A device that is killed or loses its network does not leave its game: that would take a presence heartbeat (an RTDB `onDisconnect`, or a `lastSeen` field and a scheduled function). The strict field lists of the rules make every new document field a joint release of the app and the rules. Game creation is limited only by App Check.
 
 ### Online data model and security rules
 
-One document per game, `games/{gameId}`: the game id is the code players share, six characters without the ones read alike (0/O, 1/I); the creation picks one no other game uses. It holds the players (`hostId` plays X, `guestId` plays O) and their names, the status, the scores, the current round and player, the board as nine cells (`'X'`, `'O'` or `''`), and what only the server needs: when it was written and `expiresAt`.
+One document per game, `games/{code}`. It holds the players (`hostId` plays X, `guestId` plays O) and their names, the status, the scores, the current round and player, and the board as nine cells (`'X'`, `'O'` or `''`). It also holds what only the server needs: `createdAt`, `updatedAt` and `expiresAt`.
 
-[`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write the app makes is a `GameWrite` listing the fields it changes — the same lists [`firestore.rules`](firestore.rules) allow, write by write — and the rules refuse anything else; a test reads `firestore.rules` to keep the two lists equal, and checks that the server pins every time a write carries. Games can be read with their code but never listed. Names count at most 20 UTF-16 code units, as the rules count them; so do the name field's counter and limit. A move must come from the signed-in player whose turn it is, and is checked against the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and only the winner scores. The integration tests exercise these rules on the emulator, including a cheating client.
+[`GameDocument`](lib/features/game/data/dto/game_document.dart) maps a `Game` to that document and back, and names every field once (`GameField`). Each write is a `GameWrite` listing the fields it changes, the same list [`firestore.rules`](firestore.rules) allow for that write. A test reads the rules to keep both lists equal, and checks that the server sets every time a write carries.
+
+The rules also enforce the following:
+- games can be read with their code, never listed;
+- names are at most 20 UTF-16 code units, as the app counts them;
+- a move comes from the player whose turn it is, and is checked against the board: one empty cell takes the mark, the round ends only on a real line or a full board, and only the winner scores.
+
+Every write runs in a transaction. The rules check a write against the game as it is when the write lands, so a transaction that read the game before the other player changed it fails with `permission-denied`, not a conflict Firestore would retry. The repository then runs it once more, but only if the game's `updatedAt` changed since; otherwise the refusal stands.
 
 ---
 
@@ -140,16 +151,31 @@ dart run custom_lint
 ```bash
 flutter test                                   # unit, widget and golden tests
 flutter test --exclude-tags golden             # without goldens
-flutter test --tags golden --update-goldens    # regenerate goldens after an intended visual change
+flutter test --tags golden --update-goldens    # regenerate goldens after an intended visual change, on macOS
 
 # End-to-end on a simulator or emulator, with the Firebase emulators running (see above)
 flutter test integration_test --dart-define-from-file=firebase_emulator.json
 ```
 
-- **Unit tests** cover the rules, the AI (every game a player can play against it, none won) and its timing (in fake time), both repositories (Firestore through `fake_cloud_firestore`), the anonymous identity, the startup with each Firebase step failing, starting a session (cancelled, or given up after its time limit), and the agreement between the app's writes and `firestore.rules`.
-- **Widget tests** drive the screens through robots: scenarios read as player actions and selectors live in one place. The home screen runs inside the real app and router, from the mode to the board. The board is laid out on a phone, a landscape phone, and windows barely wider than tall. Online scenarios play the opponent through a second `FirestoreGameRepository` on the same fake database.
-- **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state and the game modes in dark, light, large text and semantics views, with the real fonts. Text rasterization differs slightly between OSes: regenerate them on macOS. Each golden scenario, the home screen and its dialogs are also checked against the accessibility guidelines in both themes: labelled tap targets of the minimum size on Android and iOS, and text contrast.
-- **Integration tests** run the real app on a device against the emulators: local and AI games, a full online round against a second device, join errors, and the security rules refusing a cheating client (listing games, a game with extra fields or no expiry, taking a seat, a name too long, leaving a game one does not play, a forged time, playing out of turn, a fake victory, marking the opponent's cell, an inflated score, a deletion), and two players asking for the same change at once. Without the emulators, the online ones are skipped.
+- **Unit tests** cover:
+  - the rules, and `GameCode`, including reading it from the invitation in every language;
+  - the AI (every game a player can play against it, none won) and its timing, in fake time;
+  - both repositories (Firestore through `fake_cloud_firestore`, including refused and stale transactions), and the anonymous identity;
+  - the Firebase environment, and startup with each Firebase step failing;
+  - starting a session (cancelled, or given up after its time limit), and the actions on the board;
+  - the layer rules (`architecture_test.dart`), and the agreement between the app's writes and `firestore.rules`. The rules are read by their braces and brackets, not their layout.
+- **Widget tests** drive the screens through robots, so scenarios read as player actions:
+  - the home screen runs inside the real app and router, from the mode to the board;
+  - the board is laid out on a phone, a landscape phone, and windows barely wider than tall;
+  - online scenarios play the opponent through a second `FirestoreGameRepository` on the same fake database.
+- **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state and the game modes in dark, light, large-text and semantics views, in two sets:
+  - `goldens/macos/` with the real fonts, checked on macOS only, since text rasterizes differently on each OS;
+  - `goldens/ci/` with text drawn as boxes, the same on every OS.
+- **Accessibility:** each golden scenario, the home screen and its dialogs are checked against the guidelines in both themes: labelled tap targets of the minimum size on Android and iOS, and text contrast.
+- **Integration tests** run the real app on a device against the emulators (without them, the online ones are skipped):
+  - local and AI games, a full online round against a second device, and join errors;
+  - the security rules refusing a cheating client: listing games, a game with extra fields or no expiry, taking a seat, a name too long, leaving a game one does not play, a forged time, playing out of turn, a fake victory, marking the opponent's cell, an inflated score, and a deletion;
+  - two players asking for the same change at once.
 
 Coverage, without generated files (requires `lcov`):
 

@@ -72,9 +72,6 @@ class I18nEn extends I18n {
   String get gameNotFound => 'Game not found.';
 
   @override
-  String get emptyClipboard => 'Clipboard is empty';
-
-  @override
   String get playerFirstName => 'Player first name';
 
   @override
@@ -211,4 +208,20 @@ class I18nEn extends I18n {
 
   @override
   String get serverNotAnswering => 'The server is not answering. Check your connection and try again.';
+
+  @override
+  String get noGameCodeInClipboard => 'The clipboard holds no game code.';
+
+  @override
+  String invalidGameCode(int length) {
+    return 'A game code has $length letters and digits.';
+  }
+
+  @override
+  String boardCellPlaying(int row, int column) {
+    return 'Cell $row $column being played';
+  }
+
+  @override
+  String get serverRefused => 'The server refused this action. Update the app, then try again.';
 }

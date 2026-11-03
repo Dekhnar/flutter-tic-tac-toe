@@ -35,11 +35,11 @@ void main() {
       final starter = (await _container(const FirebaseStartup())).read(gameSessionStarterProvider);
 
       expect(
-        await starter.start(GameCreateInput.offline(guestName: 'Mario', hostName: 'Jessy')),
+        await starter.start(GameCreateInput.local(guestName: 'Mario', hostName: 'Jessy')),
         isA<LocalGameSession>(),
       );
       await expectLater(
-        starter.start(GameCreateInput.createOnlineLobby(hostName: 'Jessy')),
+        starter.start(GameCreateInput.createOnline(hostName: 'Jessy')),
         throwsA(
           isA<OnlineUnavailableException>().having((e) => e.reason, 'reason', OnlineUnavailableReason.notConfigured),
         ),
@@ -88,7 +88,7 @@ Future<ProviderContainer> _container(FirebaseStartup firebase) async {
 }
 
 Future<GameSession> _createOnlineGame(ProviderContainer container) =>
-    container.read(gameSessionStarterProvider).start(GameCreateInput.createOnlineLobby(hostName: 'Jessy'));
+    container.read(gameSessionStarterProvider).start(GameCreateInput.createOnline(hostName: 'Jessy'));
 
 Future<void> _openOnlineMode(WidgetTester tester, FirebaseStartup firebase) async {
   tester.view.physicalSize = GoldenScreen.iphone11.size;

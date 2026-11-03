@@ -1,41 +1,16 @@
-import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 
-/// What the player chose in the creation dialogs.
-sealed class GameCreateInput {
-  const GameCreateInput();
+part 'game_create_input.freezed.dart';
 
-  factory GameCreateInput.offline({required String guestName, required String hostName}) = GameCreateInputOffline1v1._;
+/// The game the player chose in a creation dialog.
+@freezed
+sealed class GameCreateInput with _$GameCreateInput {
+  const factory GameCreateInput.local({required String guestName, required String hostName}) = LocalGameInput;
 
-  factory GameCreateInput.offlineVsAi({required String hostName}) = GameCreateInputOfflineVsAi._;
+  const factory GameCreateInput.localVsAi({required String hostName}) = LocalVsAiGameInput;
 
-  factory GameCreateInput.createOnlineLobby({required String hostName}) = GameCreateInputOnlineLobby._;
+  const factory GameCreateInput.createOnline({required String hostName}) = CreateOnlineGameInput;
 
-  factory GameCreateInput.joinOnlineLobby({required GameId gameId, required String guestName}) =
-      GameCreateInputJoinOnlineLobby._;
-}
-
-final class GameCreateInputOffline1v1 extends GameCreateInput {
-  const GameCreateInputOffline1v1._({required this.guestName, required this.hostName});
-
-  final String guestName;
-  final String hostName;
-}
-
-final class GameCreateInputOfflineVsAi extends GameCreateInput {
-  const GameCreateInputOfflineVsAi._({required this.hostName});
-
-  final String hostName;
-}
-
-final class GameCreateInputOnlineLobby extends GameCreateInput {
-  const GameCreateInputOnlineLobby._({required this.hostName});
-
-  final String hostName;
-}
-
-final class GameCreateInputJoinOnlineLobby extends GameCreateInput {
-  const GameCreateInputJoinOnlineLobby._({required this.gameId, required this.guestName});
-
-  final GameId gameId;
-  final String guestName;
+  const factory GameCreateInput.joinOnline({required GameCode code, required String guestName}) = JoinOnlineGameInput;
 }

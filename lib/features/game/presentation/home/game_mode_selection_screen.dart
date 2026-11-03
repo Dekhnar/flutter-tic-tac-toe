@@ -5,12 +5,12 @@ import 'package:tic_tac_toe_app/design_system/components/lists/right_side_slider
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
-import 'package:tic_tac_toe_app/features/game/presentation/creation/game_create_offline_dialog.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/creation/game_create_local_dialog.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/creation/game_create_online_dialog.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/home/game_mode.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
 
@@ -60,8 +60,8 @@ class GameModeSelectionScreen extends ConsumerWidget {
       context: context,
       builder:
           (_) => switch (mode) {
-            GameMode.offline1v1 => const GameCreateOfflineDialog(),
-            GameMode.offlineVsAi => const GameCreateOfflineDialog(vsAi: true),
+            GameMode.local1v1 => const GameCreateLocalDialog(),
+            GameMode.localVsAi => const GameCreateLocalDialog(vsAi: true),
             GameMode.online1v1 => const GameCreateOnlineDialog(),
           },
     );
@@ -77,8 +77,7 @@ class GameModeSelectionScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
-/// Covers the modes while a game is created or joined, so the player cannot start a second one, and lets them stop
-/// waiting.
+/// Covers the modes while a game starts, so that the player cannot start a second one, and lets them stop waiting.
 class _LaunchingIndicator extends ConsumerWidget {
   const _LaunchingIndicator();
 

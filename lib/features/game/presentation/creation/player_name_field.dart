@@ -32,7 +32,7 @@ class PlayerNameField extends StatelessWidget {
       textInputAction: textInputAction,
       textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(labelText: label, prefixText: '${mark.name}: '),
-      // The server measures names in UTF-16 code units, an emoji counting for two: so do the counter and the limit.
+      // Counts UTF-16 code units, as the server does: an emoji counts for two.
       buildCounter:
           (context, {required currentLength, required isFocused, maxLength}) =>
               Text('${controller.text.length}/${PlayerName.maxLength}'),
@@ -48,8 +48,8 @@ class PlayerNameField extends StatelessWidget {
   }
 }
 
-/// Keeps a name within what the server accepts, cutting at a whole character: a flag is never left half typed. A name
-/// still being composed by the keyboard is left alone, the validator catching what it would leave too long.
+/// Cuts a name to what the server accepts, at a whole character so that a flag is never left half typed. Text the
+/// keyboard is still composing is left alone; the validator catches it.
 final class _ServerLengthLimit extends TextInputFormatter {
   const _ServerLengthLimit();
 

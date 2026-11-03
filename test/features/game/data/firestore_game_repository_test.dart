@@ -7,9 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_refused_exception.dart';
 
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
@@ -19,7 +21,7 @@ void main() {
   late FakeFirebaseFirestore firestore;
   late FirestoreGameRepository host;
   late FirestoreGameRepository guest;
-  late GameId gameId;
+  late GameCode gameId;
 
   setUp(() {
     firestore = FakeFirebaseFirestore();
@@ -70,7 +72,7 @@ void main() {
 
     test('fails when nobody created a game with this code', () {
       expect(
-        guest.joinGame(const GameId('ABCDEF'), guest: _luigi, guestName: 'Luigi'),
+        guest.joinGame(GameCode.parse('ABCDEF'), guest: _luigi, guestName: 'Luigi'),
         throwsA(isA<GameNotFoundException>()),
       );
     });
@@ -121,7 +123,7 @@ void main() {
     });
   });
 
-  test('a new game gets a short code to read out, which no other game uses', () async {
+  test('a new game gets a code no other game uses', () async {
     // Both devices draw the same codes: the second one must skip the code the first one took.
     final first = await FirestoreGameRepository(
       firestore: firestore,
@@ -132,7 +134,6 @@ void main() {
       random: Random(7),
     ).createGame(host: _mario, hostName: 'Mario');
 
-    expect([first.value, second.value], everyElement(matches(RegExp(r'^[A-HJ-NP-Z2-9]{6}$'))));
     expect(second, isNot(first));
   });
 
@@ -168,10 +169,44 @@ void main() {
     await reading;
   });
 
-  test('a write the server cannot be reached for says so, rather than failing for an unknown reason', () async {
-    final offline = FirestoreGameRepository(firestore: _Unreachable());
+  test('a write the server cannot be reached for, or that runs out of time, says so', () async {
+    for (final code in ['unavailable', 'deadline-exceeded']) {
+      final offline = FirestoreGameRepository(firestore: _Unreachable(code));
 
-    await expectLater(offline.createGame(host: _jessy, hostName: 'Jessy'), throwsA(isA<ServerNotAnsweringException>()));
+      await expectLater(
+        offline.createGame(host: _jessy, hostName: 'Jessy'),
+        throwsA(isA<ServerNotAnsweringException>()),
+        reason: code,
+      );
+    }
+  });
+
+  group('A write the server refuses', () {
+    late _Refusing refusing;
+
+    setUp(() async {
+      await startedGame();
+      await play([0, 3, 1, 4, 2]);
+    });
+
+    test('once the other player changed the game meanwhile, runs again against the game as it is now', () async {
+      refusing = _Refusing(firestore, meanwhile: () => guest.startNewRound(gameId: gameId));
+
+      await FirestoreGameRepository(firestore: refusing).startNewRound(gameId: gameId);
+
+      expect(refusing.transactions, 2);
+      expect((await host.watchGame(gameId).first).currentRoundIndex, 1);
+    });
+
+    test('of a game nobody changed is reported as refused, without asking again', () async {
+      refusing = _Refusing(firestore);
+
+      await expectLater(
+        FirestoreGameRepository(firestore: refusing).startNewRound(gameId: gameId),
+        throwsA(isA<ServerRefusedException>()),
+      );
+      expect(refusing.transactions, 1);
+    });
   });
 
   test('watching a game deleted from the server ends in an error', () async {
@@ -268,12 +303,49 @@ void main() {
   });
 }
 
-/// Firestore on a device that cannot reach the server: it gives up on every transaction.
+/// Firestore on a device that cannot reach the server: it gives up on every transaction with [code].
 final class _Unreachable extends Fake implements FirebaseFirestore {
+  _Unreachable(this.code);
+
+  final String code;
+
   @override
   Future<T> runTransaction<T>(
     TransactionHandler<T> transactionHandler, {
     Duration timeout = const Duration(seconds: 30),
     int maxAttempts = 5,
-  }) async => throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+  }) async => throw FirebaseException(plugin: 'cloud_firestore', code: code);
+}
+
+/// Firestore whose rules refuse the first transaction: it reads the game, [meanwhile] runs, and the write is refused.
+final class _Refusing extends Fake implements FirebaseFirestore {
+  _Refusing(this._firestore, {this.meanwhile});
+
+  final FakeFirebaseFirestore _firestore;
+  final Future<void> Function()? meanwhile;
+  int transactions = 0;
+
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String collectionPath) => _firestore.collection(collectionPath);
+
+  @override
+  Future<T> runTransaction<T>(
+    TransactionHandler<T> transactionHandler, {
+    Duration timeout = const Duration(seconds: 30),
+    int maxAttempts = 5,
+  }) async {
+    if (++transactions > 1) return _firestore.runTransaction(transactionHandler);
+
+    await transactionHandler(_RefusedTransaction());
+    await meanwhile?.call();
+    throw FirebaseException(plugin: 'cloud_firestore', code: 'permission-denied');
+  }
+}
+
+final class _RefusedTransaction extends Fake implements Transaction {
+  @override
+  Future<DocumentSnapshot<T>> get<T extends Object?>(DocumentReference<T> documentReference) => documentReference.get();
+
+  @override
+  Transaction update(DocumentReference documentReference, Map<Object, Object?> data) => this;
 }

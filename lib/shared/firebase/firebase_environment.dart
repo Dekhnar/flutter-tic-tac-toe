@@ -3,21 +3,33 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
-/// Firebase options read from `--dart-define-from-file=firebase_options.json`, or the local emulators with
+/// The Firebase project a build targets: `--dart-define-from-file=firebase_options.json`, or the local emulators with
 /// `--dart-define-from-file=firebase_emulator.json`.
-///
-/// [currentPlatform] is null when the build carries no options for the current platform: the app then runs without
-/// the online mode instead of failing to compile or to start.
-abstract final class FirebaseEnvironment {
-  static const _androidApiKey = String.fromEnvironment('FIREBASE_ANDROID_API_KEY');
-  static const _androidAppId = String.fromEnvironment('FIREBASE_ANDROID_APP_ID');
-  static const _appleApiKey = String.fromEnvironment('FIREBASE_APPLE_API_KEY');
-  static const _appleAppId = String.fromEnvironment('FIREBASE_APPLE_APP_ID');
-  static const _appleBundleId = String.fromEnvironment('FIREBASE_APPLE_BUNDLE_ID');
-  static const _emulatorHost = String.fromEnvironment('FIREBASE_EMULATOR_HOST');
-  static const _messagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID');
-  static const _projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
-  static const _storageBucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET');
+final class FirebaseEnvironment {
+  const FirebaseEnvironment({
+    this.androidApiKey = '',
+    this.androidAppId = '',
+    this.appleApiKey = '',
+    this.appleAppId = '',
+    this.appleBundleId = '',
+    this.emulatorHost = '',
+    this.messagingSenderId = '',
+    this.projectId = '',
+    this.storageBucket = '',
+  });
+
+  /// What this build was compiled with.
+  static const current = FirebaseEnvironment(
+    androidApiKey: String.fromEnvironment('FIREBASE_ANDROID_API_KEY'),
+    androidAppId: String.fromEnvironment('FIREBASE_ANDROID_APP_ID'),
+    appleApiKey: String.fromEnvironment('FIREBASE_APPLE_API_KEY'),
+    appleAppId: String.fromEnvironment('FIREBASE_APPLE_APP_ID'),
+    appleBundleId: String.fromEnvironment('FIREBASE_APPLE_BUNDLE_ID'),
+    emulatorHost: String.fromEnvironment('FIREBASE_EMULATOR_HOST'),
+    messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+    storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+  );
 
   static const authEmulatorPort = 9099;
   static const firestoreEmulatorPort = 8080;
@@ -30,44 +42,55 @@ abstract final class FirebaseEnvironment {
     projectId: 'demo-tic-tac-toe',
   );
 
-  static bool get usesEmulators => _emulatorHost.isNotEmpty;
+  final String androidApiKey;
+  final String androidAppId;
+  final String appleApiKey;
+  final String appleAppId;
+  final String appleBundleId;
+  final String emulatorHost;
+  final String messagingSenderId;
+  final String projectId;
+  final String storageBucket;
 
-  static FirebaseOptions? get currentPlatform {
+  bool get usesEmulators => emulatorHost.isNotEmpty;
+
+  /// Null when the build carries no options for [platform]: the app then runs without online play.
+  FirebaseOptions? optionsFor(TargetPlatform platform, {bool isWeb = kIsWeb}) {
     if (usesEmulators) return emulatorOptions;
-    if (kIsWeb || _projectId.isEmpty) return null;
+    if (isWeb || projectId.isEmpty) return null;
 
-    final (apiKey, appId) = switch (defaultTargetPlatform) {
-      TargetPlatform.android => (_androidApiKey, _androidAppId),
-      TargetPlatform.iOS || TargetPlatform.macOS => (_appleApiKey, _appleAppId),
+    final (apiKey, appId) = switch (platform) {
+      TargetPlatform.android => (androidApiKey, androidAppId),
+      TargetPlatform.iOS || TargetPlatform.macOS => (appleApiKey, appleAppId),
       _ => ('', ''),
     };
-
     if (apiKey.isEmpty || appId.isEmpty) return null;
 
     return FirebaseOptions(
       apiKey: apiKey,
       appId: appId,
-      iosBundleId: _appleBundleId.isEmpty ? null : _appleBundleId,
-      messagingSenderId: _messagingSenderId,
-      projectId: _projectId,
-      storageBucket: _storageBucket.isEmpty ? null : _storageBucket,
+      iosBundleId: appleBundleId.isEmpty ? null : appleBundleId,
+      messagingSenderId: messagingSenderId,
+      projectId: projectId,
+      storageBucket: storageBucket.isEmpty ? null : storageBucket,
     );
   }
 
+  /// The Android emulator reaches the host machine at 10.0.2.2, not at its own localhost.
+  String emulatorHostFor(TargetPlatform platform) =>
+      platform == TargetPlatform.android && emulatorHost == 'localhost' ? '10.0.2.2' : emulatorHost;
+
   /// Initializes the default app, pointed at the emulators when the build asks for them.
-  static Future<void> initialize(FirebaseOptions options) async {
+  Future<void> initialize(FirebaseOptions options) async {
     if (Firebase.apps.isNotEmpty) return;
 
     final app = await Firebase.initializeApp(options: options);
     if (usesEmulators) await useEmulators(app);
   }
 
-  static Future<void> useEmulators(FirebaseApp app) async {
-    await FirebaseAuth.instanceFor(app: app).useAuthEmulator(_hostOfEmulators, authEmulatorPort);
-    FirebaseFirestore.instanceFor(app: app).useFirestoreEmulator(_hostOfEmulators, firestoreEmulatorPort);
+  Future<void> useEmulators(FirebaseApp app) async {
+    final host = emulatorHostFor(defaultTargetPlatform);
+    await FirebaseAuth.instanceFor(app: app).useAuthEmulator(host, authEmulatorPort);
+    FirebaseFirestore.instanceFor(app: app).useFirestoreEmulator(host, firestoreEmulatorPort);
   }
-
-  /// The Android emulator reaches the host machine at 10.0.2.2, not at its own localhost.
-  static String get _hostOfEmulators =>
-      defaultTargetPlatform == TargetPlatform.android && _emulatorHost == 'localhost' ? '10.0.2.2' : _emulatorHost;
 }

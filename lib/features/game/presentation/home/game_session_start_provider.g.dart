@@ -8,20 +8,17 @@ part of 'game_session_start_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Creating or joining the game the player chose: loading meanwhile, the error when it failed. The player stops waiting
-/// by cancelling, or after [timeLimit] with a [TimeoutException]. A session that comes afterwards is left at once:
-/// nobody opens its board, and an opponent must not wait in it.
+/// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
+/// cancelling, or after [timeLimit].
 
 @ProviderFor(GameSessionStartNotifier)
 const gameSessionStartProvider = GameSessionStartNotifierProvider._();
 
-/// Creating or joining the game the player chose: loading meanwhile, the error when it failed. The player stops waiting
-/// by cancelling, or after [timeLimit] with a [TimeoutException]. A session that comes afterwards is left at once:
-/// nobody opens its board, and an opponent must not wait in it.
+/// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
+/// cancelling, or after [timeLimit].
 final class GameSessionStartNotifierProvider extends $AsyncNotifierProvider<GameSessionStartNotifier, void> {
-  /// Creating or joining the game the player chose: loading meanwhile, the error when it failed. The player stops waiting
-  /// by cancelling, or after [timeLimit] with a [TimeoutException]. A session that comes afterwards is left at once:
-  /// nobody opens its board, and an opponent must not wait in it.
+  /// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
+  /// cancelling, or after [timeLimit].
   const GameSessionStartNotifierProvider._()
     : super(
         from: null,
@@ -41,11 +38,10 @@ final class GameSessionStartNotifierProvider extends $AsyncNotifierProvider<Game
   GameSessionStartNotifier create() => GameSessionStartNotifier();
 }
 
-String _$gameSessionStartNotifierHash() => r'9bd8603067abae0a57756cc611cabaa8cd91eb34';
+String _$gameSessionStartNotifierHash() => r'815a74fb1ba1795c4f975a722e7deaa7eb5a78c8';
 
-/// Creating or joining the game the player chose: loading meanwhile, the error when it failed. The player stops waiting
-/// by cancelling, or after [timeLimit] with a [TimeoutException]. A session that comes afterwards is left at once:
-/// nobody opens its board, and an opponent must not wait in it.
+/// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
+/// cancelling, or after [timeLimit].
 
 abstract class _$GameSessionStartNotifier extends $AsyncNotifier<void> {
   FutureOr<void> build();

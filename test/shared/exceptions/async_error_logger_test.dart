@@ -4,12 +4,14 @@ import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
@@ -37,9 +39,9 @@ void main() {
     final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy');
     final session = GameSession.local(gameId: gameId);
     container.listen(gameProvider(session), (_, _) {});
-    container.listen(gameActionsProvider(session), (_, _) {});
+    container.listen(gameBoardActionsProvider(session), (_, _) {});
     await container.read(gameProvider(session).future);
-    final actions = container.read(gameActionsProvider(session).notifier);
+    final actions = container.read(gameBoardActionsProvider(session).notifier);
 
     await actions.makeMove(const Cell(9));
 
@@ -60,7 +62,7 @@ void main() {
 
     await container
         .read(gameSessionStartProvider.notifier)
-        .startSession(GameCreateInput.joinOnlineLobby(gameId: const GameId('ABCDEF'), guestName: 'Luigi'));
+        .startSession(GameCreateInput.joinOnline(code: GameCode.parse('AB3CD4'), guestName: 'Luigi'));
 
     expect(logger.errors, [isA<OnlineUnavailableException>()]);
   });

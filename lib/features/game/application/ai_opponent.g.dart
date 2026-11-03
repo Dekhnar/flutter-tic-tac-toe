@@ -8,15 +8,15 @@ part of 'ai_opponent.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// How long the AI seems to think: the player sees their own move land before the answer.
+/// Gives the player time to see their own move land before the answer.
 
 @ProviderFor(aiThinkingTime)
 const aiThinkingTimeProvider = AiThinkingTimeProvider._();
 
-/// How long the AI seems to think: the player sees their own move land before the answer.
+/// Gives the player time to see their own move land before the answer.
 
 final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duration, Duration> with $Provider<Duration> {
-  /// How long the AI seems to think: the player sees their own move land before the answer.
+  /// Gives the player time to see their own move land before the answer.
   const AiThinkingTimeProvider._()
     : super(
         from: null,
@@ -48,15 +48,18 @@ final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duratio
 
 String _$aiThinkingTimeHash() => r'8ffe49ff93c8c554b6bb4ca7776623d46f57d063';
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
+/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
+/// thinking, so the AI always plays on the game as it is.
 
 @ProviderFor(aiOpponent)
 const aiOpponentProvider = AiOpponentFamily._();
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
+/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
+/// thinking, so the AI always plays on the game as it is.
 
 final class AiOpponentProvider extends $FunctionalProvider<void, void, void> with $Provider<void> {
-  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
+  /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
+  /// thinking, so the AI always plays on the game as it is.
   const AiOpponentProvider._({required AiOpponentFamily super.from, required GameSession super.argument})
     : super(
         retry: null,
@@ -102,9 +105,10 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void> wit
   }
 }
 
-String _$aiOpponentHash() => r'd1ce1efdafa88761ec97c1ccf9a27997b466a7ae';
+String _$aiOpponentHash() => r'6e12ef0f496732f68598b82a27f0c85203d85a0b';
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
+/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
+/// thinking, so the AI always plays on the game as it is.
 
 final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void, GameSession> {
   const AiOpponentFamily._()
@@ -116,7 +120,8 @@ final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void
         isAutoDispose: true,
       );
 
-  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
+  /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
+  /// thinking, so the AI always plays on the game as it is.
 
   AiOpponentProvider call(GameSession session) => AiOpponentProvider._(argument: session, from: this);
 

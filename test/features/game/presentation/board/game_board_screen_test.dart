@@ -16,14 +16,17 @@ import 'package:tic_tac_toe_app/features/game/data/dto/game_document.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_screen.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_board_grid.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_header.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_refused_exception.dart';
 
 import '../../../../shared/golden_test_utils/material_golden.dart';
 import '../../../../shared/tic_tac_toe_widget_test_wrapper.dart';
@@ -171,6 +174,64 @@ void main() {
 
       robot.expectText(i18n.serverNotAnswering);
       robot.expectCellEmpty(0);
+    });
+
+    testWidgets('a move the server refuses for no reason of the game asks to update the app', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+
+      await robot.pumpStartedOnlineGame();
+      harness.appRepository.beforeMakeMove = () async => throw ServerRefusedException(Exception('App Check'));
+      await robot.tapCell(0);
+      await tester.pumpAndSettle();
+
+      robot.expectText(i18n.serverRefused);
+      robot.expectCellEmpty(0);
+    });
+
+    testWidgets('the tapped cell shows the move is on its way until the server answers', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      final serverAnswer = Completer<void>();
+      harness.appRepository.beforeMakeMove = () => serverAnswer.future;
+      final semantics = tester.ensureSemantics();
+
+      await robot.tapCell(4);
+
+      expect(
+        find.descendant(of: find.byKey(const Key('cell_4')), matching: find.byType(CircularProgressIndicator)),
+        findsOne,
+      );
+      expect(find.bySemanticsLabel(i18n.boardCellPlaying(2, 2)), findsOneWidget);
+
+      serverAnswer.complete();
+      await tester.pumpAndSettle();
+      robot.expectCellHasMark(4, 'X');
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('a move the server does not answer in time is given up, and the board takes moves again', (
+      tester,
+    ) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      harness.appRepository.beforeMakeMove = () => Completer<void>().future;
+
+      await robot.tapCell(0);
+      await tester.pump(GameBoardActionsNotifier.timeLimit);
+      await tester.pumpAndSettle();
+
+      robot.expectText(i18n.serverNotAnswering);
+      robot.expectCellEmpty(0);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      harness.appRepository.beforeMakeMove = null;
+      await robot.dismissSnackbar();
+      await robot.tapCell(0);
+      await tester.pumpAndSettle();
+      robot.expectCellHasMark(0, 'X');
     });
 
     testWidgets('the board takes no other move while the server handles one', (tester) async {
@@ -454,7 +515,7 @@ class _FirestoreTestHarness {
   late final appRepository = _AppRepository(FirestoreGameRepository(firestore: firestore));
 
   /// The game the host created.
-  late GameId gameId;
+  late GameCode gameId;
 
   Future<void> opponentJoins() => opponent.joinGame(gameId, guest: _luigi, guestName: 'Luigi');
 
@@ -495,15 +556,15 @@ final class _AppRepository implements OnlineGameRepository {
   AsyncCallback? beforeMakeMove;
 
   @override
-  Future<GameId> createGame({required PlayerId host, required String hostName}) =>
+  Future<GameCode> createGame({required PlayerId host, required String hostName}) =>
       _repository.createGame(host: host, hostName: hostName);
 
   @override
   Future<void> leaveGame(GameId gameId) => _repository.leaveGame(gameId);
 
   @override
-  Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName}) =>
-      _repository.joinGame(gameId, guest: guest, guestName: guestName);
+  Future<void> joinGame(GameCode code, {required PlayerId guest, required String guestName}) =>
+      _repository.joinGame(code, guest: guest, guestName: guestName);
 
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async {

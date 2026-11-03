@@ -21,7 +21,6 @@ final class Game with _$Game {
     required this.status,
   });
 
-  /// The board of the current round.
   @override
   final Board board;
 
@@ -34,11 +33,11 @@ final class Game with _$Game {
   @override
   final PlayerId? currentWinnerId;
 
-  /// The player who joined, and plays O; null until someone joins.
+  /// Plays O; null until someone joins.
   @override
   final Player? guest;
 
-  /// The player who created the game, and plays X.
+  /// Created the game, and plays X.
   @override
   final Player host;
 
@@ -50,13 +49,11 @@ final class Game with _$Game {
 }
 
 extension GamePlayers on Game {
-  /// The game creator plays X, the opponent plays O.
   CellMark markOf(PlayerId playerId) => playerId == host.id ? CellMark.X : CellMark.O;
 
   String nameOf(PlayerId playerId) => (playerId == host.id ? host : guest)?.name ?? '';
 }
 
-/// A seat at the table: who sits there, under which name, and how many rounds they won.
 @freezed
 final class Player with _$Player {
   const Player({required this.id, required this.name, this.wins = 0});
@@ -82,7 +79,6 @@ extension type const Cell(int index) {
   bool get isOnBoard => index >= 0 && index < Board.cellCount;
 }
 
-/// The 3×3 grid.
 @Freezed(copyWith: false)
 final class Board with _$Board {
   const Board({this.cells = _emptyCells});
@@ -91,7 +87,6 @@ final class Board with _$Board {
   static const cellCount = size * size;
   static const empty = Board();
 
-  /// Every row, column and diagonal.
   static const lines = [
     [Cell(0), Cell(1), Cell(2)], [Cell(3), Cell(4), Cell(5)], [Cell(6), Cell(7), Cell(8)], // rows
     [Cell(0), Cell(3), Cell(6)], [Cell(1), Cell(4), Cell(7)], [Cell(2), Cell(5), Cell(8)], // columns

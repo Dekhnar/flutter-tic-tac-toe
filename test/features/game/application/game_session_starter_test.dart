@@ -11,6 +11,7 @@ import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 
@@ -55,7 +56,7 @@ void main() {
 
     final session = await container
         .read(gameSessionStarterProvider)
-        .start(GameCreateInput.offline(guestName: 'Mario', hostName: 'Jessy'));
+        .start(GameCreateInput.local(guestName: 'Mario', hostName: 'Jessy'));
 
     final game = await localRepository.watchGame(session.gameId).first;
     expect(session, isA<LocalGameSession>());
@@ -68,7 +69,7 @@ void main() {
 
     final session = await container
         .read(gameSessionStarterProvider)
-        .start(GameCreateInput.offlineVsAi(hostName: 'Jessy'));
+        .start(GameCreateInput.localVsAi(hostName: 'Jessy'));
 
     final game = await localRepository.watchGame(session.gameId).first;
     expect(session.isAi(game, InMemoryGameRepository.guestId), isTrue);
@@ -80,7 +81,7 @@ void main() {
 
     final session = await container
         .read(gameSessionStarterProvider)
-        .start(GameCreateInput.createOnlineLobby(hostName: 'Jessy'));
+        .start(GameCreateInput.createOnline(hostName: 'Jessy'));
 
     final game = await onlineGame(session.gameId);
     expect(session, GameSession.online(gameId: game.id, me: _jessy));
@@ -93,18 +94,56 @@ void main() {
 
     final session = await container
         .read(gameSessionStarterProvider)
-        .start(GameCreateInput.joinOnlineLobby(gameId: gameId, guestName: 'Luigi'));
+        .start(GameCreateInput.joinOnline(code: gameId, guestName: 'Luigi'));
 
     final game = await onlineGame(gameId, where: (game) => game.guest?.id != null);
     expect(session, GameSession.online(gameId: gameId, me: _luigi));
     expect((game.guest?.id, game.guest?.name), (_luigi, 'Luigi'));
   });
 
+  group('A session that started once the player no longer waited for it', () {
+    test('leaves the game created for it: nobody else knows the code', () async {
+      final starter = containerSignedInAs(const _SignedIn(_jessy)).read(gameSessionStarterProvider);
+      const input = GameCreateInput.createOnline(hostName: 'Jessy');
+      final session = await starter.start(input);
+
+      await starter.dropLate(input, session);
+
+      expect(
+        (await onlineGame(session.gameId, where: (game) => game.status == GameStatus.abandoned)).status,
+        GameStatus.abandoned,
+      );
+    });
+
+    test('keeps the seat taken in a friend\'s game, so that joining again opens it', () async {
+      final code = await FirestoreGameRepository(firestore: firestore).createGame(host: _jessy, hostName: 'Jessy');
+      final starter = containerSignedInAs(const _SignedIn(_luigi)).read(gameSessionStarterProvider);
+      final input = GameCreateInput.joinOnline(code: code, guestName: 'Luigi');
+      final session = await starter.start(input);
+
+      await starter.dropLate(input, session);
+
+      expect(await starter.start(input), session);
+      final game = await onlineGame(code, where: (game) => game.guest != null);
+      expect((game.guest?.id, game.status), (_luigi, GameStatus.setup));
+    });
+
+    test('forgets a local game', () async {
+      final starter = containerSignedInAs(const _SignedIn(_jessy)).read(gameSessionStarterProvider);
+      const input = GameCreateInput.localVsAi(hostName: 'Jessy');
+      final session = await starter.start(input);
+
+      await starter.dropLate(input, session);
+
+      await expectLater(localRepository.watchGame(session.gameId).first, throwsA(isA<GameNotFoundException>()));
+    });
+  });
+
   test('an online game cannot be started without Firebase, and nothing is written', () async {
     final container = containerSignedInAs(const _SignedIn(_jessy), isOnlineAvailable: false);
 
     await expectLater(
-      container.read(gameSessionStarterProvider).start(GameCreateInput.createOnlineLobby(hostName: 'Jessy')),
+      container.read(gameSessionStarterProvider).start(GameCreateInput.createOnline(hostName: 'Jessy')),
       throwsA(isA<OnlineUnavailableException>()),
     );
     expect((await firestore.collection('games').get()).docs, isEmpty);
@@ -114,9 +153,7 @@ void main() {
     final signIn = Completer<PlayerId>();
     final container = containerSignedInAs(_SigningIn(signIn.future));
 
-    final session = container
-        .read(gameSessionStarterProvider)
-        .start(GameCreateInput.createOnlineLobby(hostName: 'Jessy'));
+    final session = container.read(gameSessionStarterProvider).start(GameCreateInput.createOnline(hostName: 'Jessy'));
     container.invalidate(gameSessionStarterProvider);
     await container.pump();
     signIn.complete(_jessy);

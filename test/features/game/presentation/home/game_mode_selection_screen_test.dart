@@ -3,20 +3,22 @@
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
-import 'package:tic_tac_toe_app/features/game/application/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/home/game_session_start_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 import '../../../../shared/fakes/pending_local_game_repository.dart';
@@ -143,7 +145,7 @@ void main() {
     });
 
     /// The host's board, in the real app, once the game is created and the opponent sat down if [joined].
-    Future<GameId> openBoard(WidgetTester tester, {required bool joined}) async {
+    Future<GameCode> openBoard(WidgetTester tester, {required bool joined}) async {
       robot = _HomeRobot(tester);
       await robot.launch(
         localRepository: games,
@@ -190,6 +192,21 @@ void main() {
       expect(find.text(i18n.gameNotFound), findsOneWidget);
       expect(find.text(i18n.startGame), findsNothing);
 
+      await robot.tapText(i18n.quit);
+
+      expect(find.text(i18n.leaveGameTitle), findsNothing);
+      expect(find.text(i18n.local1v1), findsOneWidget);
+    });
+
+    testWidgets('gone from the server while the player confirms leaving: Quit closes the board all the same', (
+      tester,
+    ) async {
+      final gameId = await openBoard(tester, joined: true);
+      await robot.goBack();
+      expect(find.text(i18n.leaveGameTitle), findsOneWidget);
+
+      await tester.runAsync(() => firestore.collection('games').doc(gameId.value).delete());
+      await tester.pumpAndSettle();
       await robot.tapText(i18n.quit);
 
       expect(find.text(i18n.leaveGameTitle), findsNothing);
@@ -296,11 +313,66 @@ void main() {
     await robot.launch(localRepository: games, online: _onlineAs(_luigi, repository: server));
 
     // Codes are case-insensitive for the player.
-    await robot.joinOnlineGame(GameId(gameId.value.toLowerCase()), guestName: 'Luigi');
+    await robot.joinOnlineGame(gameId.value.toLowerCase(), guestName: 'Luigi');
 
     robot.expectSnackBar(i18n.gameAlreadyFull);
     expect(find.text(i18n.local1v1), findsOneWidget);
   });
+
+  group('Joining with the code a friend shared', () {
+    late FirestoreGameRepository server;
+    late GameCode code;
+    late _HomeRobot robot;
+
+    Future<void> launch(WidgetTester tester, {String? clipboard}) async {
+      code = await server.createGame(host: _jessy, hostName: 'Jessy');
+      if (clipboard != null) _clipboardHolds(tester, clipboard.replaceAll('{code}', code.value));
+      robot = _HomeRobot(tester);
+      await robot.launch(localRepository: games, online: _onlineAs(_luigi, repository: server));
+    }
+
+    setUp(() => server = FirestoreGameRepository(firestore: FakeFirebaseFirestore()));
+
+    testWidgets('pasted with the invitation around it opens the game', (tester) async {
+      await launch(tester, clipboard: i18n.shareInvitation('{code}'));
+
+      await robot.openJoinDialog(guestName: 'Luigi');
+      await robot.pasteCode();
+      expect(find.widgetWithText(TextFormField, code.value), findsOneWidget);
+      await robot.tapJoin();
+
+      expect(find.text('Luigi (O)'), findsOneWidget);
+    });
+
+    testWidgets('pasted from a clipboard without a code says so, and fills nothing', (tester) async {
+      await launch(tester, clipboard: 'See you tonight!');
+
+      await robot.openJoinDialog(guestName: 'Luigi');
+      await robot.pasteCode();
+
+      robot.expectSnackBar(i18n.noGameCodeInClipboard);
+      expect(find.text('See you tonight!'), findsNothing);
+    });
+
+    testWidgets('that cannot be a code is refused at once, before asking the server', (tester) async {
+      await launch(tester);
+
+      await robot.joinOnlineGame('HELLO', guestName: 'Luigi');
+
+      expect(find.text(i18n.invalidGameCode(GameCode.length)), findsOneWidget);
+      expect(find.text(i18n.onlineGame), findsOneWidget);
+    });
+  });
+}
+
+/// What the device's clipboard returns to a paste.
+void _clipboardHolds(WidgetTester tester, String text) {
+  final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async => call.method == 'Clipboard.getData' ? {'text': text} : null,
+  );
+  addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
 }
 
 /// Test DSL for the home screen, driven through the real app and its router.
@@ -340,13 +412,12 @@ class _HomeRobot {
   }
 
   /// Creates a game from the app, and reads its code where the board shows it to share.
-  Future<GameId> createOnlineGame({required String hostName}) async {
+  Future<GameCode> createOnlineGame({required String hostName}) async {
     await chooseMode(i18n.online1v1);
     await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), hostName);
     await tapText(i18n.createGame);
 
-    final codeLabel = i18n.gameCodeValue('');
-    return GameId(tester.widget<Text>(find.textContaining(codeLabel)).data?.substring(codeLabel.length) ?? '');
+    return GameCode.parse(tester.widget<Text>(find.textContaining(i18n.gameCodeValue(''))).data ?? '');
   }
 
   Future<void> goBack() async {
@@ -354,11 +425,24 @@ class _HomeRobot {
     await tester.pumpAndSettle();
   }
 
-  Future<void> joinOnlineGame(GameId gameId, {required String guestName}) async {
+  Future<void> openJoinDialog({required String guestName}) async {
     await chooseMode(i18n.online1v1);
     await tapText(i18n.join);
     await tester.enterText(find.widgetWithText(TextFormField, i18n.playerFirstName), guestName);
-    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), gameId.value);
+  }
+
+  Future<void> joinOnlineGame(String code, {required String guestName}) async {
+    await openJoinDialog(guestName: guestName);
+    await tester.enterText(find.widgetWithText(TextFormField, i18n.gameCode), code);
+    await tapJoin();
+  }
+
+  Future<void> pasteCode() async {
+    await tester.tap(find.byTooltip(i18n.paste));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapJoin() async {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, i18n.join));
     await tester.pumpAndSettle();

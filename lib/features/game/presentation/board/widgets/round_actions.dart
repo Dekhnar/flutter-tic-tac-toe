@@ -5,6 +5,7 @@ import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 /// Starts the game once the opponent is there, then the next round once one ends.
@@ -24,8 +25,8 @@ class RoundActions extends ConsumerWidget {
         },
       ),
     );
-    final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
-    GameActionsNotifier actions() => ref.read(gameActionsProvider(session).notifier);
+    final busy = ref.watch(gameBoardActionsProvider(session).select((actions) => actions.isLoading));
+    GameBoardActionsNotifier actions() => ref.read(gameBoardActionsProvider(session).notifier);
     final i18n = I18n.of(context);
 
     return Container(

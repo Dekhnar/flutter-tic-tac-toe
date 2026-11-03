@@ -16,8 +16,8 @@ import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/firebase/crashlytics_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/firebase/firebase_environment.dart';
 
-/// Everything the app needs before its first frame, and the one place that picks the implementation behind each
-/// contract. Integration tests start the app from it too.
+/// Everything the app needs before its first frame. The only file that picks the implementation behind each contract;
+/// integration tests start the app from it too.
 Future<ProviderContainer> createAppContainer({FirebaseStartup firebase = const FirebaseStartup()}) async {
   final (onlinePlay, errorLogger) = await _start(firebase);
 
@@ -37,8 +37,8 @@ List<Override> bindGameProviders({required OnlinePlay onlinePlay}) => [
   onlinePlayProvider.overrideWithValue(onlinePlay),
 ];
 
-/// Starts Firebase one step at a time: a step that fails leaves out only what depends on it, and is reported once the
-/// error logger is known — through Crashlytics when that step went through.
+/// Starts Firebase one step at a time: a failed step leaves out only what depends on it. Failures are reported once the
+/// error logger is known, through Crashlytics when it started.
 Future<(OnlinePlay, ErrorLogger)> _start(FirebaseStartup firebase) async {
   const console = DeveloperErrorLogger();
   final options = firebase.options;
@@ -75,13 +75,15 @@ Future<(OnlinePlay, ErrorLogger)> _start(FirebaseStartup firebase) async {
 
 /// The steps that start Firebase. A real project also gets crash reports and App Check; the emulators support neither.
 class FirebaseStartup {
-  const FirebaseStartup();
+  const FirebaseStartup({this.environment = FirebaseEnvironment.current});
 
-  FirebaseOptions? get options => FirebaseEnvironment.currentPlatform;
+  final FirebaseEnvironment environment;
 
-  bool get usesEmulators => FirebaseEnvironment.usesEmulators;
+  FirebaseOptions? get options => environment.optionsFor(defaultTargetPlatform);
 
-  Future<void> initializeApp(FirebaseOptions options) => FirebaseEnvironment.initialize(options);
+  bool get usesEmulators => environment.usesEmulators;
+
+  Future<void> initializeApp(FirebaseOptions options) => environment.initialize(options);
 
   OnlinePlayAvailable onlinePlay() => OnlinePlayAvailable(
     identity: FirebasePlayerIdentity(auth: FirebaseAuth.instance),

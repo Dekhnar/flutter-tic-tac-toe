@@ -7,7 +7,7 @@ import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 
 part 'game_session_starter.g.dart';
 
-/// Creates or joins the game the player chose; the board then only watches it.
+/// Creates or joins the game the player chose, before its board opens.
 final class GameSessionStarter {
   const GameSessionStarter({required LocalGameRepository localRepository, required OnlinePlay onlinePlay})
     : _localRepository = localRepository,
@@ -18,30 +18,35 @@ final class GameSessionStarter {
 
   Future<GameSession> start(GameCreateInput input) async {
     switch (input) {
-      case GameCreateInputOffline1v1(:final guestName, :final hostName):
+      case LocalGameInput(:final guestName, :final hostName):
         final gameId = await _localRepository.createGame(guestName: guestName, hostName: hostName);
         return GameSession.local(gameId: gameId);
-      case GameCreateInputOfflineVsAi(:final hostName):
+      case LocalVsAiGameInput(:final hostName):
         final gameId = await _localRepository.createGame(guestName: '', hostName: hostName);
         return GameSession.local(gameId: gameId, vsAi: true);
-      case GameCreateInputOnlineLobby(:final hostName):
+      case CreateOnlineGameInput(:final hostName):
         final online = _online();
         final me = await online.identity.signIn();
-        final gameId = await online.repository.createGame(host: me, hostName: hostName);
-        return GameSession.online(gameId: gameId, me: me);
-      case GameCreateInputJoinOnlineLobby(:final gameId, :final guestName):
+        final code = await online.repository.createGame(host: me, hostName: hostName);
+        return GameSession.online(gameId: code, me: me);
+      case JoinOnlineGameInput(:final code, :final guestName):
         final online = _online();
         final me = await online.identity.signIn();
-        await online.repository.joinGame(gameId, guest: me, guestName: guestName);
-        return GameSession.online(gameId: gameId, me: me);
+        await online.repository.joinGame(code, guest: me, guestName: guestName);
+        return GameSession.online(gameId: code, me: me);
     }
   }
 
-  /// Leaves the game of a [session] nobody is going to open.
-  Future<void> leave(GameSession session) => switch (session) {
-    LocalGameSession() => _localRepository.leaveGame(session.gameId),
-    OnlineGameSession() => _online().repository.leaveGame(session.gameId),
-  };
+  /// Lets go of a [session] that started once the player no longer waited for it. A game created for it is left: nobody
+  /// else knows it. A seat taken in someone else's game is kept, so that joining again opens the game.
+  Future<void> dropLate(GameCreateInput input, GameSession session) async {
+    if (input is JoinOnlineGameInput) return;
+
+    await switch (session) {
+      LocalGameSession(:final gameId) => _localRepository.leaveGame(gameId),
+      OnlineGameSession(:final gameId) => _online().repository.leaveGame(gameId),
+    };
+  }
 
   OnlinePlayAvailable _online() => switch (_onlinePlay) {
     final OnlinePlayAvailable online => online,
@@ -49,7 +54,7 @@ final class GameSessionStarter {
   };
 }
 
-/// Holds the dependencies themselves rather than a `Ref`, which may be disposed before a creation completes.
+/// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
 @riverpod
 GameSessionStarter gameSessionStarter(Ref ref) => GameSessionStarter(
   localRepository: ref.watch(localGameRepositoryProvider),

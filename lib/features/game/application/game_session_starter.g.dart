@@ -8,17 +8,17 @@ part of 'game_session_starter.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Holds the dependencies themselves rather than a `Ref`, which may be disposed before a creation completes.
+/// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
 
 @ProviderFor(gameSessionStarter)
 const gameSessionStarterProvider = GameSessionStarterProvider._();
 
-/// Holds the dependencies themselves rather than a `Ref`, which may be disposed before a creation completes.
+/// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
 
 final class GameSessionStarterProvider
     extends $FunctionalProvider<GameSessionStarter, GameSessionStarter, GameSessionStarter>
     with $Provider<GameSessionStarter> {
-  /// Holds the dependencies themselves rather than a `Ref`, which may be disposed before a creation completes.
+  /// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
   const GameSessionStarterProvider._()
     : super(
         from: null,

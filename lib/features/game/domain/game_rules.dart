@@ -1,28 +1,37 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 
-/// Every change a game can go through, local or online: the repositories only store what these return, and
-/// `firestore.rules` check the same rules on the server. A refusal throws the [GameException] that says why; a null
-/// result means the change already happened, both players being able to ask for it at once.
+part 'game_rules.freezed.dart';
+
+/// What a rule makes of a request the game accepts. Both players can make the same request at once, so the second one
+/// finds it already done.
+@freezed
+sealed class GameChange with _$GameChange {
+  const factory GameChange.changed(Game game) = GameChanged;
+
+  const factory GameChange.alreadyDone() = GameAlreadyDone;
+}
+
+/// Every change a game can go through, local or online: repositories store what these return, and `firestore.rules`
+/// enforce the same rules on the server. A refusal throws the [GameException] that says why.
 final class GameRules {
   const GameRules();
 
-  /// The game once [guest] took the free seat, or null when [guest] already plays it.
-  Game? join(Game game, {required PlayerId guest, required String guestName}) {
+  GameChange join(Game game, {required PlayerId guest, required String guestName}) {
     if (game.status == GameStatus.abandoned) throw GameAbandonedException();
-    if (guest == game.host.id || guest == game.guest?.id) return null;
+    if (guest == game.host.id || guest == game.guest?.id) return const GameChange.alreadyDone();
     if (game.guest != null) throw GameAlreadyFullException();
 
-    return game.copyWith(guest: Player(id: guest, name: guestName));
+    return GameChange.changed(game.copyWith(guest: Player(id: guest, name: guestName)));
   }
 
-  /// The game once started, or null when it already is.
-  Game? start(Game game) {
-    if (game.status != GameStatus.setup) return null;
+  GameChange start(Game game) {
+    if (game.status != GameStatus.setup) return const GameChange.alreadyDone();
     if (game.guest == null) throw GameOpponentMissingException();
 
-    return game.copyWith(status: GameStatus.playing);
+    return GameChange.changed(game.copyWith(status: GameStatus.playing));
   }
 
   Game applyMove({required Game game, required PlayerId playerId, required Cell cell}) {
@@ -54,27 +63,27 @@ final class GameRules {
     );
   }
 
-  /// The next round, on an empty board, the players taking turns to start; null while the round is being played.
-  Game? startNewRound(Game game) {
-    if (game.status != GameStatus.finished) return null;
-
+  /// The next round starts on an empty board, the players taking turns to start; asked during a round, it is already
+  /// there.
+  GameChange startNewRound(Game game) {
     final guest = game.guest;
-    if (guest == null) return null;
+    if (game.status != GameStatus.finished || guest == null) return const GameChange.alreadyDone();
 
     final nextRoundIndex = game.currentRoundIndex + 1;
-    return game.copyWith(
-      board: Board.empty,
-      currentPlayerId: nextRoundIndex.isEven ? game.host.id : guest.id,
-      currentRoundIndex: nextRoundIndex,
-      currentWinnerId: null,
-      status: GameStatus.playing,
+    return GameChange.changed(
+      game.copyWith(
+        board: Board.empty,
+        currentPlayerId: nextRoundIndex.isEven ? game.host.id : guest.id,
+        currentRoundIndex: nextRoundIndex,
+        currentWinnerId: null,
+        status: GameStatus.playing,
+      ),
     );
   }
 
-  /// The game once a player left it: the other one can no longer play it.
-  Game? leave(Game game) {
-    if (game.status == GameStatus.abandoned) return null;
-
-    return game.copyWith(status: GameStatus.abandoned);
-  }
+  /// A player leaves for good: the other one can no longer play.
+  GameChange leave(Game game) => switch (game.status) {
+    GameStatus.abandoned => const GameChange.alreadyDone(),
+    _ => GameChange.changed(game.copyWith(status: GameStatus.abandoned)),
+  };
 }

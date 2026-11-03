@@ -20,14 +20,15 @@ void main() {
     final waiting = _startedGame().copyWith(status: GameStatus.setup, guest: null);
 
     test('seats the guest in the free seat, by name', () {
-      final joined = rules.join(waiting, guest: _o, guestName: 'Mario');
-
-      expect((joined?.guest?.id, joined?.guest?.name), (_o, 'Mario'));
+      expect(
+        rules.join(waiting, guest: _o, guestName: 'Mario'),
+        GameChange.changed(waiting.copyWith(guest: const Player(id: _o, name: 'Mario'))),
+      );
     });
 
     test('again, or as the host, changes nothing', () {
-      expect(rules.join(_startedGame(), guest: _o, guestName: 'Mario'), isNull);
-      expect(rules.join(waiting, guest: _x, guestName: 'Jessy'), isNull);
+      expect(rules.join(_startedGame(), guest: _o, guestName: 'Mario'), const GameChange.alreadyDone());
+      expect(rules.join(waiting, guest: _x, guestName: 'Jessy'), const GameChange.alreadyDone());
     });
 
     test('is refused once a player left the game', () {
@@ -47,30 +48,32 @@ void main() {
   group('Leaving', () {
     test('ends the game for both players, whatever its state', () {
       for (final status in [GameStatus.setup, GameStatus.playing, GameStatus.finished]) {
-        expect(rules.leave(_startedGame().copyWith(status: status))?.status, GameStatus.abandoned);
+        final game = _startedGame().copyWith(status: status);
+
+        expect(rules.leave(game), GameChange.changed(game.copyWith(status: GameStatus.abandoned)));
       }
     });
 
     test('again changes nothing', () {
-      expect(rules.leave(_startedGame().copyWith(status: GameStatus.abandoned)), isNull);
+      expect(rules.leave(_startedGame().copyWith(status: GameStatus.abandoned)), const GameChange.alreadyDone());
     });
 
     test('stops the moves, the start and the next round', () {
       final abandoned = _startedGame().copyWith(status: GameStatus.abandoned);
 
       expect(move(abandoned, playerId: _x, cell: 0), throwsA(isA<GameAbandonedException>()));
-      expect(rules.start(abandoned), isNull);
-      expect(rules.startNewRound(abandoned), isNull);
+      expect(rules.start(abandoned), const GameChange.alreadyDone());
+      expect(rules.startNewRound(abandoned), const GameChange.alreadyDone());
     });
   });
 
   group('Starting the game', () {
     test('lets the players play', () {
-      expect(rules.start(_startedGame().copyWith(status: GameStatus.setup))?.status, GameStatus.playing);
+      expect(rules.start(_startedGame().copyWith(status: GameStatus.setup)), GameChange.changed(_startedGame()));
     });
 
     test('again changes nothing', () {
-      expect(rules.start(_startedGame()), isNull);
+      expect(rules.start(_startedGame()), const GameChange.alreadyDone());
     });
 
     test('is refused while no opponent has joined', () {
@@ -153,20 +156,25 @@ void main() {
     test('clears the board, keeps the scores and lets the other player start', () {
       final finished = play(_startedGame(), [0, 3, 1, 4, 2]);
 
-      final next = rules.startNewRound(finished);
-
-      expect(next?.status, GameStatus.playing);
-      expect(next?.currentRoundIndex, 1);
-      expect(next?.currentPlayerId, _o);
-      expect(next?.currentWinnerId, isNull);
-      expect(next?.board, Board.empty);
-      expect((next?.host.wins, next?.guest?.wins), (1, 0));
+      expect(
+        rules.startNewRound(finished),
+        GameChange.changed(
+          finished.copyWith(
+            board: Board.empty,
+            currentPlayerId: _o,
+            currentRoundIndex: 1,
+            currentWinnerId: null,
+            status: GameStatus.playing,
+          ),
+        ),
+      );
+      expect((finished.host.wins, finished.guest?.wins), (1, 0));
     });
 
     test('cannot start while the round is still being played', () {
       final playing = play(_startedGame(), [0]);
 
-      expect(rules.startNewRound(playing), isNull);
+      expect(rules.startNewRound(playing), const GameChange.alreadyDone());
     });
   });
 }

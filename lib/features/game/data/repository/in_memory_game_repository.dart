@@ -31,8 +31,11 @@ final class InMemoryGameRepository implements LocalGameRepository {
       id: gameId,
       status: GameStatus.setup,
     );
-    // Both players are on this device from the start: nobody has to wait, the game starts at once.
-    _stores[gameId] = InMemoryStore<Game>(_rules.start(seated) ?? seated);
+    // Both players are on this device from the start: the game starts at once.
+    _stores[gameId] = InMemoryStore(switch (_rules.start(seated)) {
+      GameChanged(:final game) => game,
+      GameAlreadyDone() => seated,
+    });
     return gameId;
   }
 
@@ -41,7 +44,7 @@ final class InMemoryGameRepository implements LocalGameRepository {
 
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async =>
-      _update(gameId, (game) => _rules.applyMove(game: game, playerId: playerId, cell: cell));
+      _update(gameId, (game) => GameChange.changed(_rules.applyMove(game: game, playerId: playerId, cell: cell)));
 
   @override
   Future<void> leaveGame(GameId gameId) async => _stores.remove(gameId)?.close();
@@ -53,9 +56,8 @@ final class InMemoryGameRepository implements LocalGameRepository {
     _stores.clear();
   }
 
-  /// Applies [change] to the stored game; a null change, a request already fulfilled, stores nothing.
-  void _update(GameId gameId, Game? Function(Game game) change) {
+  void _update(GameId gameId, GameChange Function(Game game) change) {
     final store = _stores[gameId] ?? (throw GameNotFoundException());
-    if (change(store.value) case final changed?) store.value = changed;
+    if (change(store.value) case GameChanged(:final game)) store.value = game;
   }
 }

@@ -218,12 +218,6 @@ abstract class I18n {
   /// **'Game not found.'**
   String get gameNotFound;
 
-  /// No description provided for @emptyClipboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Clipboard is empty'**
-  String get emptyClipboard;
-
   /// No description provided for @playerFirstName.
   ///
   /// In en, this message translates to:
@@ -463,6 +457,30 @@ abstract class I18n {
   /// In en, this message translates to:
   /// **'The server is not answering. Check your connection and try again.'**
   String get serverNotAnswering;
+
+  /// No description provided for @noGameCodeInClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard holds no game code.'**
+  String get noGameCodeInClipboard;
+
+  /// No description provided for @invalidGameCode.
+  ///
+  /// In en, this message translates to:
+  /// **'A game code has {length} letters and digits.'**
+  String invalidGameCode(int length);
+
+  /// No description provided for @boardCellPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {row} {column} being played'**
+  String boardCellPlaying(int row, int column);
+
+  /// No description provided for @serverRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused this action. Update the app, then try again.'**
+  String get serverRefused;
 }
 
 class _I18nDelegate extends LocalizationsDelegate<I18n> {

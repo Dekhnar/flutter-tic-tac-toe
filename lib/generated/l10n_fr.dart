@@ -72,9 +72,6 @@ class I18nFr extends I18n {
   String get gameNotFound => 'Partie introuvable.';
 
   @override
-  String get emptyClipboard => 'Presse-papiers vide';
-
-  @override
   String get playerFirstName => 'Prénom du Joueur';
 
   @override
@@ -211,4 +208,20 @@ class I18nFr extends I18n {
 
   @override
   String get serverNotAnswering => 'Le serveur ne répond pas. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get noGameCodeInClipboard => 'Le presse-papiers ne contient pas de code de partie.';
+
+  @override
+  String invalidGameCode(int length) {
+    return 'Un code de partie compte $length lettres et chiffres.';
+  }
+
+  @override
+  String boardCellPlaying(int row, int column) {
+    return 'Case $row $column en cours';
+  }
+
+  @override
+  String get serverRefused => 'Le serveur a refusé cette action. Mets l\'application à jour, puis réessaie.';
 }

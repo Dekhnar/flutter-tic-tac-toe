@@ -7,7 +7,7 @@ part 'game_session.freezed.dart';
 /// A game this device takes part in, created or joined before the board opens.
 @freezed
 sealed class GameSession with _$GameSession {
-  /// Both players share this device, or the guest is the AI: who plays a seat is up to this device, not the game.
+  /// Both players on this device, or the host against the AI.
   const factory GameSession.local({required GameId gameId, @Default(false) bool vsAi}) = LocalGameSession;
 
   /// This device plays as [me] against another device.
@@ -21,19 +21,21 @@ extension GameSessionPlayers on GameSession {
     LocalGameSession() => null,
   };
 
-  /// Whether the AI plays [player]: the guest of a local game against the AI.
-  bool isAi(Game game, PlayerId player) => switch (this) {
-    LocalGameSession(vsAi: true) => player == game.guest?.id,
-    _ => false,
+  /// Whether the AI plays a seat: the guest's, in a local game against the AI.
+  bool get hasAi => switch (this) {
+    LocalGameSession(:final vsAi) => vsAi,
+    OnlineGameSession() => false,
   };
+
+  bool isAi(Game game, PlayerId player) => hasAi && player == game.guest?.id;
 
   bool isAiTurn(Game game) => game.status == GameStatus.playing && isAi(game, game.currentPlayerId);
 
-  /// Whether a player of this device may play now: on a local game, whoever's turn it is, except the AI.
+  /// On a local game, whoever's turn it is may play, except the AI.
   bool canPlay(Game game) =>
       game.status == GameStatus.playing && !isAiTurn(game) && (me == null || game.currentPlayerId == me);
 
-  /// Whether leaving ends the game for someone else: an online game an opponent sits in, and that is not over.
+  /// Leaving ends the game for someone else only online, once an opponent sits in it.
   bool leaveEndsGameForOpponent(Game game) => switch (this) {
     OnlineGameSession() => game.guest != null && game.status != GameStatus.abandoned,
     LocalGameSession() => false,

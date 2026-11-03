@@ -224,4 +224,9 @@ class I18nFr extends I18n {
 
   @override
   String get serverRefused => 'Le serveur a refusé cette action. Réessaie plus tard.';
+
+  @override
+  String opponentInactive(String player) {
+    return 'Aucun coup de $player depuis une minute. Tu peux attendre, ou quitter la partie.';
+  }
 }

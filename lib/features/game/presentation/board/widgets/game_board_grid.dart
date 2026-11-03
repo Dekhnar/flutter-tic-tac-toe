@@ -29,7 +29,7 @@ class GameBoardGrid extends StatelessWidget {
   }
 }
 
-/// The cell of a move on its way shows a progress indicator until the game shows the move.
+/// The cell of the move under way shows a progress indicator.
 class _GameCell extends ConsumerWidget {
   const _GameCell({super.key, required this.cell, required this.session});
 
@@ -42,13 +42,6 @@ class _GameCell extends ConsumerWidget {
     _ => false,
   };
 
-  /// A second tap can land before the board rebuilt from the first one: the game decides, as it is now.
-  void _play(WidgetRef ref) {
-    if (!_isPlayable(ref.read(gameProvider(session)))) return;
-
-    unawaited(ref.read(gameBoardActionsProvider(session).notifier).makeMove(cell));
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mark = ref.watch(gameProvider(session).select((asyncGame) => asyncGame.value?.board[cell]));
@@ -56,7 +49,8 @@ class _GameCell extends ConsumerWidget {
     final busy = ref.watch(gameBoardActionsProvider(session).select((actions) => actions.isLoading));
     final pending = ref.watch(pendingMoveProvider(session).select((move) => move == cell));
 
-    final onTap = playable && !busy ? () => _play(ref) : null;
+    final onTap =
+        playable && !busy ? () => unawaited(ref.read(gameBoardActionsProvider(session).notifier).makeMove(cell)) : null;
     final i18n = I18n.of(context);
     final (row, column) = (cell.row + 1, cell.column + 1);
 

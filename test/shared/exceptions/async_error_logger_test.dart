@@ -35,7 +35,7 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('a move the game refuses is reported once', () async {
+  test('a move the game can no longer take is reported once', () async {
     final gameId = await games.createGame(guestName: 'Mario', hostName: 'Jessy');
     final session = GameSession.local(gameId: gameId);
     container.listen(gameProvider(session), (_, _) {});
@@ -43,9 +43,11 @@ void main() {
     await container.read(gameProvider(session).future);
     final actions = container.read(gameBoardActionsProvider(session).notifier);
 
-    await actions.makeMove(const Cell(9));
+    await games.leaveGame(gameId);
 
-    expect(logger.errors, [isA<MoveCellIndexInvalidException>()]);
+    await actions.makeMove(const Cell(0));
+
+    expect(logger.errors, [isA<GameNotFoundException>()]);
   });
 
   test('a game that cannot be loaded is reported once', () async {

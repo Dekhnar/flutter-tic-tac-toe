@@ -156,5 +156,13 @@
       }
     }
   },
-  "serverRefused": "The server refused this action. Please try again later."
+  "serverRefused": "The server refused this action. Please try again later.",
+  "opponentInactive": "No move from {player} for a minute. You can wait, or leave the game.",
+  "@opponentInactive": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  }
 }

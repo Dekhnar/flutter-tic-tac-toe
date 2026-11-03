@@ -28,7 +28,7 @@ void main() {
   final online = FirebaseEnvironment.current.usesEmulators;
 
   group('Local game', () {
-    testWidgets('two players play a round, then the loser starts the next one', (tester) async {
+    testWidgets('two players play a round, then the other one starts the next', (tester) async {
       final robot = _AppRobot(tester);
       await robot.launch();
 

@@ -267,6 +267,73 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
+    testWidgets('a move the server took stays on its way until the board gets it, and the board takes no other', (
+      tester,
+    ) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      harness.appRepository.lag();
+
+      await robot.tapCell(0);
+      await robot.tapCell(1);
+      expect(robot.spinnerIn(0), findsOneWidget);
+      robot.expectCellEmpty(0);
+
+      harness.appRepository.catchUp();
+      await tester.pumpAndSettle();
+      robot.expectCellHasMark(0, 'X');
+      robot.expectCellEmpty(1);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('a winning move whose game comes back already in the next round leaves no cell on its way', (
+      tester,
+    ) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      for (final (mine, theirs) in [(0, 3), (1, 4)]) {
+        await robot.tapCell(mine);
+        await tester.pumpAndSettle();
+        await harness.opponent.makeMove(gameId: harness.gameId, playerId: _luigi, cell: Cell(theirs));
+        await tester.pumpAndSettle();
+      }
+      harness.appRepository.lag();
+
+      await robot.tapCell(2);
+      expect(robot.spinnerIn(2), findsOneWidget);
+      await harness.opponent.startNewRound(gameId: harness.gameId);
+      await tester.pump();
+      expect(robot.spinnerIn(2), findsOneWidget);
+      harness.appRepository.catchUp();
+      await tester.pump();
+
+      robot.expectMarkedCellCount(0);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('an opponent who has not played for a minute shows as inactive, until they play', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      await robot.tapCell(0);
+      await tester.pumpAndSettle();
+      final inactive = i18n.opponentInactive('Luigi (O)');
+
+      await tester.pump(OpponentInactiveNotifier.inactiveAfter - const Duration(seconds: 1));
+      robot.expectTextNotPresent(inactive);
+      await tester.pump(const Duration(seconds: 1));
+      robot.expectText(inactive);
+
+      await harness.opponent.makeMove(gameId: harness.gameId, playerId: _luigi, cell: const Cell(4));
+      await tester.pumpAndSettle();
+      robot.expectTextNotPresent(inactive);
+    });
+
     testWidgets('the board takes no other move while the server handles one', (tester) async {
       final harness = _FirestoreTestHarness();
       final robot = _GameBoardScreenRobot(tester, harness: harness);
@@ -602,6 +669,20 @@ final class _AppRepository implements OnlineGameRepository {
   /// Runs once the player tapped a cell, before the move reaches the server.
   AsyncCallback? beforeMakeMove;
 
+  bool _lagging = false;
+  final _catchUps = <VoidCallback>[];
+
+  /// From now on, the game stream holds back what the server sends, as a listener that lags behind does.
+  void lag() => _lagging = true;
+
+  /// The game stream delivers the latest game it held back: Firestore skips the states in between.
+  void catchUp() {
+    _lagging = false;
+    for (final catchUp in [..._catchUps]) {
+      catchUp();
+    }
+  }
+
   @override
   Future<GameCode> createGame({required PlayerId host, required String hostName}) =>
       _repository.createGame(host: host, hostName: hostName);
@@ -626,7 +707,33 @@ final class _AppRepository implements OnlineGameRepository {
   Future<void> startNewRound({required GameId gameId}) => _repository.startNewRound(gameId: gameId);
 
   @override
-  Stream<Game> watchGame(GameId gameId) => _repository.watchGame(gameId);
+  Stream<Game> watchGame(GameId gameId) {
+    late final StreamController<Game> controller;
+    StreamSubscription<Game>? server;
+    Game? heldBack;
+    void catchUp() {
+      if (heldBack case final game?) controller.add(game);
+      heldBack = null;
+    }
+
+    controller = StreamController<Game>(
+      onListen: () {
+        _catchUps.add(catchUp);
+        server = _repository
+            .watchGame(gameId)
+            .listen(
+              (game) => _lagging ? heldBack = game : controller.add(game),
+              onError: controller.addError,
+              onDone: controller.close,
+            );
+      },
+      onCancel: () {
+        _catchUps.remove(catchUp);
+        return server?.cancel();
+      },
+    );
+    return controller.stream;
+  }
 }
 
 const _jessyHosting = Player(id: _jessy, name: 'Jessy');

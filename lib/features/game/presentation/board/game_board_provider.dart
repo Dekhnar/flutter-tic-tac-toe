@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderListenableSelect;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
@@ -22,11 +23,18 @@ class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
 
   Future<void> startGame() => _run(() => ref.read(onlineGameRepositoryProvider).startGame(gameId: session.gameId));
 
-  Future<void> makeMove(Cell cell) => _run(move: cell, () {
-    final game = ref.read(gameProvider(session)).requireValue;
-    final player = session.playsFor(game) ?? (throw MoveNotYourTurnException());
-    return _repository.makeMove(gameId: game.id, playerId: player, cell: cell);
-  });
+  /// Ignores a move the game as it is now does not offer this device, like a second tap landing in the same frame. A
+  /// move ends once the board shows a game it changed: online, that game comes on its own stream, after the server's
+  /// answer.
+  Future<void> makeMove(Cell cell) async {
+    final game = ref.read(gameProvider(session)).value;
+    if (game == null || !cell.isOnBoard || game.board[cell] != null || !session.canPlay(game)) return;
+
+    await _run(move: cell, () async {
+      await _repository.makeMove(gameId: game.id, playerId: game.currentPlayerId, cell: cell);
+      await _shownAfter(game);
+    });
+  }
 
   Future<void> startNewRound() => _run(() => _repository.startNewRound(gameId: session.gameId));
 
@@ -39,33 +47,64 @@ class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
     if (state.isLoading) return;
 
     state = const AsyncLoading();
-    if (move != null) ref.read(pendingMoveProvider(session).notifier).show(move);
+    ref.read(pendingMoveProvider(session).notifier).show(move);
     final result = await AsyncValue.guard(() => action().withinTimeLimit(timeLimit));
     if (!ref.mounted) return;
 
     state = result;
-    if (result.hasError) ref.read(pendingMoveProvider(session).notifier).show(null);
+    ref.read(pendingMoveProvider(session).notifier).show(null);
+  }
+
+  Future<void> _shownAfter(Game played) {
+    final shown = Completer<void>();
+    final subscription = ref.listen(gameProvider(session), fireImmediately: true, (_, next) {
+      if ((next.hasError || next.value != played) && !shown.isCompleted) shown.complete();
+    });
+    return shown.future.whenComplete(subscription.close);
   }
 }
 
-/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+/// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 @riverpod
 class PendingMoveNotifier extends _$PendingMoveNotifier {
   @override
-  Cell? build(GameSession session) {
-    ref.listen(gameProvider(session), (_, next) {
-      if (state case final cell? when next.value?.board[cell] != null) state = null;
-    });
-    return null;
-  }
+  Cell? build(GameSession session) => null;
 
   void show(Cell? move) => state = move;
 }
 
-/// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
 @riverpod
-bool leaveNeedsConfirmation(Ref ref, GameSession session) => switch (ref.watch(gameProvider(session))) {
-  AsyncData(:final value) => session.leaveEndsGameForOpponent(value),
-  _ => false,
-};
+bool leaveNeedsConfirmation(Ref ref, GameSession session) {
+  final game = ref.watch(gameProvider(session));
+  if (game.error is GameNotFoundException) return false;
+
+  return switch (game.value) {
+    final value? => session.leaveEndsGameForOpponent(value),
+    null => false,
+  };
+}
+
+/// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+/// offline. Any change of the game starts the wait again.
+@riverpod
+class OpponentInactiveNotifier extends _$OpponentInactiveNotifier {
+  static const inactiveAfter = Duration(minutes: 1);
+
+  @override
+  bool build(GameSession session) {
+    final awaited = ref.watch(
+      gameProvider(session).select(
+        (asyncGame) => switch (asyncGame.value) {
+          final Game game when game.status == GameStatus.playing && !session.canPlay(game) => game,
+          _ => null,
+        },
+      ),
+    );
+    if (session.me == null || awaited == null) return false;
+
+    final timer = Timer(inactiveAfter, () => state = true);
+    ref.onDispose(timer.cancel);
+    return false;
+  }
+}

@@ -64,5 +64,6 @@
   "noGameCodeInClipboard": "Le presse-papiers ne contient pas de code de partie.",
   "invalidGameCode": "Un code de partie compte {length} lettres et chiffres.",
   "boardCellPlaying": "Case {row} {column} en cours",
-  "serverRefused": "Le serveur a refusé cette action. Réessaie plus tard."
+  "serverRefused": "Le serveur a refusé cette action. Réessaie plus tard.",
+  "opponentInactive": "Aucun coup de {player} depuis une minute. Tu peux attendre, ou quitter la partie."
 }

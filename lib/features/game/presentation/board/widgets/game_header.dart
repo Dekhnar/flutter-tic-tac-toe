@@ -8,6 +8,7 @@ import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 class GameHeader extends ConsumerWidget {
@@ -71,11 +72,27 @@ class GameHeader extends ConsumerWidget {
               }),
               GameStatus.abandoned => Text(i18n.opponentLeft),
             },
+            if (game.status == GameStatus.playing)
+              _OpponentInactive(session: session, opponent: playerLabel(game.currentPlayerId)),
             const SizedBox(height: Dimens.halfPadding),
           ],
         ),
       ),
     );
+  }
+}
+
+class _OpponentInactive extends ConsumerWidget {
+  const _OpponentInactive({required this.opponent, required this.session});
+
+  final String opponent;
+  final GameSession session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(opponentInactiveProvider(session))) return const SizedBox.shrink();
+
+    return Text(I18n.of(context).opponentInactive(opponent));
   }
 }
 

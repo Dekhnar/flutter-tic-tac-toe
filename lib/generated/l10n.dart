@@ -481,6 +481,12 @@ abstract class I18n {
   /// In en, this message translates to:
   /// **'The server refused this action. Please try again later.'**
   String get serverRefused;
+
+  /// No description provided for @opponentInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'No move from {player} for a minute. You can wait, or leave the game.'**
+  String opponentInactive(String player);
 }
 
 class _I18nDelegate extends LocalizationsDelegate<I18n> {

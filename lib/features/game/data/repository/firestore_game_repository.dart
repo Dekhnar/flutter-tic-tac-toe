@@ -96,26 +96,29 @@ final class FirestoreGameRepository implements OnlineGameRepository {
   Future<void> _update(GameId gameId, GameWrite write, GameChange Function(Game game) change) {
     final gameRef = _gameRef(gameId);
 
-    return _reachingServer(() async {
-      for (var attempt = 1; ; attempt++) {
-        Object? readVersion;
-        try {
-          return await _firestore.runTransaction((transaction) async {
-            final snapshot = await transaction.get(gameRef);
-            readVersion = GameDocument.versionOf(snapshot);
-            if (change(GameDocument.read(snapshot)) case GameChanged(:final game)) {
-              transaction.update(gameRef, GameDocument.write(write, game));
-            }
-          });
-        } on FirebaseException catch (error) {
-          if (error.code != 'permission-denied' || attempt == _writeAttempts) rethrow;
+    Future<void> attempt(int number) async {
+      Object? versionRead;
+      try {
+        await _firestore.runTransaction((transaction) async {
+          final snapshot = await transaction.get(gameRef);
+          versionRead = GameDocument.versionOf(snapshot);
+          if (change(GameDocument.read(snapshot)) case GameChanged(:final game)) {
+            transaction.update(gameRef, GameDocument.write(write, game));
+          }
+        });
+      } on FirebaseException catch (error) {
+        final mayHaveReadStaleGame = error.code == 'permission-denied' && number < _writeAttempts;
+        if (!mayHaveReadStaleGame || !await _changedSince(gameRef, versionRead)) rethrow;
 
-          final current = await gameRef.get(const GetOptions(source: Source.server));
-          if (GameDocument.versionOf(current) == readVersion) rethrow;
-        }
+        await attempt(number + 1);
       }
-    });
+    }
+
+    return _reachingServer(() => attempt(1));
   }
+
+  static Future<bool> _changedSince(DocumentReference<Map<String, dynamic>> gameRef, Object? version) async =>
+      GameDocument.versionOf(await gameRef.get(const GetOptions(source: Source.server))) != version;
 
   /// Turns the failures a player can do something about into the exceptions the app explains.
   static Future<T> _reachingServer<T>(Future<T> Function() request) async {

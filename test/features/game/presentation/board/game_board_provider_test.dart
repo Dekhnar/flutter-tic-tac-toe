@@ -65,22 +65,23 @@ void main() {
       await openBoard();
       games.answer.complete();
 
-      await actions().makeMove(const Cell(9));
-      expect(state().error, isA<MoveCellIndexInvalidException>());
+      games.refusal = MoveCellAlreadyTakenException();
+      await actions().makeMove(const Cell(0));
+      expect(state().error, isA<MoveCellAlreadyTakenException>());
 
+      games.refusal = null;
       await actions().makeMove(const Cell(0));
       expect(state(), const AsyncData<void>(null));
     });
 
-    test('never play for the AI: a move on its turn is refused, and the board does not change', () async {
+    test('never play for the AI: a move on its turn is ignored', () async {
       await openBoard(vsAi: true);
       games.answer.complete();
       await actions().makeMove(const Cell(0));
-      await pumpEventQueue();
 
       await actions().makeMove(const Cell(1));
 
-      expect(state().error, isA<MoveNotYourTurnException>());
+      expect(state(), const AsyncData<void>(null));
       expect(games.moves, [const Cell(0)]);
     });
 
@@ -104,7 +105,7 @@ void main() {
     late ProviderContainer container;
 
     setUp(() {
-      server = StreamController<Game>();
+      server = StreamController<Game>.broadcast();
       addTearDown(server.close);
       container = ProviderContainer(overrides: [gameProvider(_online).overrideWith((ref) => server.stream)]);
       addTearDown(container.dispose);
@@ -117,6 +118,20 @@ void main() {
       server.add(_withOpponent);
       await pumpEventQueue();
 
+      expect(asks(), isTrue);
+    });
+
+    test('while the board loads that game again, after a failure', () async {
+      server.add(_withOpponent);
+      await pumpEventQueue();
+      server.addError(Exception('offline'));
+      await pumpEventQueue();
+      expect(asks(), isTrue);
+
+      container.invalidate(gameProvider(_online));
+      await pumpEventQueue();
+
+      expect(container.read(gameProvider(_online)).isLoading, isTrue);
       expect(asks(), isTrue);
     });
 
@@ -141,10 +156,15 @@ final class _SlowMoves implements LocalGameRepository {
   final answer = Completer<void>();
   final moves = <Cell>[];
 
+  /// What the game answers the next moves with, if it refuses them.
+  GameException? refusal;
+
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async {
     moves.add(cell);
     await answer.future;
+    if (refusal case final refusal?) throw refusal;
+
     await _games.makeMove(gameId: gameId, playerId: playerId, cell: cell);
   }
 

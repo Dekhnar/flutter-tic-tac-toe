@@ -58,7 +58,7 @@ final class GameBoardActionsNotifierProvider
 }
 
 String _$gameBoardActionsNotifierHash() =>
-    r'b3dd64625a12284be00fc16deda441a456186183';
+    r'd59cb1b670e04b94cd73b3b9ee898ea94e643ac4';
 
 /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
 /// One action at a time, each given [timeLimit] to complete.
@@ -116,18 +116,15 @@ abstract class _$GameBoardActionsNotifier extends $AsyncNotifier<void> {
   }
 }
 
-/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+/// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 
 @ProviderFor(PendingMoveNotifier)
 const pendingMoveProvider = PendingMoveNotifierFamily._();
 
-/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+/// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 final class PendingMoveNotifierProvider
     extends $NotifierProvider<PendingMoveNotifier, Cell?> {
-  /// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-  /// the server's answer. Only [GameBoardActionsNotifier] sets it.
+  /// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
   const PendingMoveNotifierProvider._({
     required PendingMoveNotifierFamily super.from,
     required GameSession super.argument,
@@ -173,10 +170,9 @@ final class PendingMoveNotifierProvider
 }
 
 String _$pendingMoveNotifierHash() =>
-    r'75ea8878924e149e5410e78f389e1b8674b8b00d';
+    r'0bec565aad7c3ab1ae851fb9e29e90f6bd93665e';
 
-/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+/// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 
 final class PendingMoveNotifierFamily extends $Family
     with
@@ -196,8 +192,7 @@ final class PendingMoveNotifierFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-  /// the server's answer. Only [GameBoardActionsNotifier] sets it.
+  /// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 
   PendingMoveNotifierProvider call(GameSession session) =>
       PendingMoveNotifierProvider._(argument: session, from: this);
@@ -206,8 +201,7 @@ final class PendingMoveNotifierFamily extends $Family
   String toString() => r'pendingMoveProvider';
 }
 
-/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
-/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+/// The cell of the move [GameBoardActionsNotifier] runs, for as long as it runs.
 
 abstract class _$PendingMoveNotifier extends $Notifier<Cell?> {
   late final _$args = ref.$arg as GameSession;
@@ -231,17 +225,17 @@ abstract class _$PendingMoveNotifier extends $Notifier<Cell?> {
   }
 }
 
-/// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
 
 @ProviderFor(leaveNeedsConfirmation)
 const leaveNeedsConfirmationProvider = LeaveNeedsConfirmationFamily._();
 
-/// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
 
 final class LeaveNeedsConfirmationProvider
     extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  /// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+  /// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
   const LeaveNeedsConfirmationProvider._({
     required LeaveNeedsConfirmationFamily super.from,
     required GameSession super.argument,
@@ -295,9 +289,9 @@ final class LeaveNeedsConfirmationProvider
 }
 
 String _$leaveNeedsConfirmationHash() =>
-    r'8f5ef7ffcc88713493f50f879a90a83c3b6227cc';
+    r'936375155f6de6c786e662c72488e595a9bd7918';
 
-/// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+/// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
 
 final class LeaveNeedsConfirmationFamily extends $Family
     with $FunctionalFamilyOverride<bool, GameSession> {
@@ -310,11 +304,127 @@ final class LeaveNeedsConfirmationFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
+  /// Whether leaving ends the game the board last showed for an opponent. A game gone from the server ends for nobody.
 
   LeaveNeedsConfirmationProvider call(GameSession session) =>
       LeaveNeedsConfirmationProvider._(argument: session, from: this);
 
   @override
   String toString() => r'leaveNeedsConfirmationProvider';
+}
+
+/// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+/// offline. Any change of the game starts the wait again.
+
+@ProviderFor(OpponentInactiveNotifier)
+const opponentInactiveProvider = OpponentInactiveNotifierFamily._();
+
+/// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+/// offline. Any change of the game starts the wait again.
+final class OpponentInactiveNotifierProvider
+    extends $NotifierProvider<OpponentInactiveNotifier, bool> {
+  /// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+  /// offline. Any change of the game starts the wait again.
+  const OpponentInactiveNotifierProvider._({
+    required OpponentInactiveNotifierFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: null,
+         name: r'opponentInactiveProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$opponentInactiveNotifierHash();
+
+  @override
+  String toString() {
+    return r'opponentInactiveProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  OpponentInactiveNotifier create() => OpponentInactiveNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OpponentInactiveNotifierProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$opponentInactiveNotifierHash() =>
+    r'db49d893213df49ce2592bb794e71f16989dfbd2';
+
+/// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+/// offline. Any change of the game starts the wait again.
+
+final class OpponentInactiveNotifierFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          OpponentInactiveNotifier,
+          bool,
+          bool,
+          bool,
+          GameSession
+        > {
+  const OpponentInactiveNotifierFamily._()
+    : super(
+        retry: null,
+        name: r'opponentInactiveProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+  /// offline. Any change of the game starts the wait again.
+
+  OpponentInactiveNotifierProvider call(GameSession session) =>
+      OpponentInactiveNotifierProvider._(argument: session, from: this);
+
+  @override
+  String toString() => r'opponentInactiveProvider';
+}
+
+/// Whether an online opponent has not played for [inactiveAfter] while it is their turn: their app may be closed or
+/// offline. Any change of the game starts the wait again.
+
+abstract class _$OpponentInactiveNotifier extends $Notifier<bool> {
+  late final _$args = ref.$arg as GameSession;
+  GameSession get session => _$args;
+
+  bool build(GameSession session);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build(_$args);
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
 }

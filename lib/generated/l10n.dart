@@ -1,493 +1,522 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'intl/messages_all.dart';
+import 'dart:async';
 
-// **************************************************************************
-// Generator: Flutter Intl IDE plugin
-// Made by Localizely
-// **************************************************************************
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
 
-// ignore_for_file: non_constant_identifier_names, lines_longer_than_80_chars
-// ignore_for_file: join_return_with_assignment, prefer_final_in_for_each
-// ignore_for_file: avoid_redundant_argument_values, avoid_escaping_inner_quotes
+import 'l10n_en.dart';
+import 'l10n_fr.dart';
 
-class I18n {
-  I18n();
+// ignore_for_file: type=lint
 
-  static I18n? _current;
+/// Callers can lookup localized strings with an instance of I18n
+/// returned by `I18n.of(context)`.
+///
+/// Applications need to include `I18n.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'generated/l10n.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: I18n.localizationsDelegates,
+///   supportedLocales: I18n.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the I18n.supportedLocales
+/// property.
+abstract class I18n {
+  I18n(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
-  static I18n get current {
-    assert(
-      _current != null,
-      'No instance of I18n was loaded. Try to initialize the I18n delegate before accessing I18n.current.',
-    );
-    return _current!;
-  }
-
-  static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
-
-  static Future<I18n> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
-    final localeName = Intl.canonicalizedLocale(name);
-    return initializeMessages(localeName).then((_) {
-      Intl.defaultLocale = localeName;
-      final instance = I18n();
-      I18n._current = instance;
-
-      return instance;
-    });
-  }
+  final String localeName;
 
   static I18n of(BuildContext context) {
-    final instance = I18n.maybeOf(context);
-    assert(
-      instance != null,
-      'No instance of I18n present in the widget tree. Did you add I18n.delegate in localizationsDelegates?',
-    );
-    return instance!;
+    return Localizations.of<I18n>(context, I18n)!;
   }
 
-  static I18n? maybeOf(BuildContext context) {
-    return Localizations.of<I18n>(context, I18n);
-  }
+  static const LocalizationsDelegate<I18n> delegate = _I18nDelegate();
 
-  /// `Retry`
-  String get retry {
-    return Intl.message('Retry', name: 'retry', desc: '', args: []);
-  }
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
-  /// `Loading error`
-  String get errorLoading {
-    return Intl.message(
-      'Loading error',
-      name: 'errorLoading',
-      desc: '',
-      args: [],
-    );
-  }
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('fr')];
 
-  /// `Online 1v1`
-  String get online1v1 {
-    return Intl.message('Online 1v1', name: 'online1v1', desc: '', args: []);
-  }
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 
-  /// `Offline 1v1`
-  String get offline1v1 {
-    return Intl.message('Offline 1v1', name: 'offline1v1', desc: '', args: []);
-  }
+  /// No description provided for @online1v1.
+  ///
+  /// In en, this message translates to:
+  /// **'Online 1v1'**
+  String get online1v1;
 
-  /// `Local 1v1`
-  String get local1v1 {
-    return Intl.message('Local 1v1', name: 'local1v1', desc: '', args: []);
-  }
+  /// No description provided for @local1v1.
+  ///
+  /// In en, this message translates to:
+  /// **'Local 1v1'**
+  String get local1v1;
 
-  /// `Play against AI.`
-  String get playAgainstAi {
-    return Intl.message(
-      'Play against AI.',
-      name: 'playAgainstAi',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @playAgainstAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Play against AI.'**
+  String get playAgainstAi;
 
-  /// `Play your friend online.`
-  String get playFriendOnline {
-    return Intl.message(
-      'Play your friend online.',
-      name: 'playFriendOnline',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @playFriendOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Play your friend online.'**
+  String get playFriendOnline;
 
-  /// `It's not your turn.`
-  String get notYourTurn {
-    return Intl.message(
-      'It\'s not your turn.',
-      name: 'notYourTurn',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @notYourTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s not your turn.'**
+  String get notYourTurn;
 
-  /// `This cell is already taken.`
-  String get cellAlreadyTaken {
-    return Intl.message(
-      'This cell is already taken.',
-      name: 'cellAlreadyTaken',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @cellAlreadyTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This cell is already taken.'**
+  String get cellAlreadyTaken;
 
-  /// `Paste`
-  String get paste {
-    return Intl.message('Paste', name: 'paste', desc: '', args: []);
-  }
+  /// No description provided for @paste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get paste;
 
-  /// `Start`
-  String get start {
-    return Intl.message('Start', name: 'start', desc: '', args: []);
-  }
+  /// No description provided for @start.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get start;
 
-  /// `Versus AI (offline)`
-  String get versusAiOffline {
-    return Intl.message(
-      'Versus AI (offline)',
-      name: 'versusAiOffline',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
 
-  /// `Copy`
-  String get copy {
-    return Intl.message('Copy', name: 'copy', desc: '', args: []);
-  }
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
 
-  /// `Create`
-  String get create {
-    return Intl.message('Create', name: 'create', desc: '', args: []);
-  }
+  /// No description provided for @createGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Create game'**
+  String get createGame;
 
-  /// `Create game`
-  String get createGame {
-    return Intl.message('Create game', name: 'createGame', desc: '', args: []);
-  }
+  /// No description provided for @waitingForOpponent.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an opponent…'**
+  String get waitingForOpponent;
 
-  /// `EEEE dd MMMM`
-  String get datePatternLong {
-    return Intl.message(
-      'EEEE dd MMMM',
-      name: 'datePatternLong',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @invalidCellIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid cell index.'**
+  String get invalidCellIndex;
 
-  /// `EEEE dd MMMM yyyy`
-  String get datePatternLongWithYear {
-    return Intl.message(
-      'EEEE dd MMMM yyyy',
-      name: 'datePatternLongWithYear',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @play.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get play;
 
-  /// `Waiting for an opponent…`
-  String get waitingForOpponent {
-    return Intl.message(
-      'Waiting for an opponent…',
-      name: 'waitingForOpponent',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @playOnSameDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Play on the same device.'**
+  String get playOnSameDevice;
 
-  /// `Invalid cell index.`
-  String get invalidCellIndex {
-    return Intl.message(
-      'Invalid cell index.',
-      name: 'invalidCellIndex',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @roundIsOver.
+  ///
+  /// In en, this message translates to:
+  /// **'The round is over.'**
+  String get roundIsOver;
 
-  /// `Play`
-  String get play {
-    return Intl.message('Play', name: 'play', desc: '', args: []);
-  }
+  /// No description provided for @gameNotStartedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'The game has not started yet.'**
+  String get gameNotStartedYet;
 
-  /// `Play on the same device.`
-  String get playOnSameDevice {
-    return Intl.message(
-      'Play on the same device.',
-      name: 'playOnSameDevice',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @startGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the game'**
+  String get startGame;
 
-  /// `The round is over.`
-  String get roundIsOver {
-    return Intl.message(
-      'The round is over.',
-      name: 'roundIsOver',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @onlineGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Online game'**
+  String get onlineGame;
 
-  /// `The game has not started yet.`
-  String get gameNotStartedYet {
-    return Intl.message(
-      'The game has not started yet.',
-      name: 'gameNotStartedYet',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @gameNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Game not found.'**
+  String get gameNotFound;
 
-  /// `Start the game`
-  String get startGame {
-    return Intl.message(
-      'Start the game',
-      name: 'startGame',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @playerFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Player first name'**
+  String get playerFirstName;
 
-  /// `Link copied`
-  String get linkCopied {
-    return Intl.message('Link copied', name: 'linkCopied', desc: '', args: []);
-  }
+  /// No description provided for @playerOneFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Player 1 first name'**
+  String get playerOneFirstName;
 
-  /// `Share link to paste`
-  String get shareLinkToPaste {
-    return Intl.message(
-      'Share link to paste',
-      name: 'shareLinkToPaste',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @playerTwoFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Player 2 first name'**
+  String get playerTwoFirstName;
 
-  /// `Shareable link`
-  String get shareLinkToShare {
-    return Intl.message(
-      'Shareable link',
-      name: 'shareLinkToShare',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @join.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get join;
 
-  /// `Online game`
-  String get onlineGame {
-    return Intl.message('Online game', name: 'onlineGame', desc: '', args: []);
-  }
+  /// No description provided for @playAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Play again'**
+  String get playAgain;
 
-  /// `Game not found.`
-  String get gameNotFound {
-    return Intl.message(
-      'Game not found.',
-      name: 'gameNotFound',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @soloVsAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Solo vs AI'**
+  String get soloVsAi;
 
-  /// `Clipboard is empty`
-  String get emptyClipboard {
-    return Intl.message(
-      'Clipboard is empty',
-      name: 'emptyClipboard',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @opponentMustJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'An opponent must join the game.'**
+  String get opponentMustJoin;
 
-  /// `Player first name`
-  String get playerFirstName {
-    return Intl.message(
-      'Player first name',
-      name: 'playerFirstName',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @pleaseEnterFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a first name'**
+  String get pleaseEnterFirstName;
 
-  /// `Player 1 first name`
-  String get playerOneFirstName {
-    return Intl.message(
-      'Player 1 first name',
-      name: 'playerOneFirstName',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @draw.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw'**
+  String get draw;
 
-  /// `Player 2 first name`
-  String get playerTwoFirstName {
-    return Intl.message(
-      'Player 2 first name',
-      name: 'playerTwoFirstName',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @pleaseRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Please retry'**
+  String get pleaseRetry;
 
-  /// `Join`
-  String get join {
-    return Intl.message('Join', name: 'join', desc: '', args: []);
-  }
+  /// No description provided for @errorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorTitle;
 
-  /// `Play again`
-  String get playAgain {
-    return Intl.message('Play again', name: 'playAgain', desc: '', args: []);
-  }
+  /// No description provided for @errorRetryLater.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred, please try again later.'**
+  String get errorRetryLater;
 
-  /// `Solo vs AI`
-  String get soloVsAi {
-    return Intl.message('Solo vs AI', name: 'soloVsAi', desc: '', args: []);
-  }
+  /// No description provided for @quit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get quit;
 
-  /// `An opponent must join the game.`
-  String get opponentMustJoin {
-    return Intl.message(
-      'An opponent must join the game.',
-      name: 'opponentMustJoin',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @boardCellEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {row} {column} empty'**
+  String boardCellEmpty(int row, int column);
 
-  /// `Please provide a link`
-  String get pleaseProvideLink {
-    return Intl.message(
-      'Please provide a link',
-      name: 'pleaseProvideLink',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @boardCellCross.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {row} {column} cross'**
+  String boardCellCross(int row, int column);
 
-  /// `Please enter a first name`
-  String get pleaseEnterFirstName {
-    return Intl.message(
-      'Please enter a first name',
-      name: 'pleaseEnterFirstName',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @boardCellCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {row} {column} circle'**
+  String boardCellCircle(int row, int column);
 
-  /// `Player O wins`
-  String get playerOWins {
-    return Intl.message(
-      'Player O wins',
-      name: 'playerOWins',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @turnOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn: {player}'**
+  String turnOf(String player);
 
-  /// `Player X wins`
-  String get playerXWins {
-    return Intl.message(
-      'Player X wins',
-      name: 'playerXWins',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @onlineUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Online mode is unavailable in this build.'**
+  String get onlineUnavailable;
 
-  /// `Draw`
-  String get draw {
-    return Intl.message('Draw', name: 'draw', desc: '', args: []);
-  }
+  /// No description provided for @gameAlreadyFull.
+  ///
+  /// In en, this message translates to:
+  /// **'This game already has two players.'**
+  String get gameAlreadyFull;
 
-  /// `Empty snapshot after create (no data returned).`
-  String get emptySnapshotAfterCreate {
-    return Intl.message(
-      'Empty snapshot after create (no data returned).',
-      name: 'emptySnapshotAfterCreate',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @ai.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get ai;
 
-  /// `Please retry`
-  String get pleaseRetry {
-    return Intl.message(
-      'Please retry',
-      name: 'pleaseRetry',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get loading;
 
-  /// `Error`
-  String get errorTitle {
-    return Intl.message('Error', name: 'errorTitle', desc: '', args: []);
-  }
+  /// No description provided for @playerWithMark.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({mark})'**
+  String playerWithMark(String name, String mark);
 
-  /// `An error occurred, please try again later.`
-  String get errorRetryLater {
-    return Intl.message(
-      'An error occurred, please try again later.',
-      name: 'errorRetryLater',
-      desc: '',
-      args: [],
-    );
-  }
+  /// No description provided for @gameCodeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Game code: {code}'**
+  String gameCodeValue(String code);
 
-  /// `Close`
-  String get quit {
-    return Intl.message('Close', name: 'quit', desc: '', args: []);
-  }
+  /// No description provided for @playerWins.
+  ///
+  /// In en, this message translates to:
+  /// **'{player} wins'**
+  String playerWins(String player);
 
-  /// `Cell {row} {column} empty`
-  String boardCellEmpty(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column empty',
-      name: 'boardCellEmpty',
-      desc: '',
-      args: [row, column],
-    );
-  }
+  /// No description provided for @yourTurn.
+  ///
+  /// In en, this message translates to:
+  /// **'Your turn'**
+  String get yourTurn;
 
-  /// `Cell {row} {column} cross`
-  String boardCellCross(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column cross',
-      name: 'boardCellCross',
-      desc: '',
-      args: [row, column],
-    );
-  }
+  /// No description provided for @codeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get codeCopied;
 
-  /// `Cell {row} {column} circle`
-  String boardCellCircle(Object row, Object column) {
-    return Intl.message(
-      'Cell $row $column circle',
-      name: 'boardCellCircle',
-      desc: '',
-      args: [row, column],
-    );
-  }
+  /// No description provided for @gameCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Game code'**
+  String get gameCode;
+
+  /// No description provided for @pleaseEnterGameCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the game code'**
+  String get pleaseEnterGameCode;
+
+  /// No description provided for @nameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'{max} characters at most'**
+  String nameTooLong(int max);
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @shareInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Join my tic-tac-toe game with the code {code}'**
+  String shareInvitation(String code);
+
+  /// No description provided for @opponentLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Your opponent left the game.'**
+  String get opponentLeft;
+
+  /// No description provided for @gameAbandoned.
+  ///
+  /// In en, this message translates to:
+  /// **'This game is over: a player left it.'**
+  String get gameAbandoned;
+
+  /// No description provided for @leaveGameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the game?'**
+  String get leaveGameTitle;
+
+  /// No description provided for @leaveGameMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your opponent will see that you left, and the game will end for both of you.'**
+  String get leaveGameMessage;
+
+  /// No description provided for @stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get stay;
+
+  /// No description provided for @leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leave;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @onlineFailedToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Online mode could not start. Restart the app to try again.'**
+  String get onlineFailedToStart;
+
+  /// No description provided for @serverNotAnswering.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering. Check your connection and try again.'**
+  String get serverNotAnswering;
+
+  /// No description provided for @noGameCodeInClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard holds no game code.'**
+  String get noGameCodeInClipboard;
+
+  /// No description provided for @invalidGameCode.
+  ///
+  /// In en, this message translates to:
+  /// **'A game code has {length} letters and digits.'**
+  String invalidGameCode(int length);
+
+  /// No description provided for @boardCellPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Cell {row} {column} being played'**
+  String boardCellPlaying(int row, int column);
+
+  /// No description provided for @serverRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused this action. Please try again later.'**
+  String get serverRefused;
+
+  /// No description provided for @opponentInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'No move from {player} for a minute. You can wait, or leave the game.'**
+  String opponentInactive(String player);
 }
 
-class AppLocalizationDelegate extends LocalizationsDelegate<I18n> {
-  const AppLocalizationDelegate();
+class _I18nDelegate extends LocalizationsDelegate<I18n> {
+  const _I18nDelegate();
 
-  List<Locale> get supportedLocales {
-    return const <Locale>[
-      Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'fr'),
-    ];
+  @override
+  Future<I18n> load(Locale locale) {
+    return SynchronousFuture<I18n>(lookupI18n(locale));
   }
 
   @override
-  bool isSupported(Locale locale) => _isSupported(locale);
-  @override
-  Future<I18n> load(Locale locale) => I18n.load(locale);
-  @override
-  bool shouldReload(AppLocalizationDelegate old) => false;
+  bool isSupported(Locale locale) => <String>['en', 'fr'].contains(locale.languageCode);
 
-  bool _isSupported(Locale locale) {
-    for (var supportedLocale in supportedLocales) {
-      if (supportedLocale.languageCode == locale.languageCode) {
-        return true;
-      }
-    }
-    return false;
+  @override
+  bool shouldReload(_I18nDelegate old) => false;
+}
+
+I18n lookupI18n(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return I18nEn();
+    case 'fr':
+      return I18nFr();
   }
+
+  throw FlutterError(
+    'I18n.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

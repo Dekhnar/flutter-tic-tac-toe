@@ -1,54 +1,37 @@
-import 'package:auto_route/auto_route.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:tic_tac_toe_app/design_system/components/data_display/animated_splash.dart';
-import 'package:tic_tac_toe_app/design_system/components/feedback/base_loading_retry_button.dart';
-import 'package:tic_tac_toe_app/design_system/foundations/assets.dart';
+import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/routing/app_router_provider.dart';
-import 'package:tic_tac_toe_app/shared/bootstrap/bootstrap_provider.dart';
+import 'package:tic_tac_toe_app/routing/app_router.dart';
 
-class App extends ConsumerWidget {
+class App extends StatefulWidget {
   const App({super.key});
 
-  static const localizationsDelegates = <LocalizationsDelegate>[
-    I18n.delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    DefaultCupertinoLocalizations.delegate,
-  ];
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  final _appRouter = AppRouter();
+  final _darkTheme = ThemeBuilder.buildDarkThemeData();
+  final _lightTheme = ThemeBuilder.buildLightThemeData();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bootstrapState = ref.watch(bootstrapServiceProvider);
-    final boostrapData = bootstrapState.valueOrNull;
-    final appRouter = ref.watch(appRouterProvider);
+  void dispose() {
+    _appRouter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: localizationsDelegates,
-      supportedLocales: I18n.delegate.supportedLocales,
-      locale: boostrapData?.locale,
-      theme: boostrapData?.theme,
-      darkTheme: boostrapData?.darkTheme,
-      themeMode: boostrapData?.themeMode,
-      routerDelegate: appRouter.delegate(navigatorObservers: () => [AutoRouteObserver()]),
-      routeInformationParser: appRouter.defaultRouteParser(),
-      builder: (context, child) {
-        return switch (bootstrapState) {
-          final state when state.isLoading => Scaffold(
-            body: Center(child: BaseAnimatedSplash(imagePath: Assets.images.appIcon)),
-          ),
-          AsyncError() => Scaffold(
-            body: Center(child: BaseLoadingRetryButton(onPressed: () => ref.refresh(bootstrapServiceProvider))),
-          ),
-          AsyncData() => child ?? const SizedBox.shrink(),
-          _ => const SizedBox.shrink(),
-        };
-      },
+      localizationsDelegates: I18n.localizationsDelegates,
+      supportedLocales: I18n.supportedLocales,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
+      routerDelegate: _appRouter.delegate(deepLinkBuilder: AppRouter.openBoardsFromHome),
+      routeInformationParser: _appRouter.defaultRouteParser(),
     );
   }
 }

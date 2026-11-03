@@ -1,8 +1,7 @@
 {
+  "@@locale": "en",
   "retry": "Retry",
-  "errorLoading": "Loading error",
   "online1v1": "Online 1v1",
-  "offline1v1": "Offline 1v1",
   "local1v1": "Local 1v1",
   "playAgainstAi": "Play against AI.",
   "playFriendOnline": "Play your friend online.",
@@ -10,12 +9,9 @@
   "cellAlreadyTaken": "This cell is already taken.",
   "paste": "Paste",
   "start": "Start",
-  "versusAiOffline": "Versus AI (offline)",
   "copy": "Copy",
   "create": "Create",
   "createGame": "Create game",
-  "datePatternLong": "EEEE dd MMMM",
-  "datePatternLongWithYear": "EEEE dd MMMM yyyy",
   "waitingForOpponent": "Waiting for an opponent…",
   "invalidCellIndex": "Invalid cell index.",
   "play": "Play",
@@ -23,12 +19,8 @@
   "roundIsOver": "The round is over.",
   "gameNotStartedYet": "The game has not started yet.",
   "startGame": "Start the game",
-  "linkCopied": "Link copied",
-  "shareLinkToPaste": "Share link to paste",
-  "shareLinkToShare": "Shareable link",
   "onlineGame": "Online game",
   "gameNotFound": "Game not found.",
-  "emptyClipboard": "Clipboard is empty",
   "playerFirstName": "Player first name",
   "playerOneFirstName": "Player 1 first name",
   "playerTwoFirstName": "Player 2 first name",
@@ -36,17 +28,141 @@
   "playAgain": "Play again",
   "soloVsAi": "Solo vs AI",
   "opponentMustJoin": "An opponent must join the game.",
-  "pleaseProvideLink": "Please provide a link",
   "pleaseEnterFirstName": "Please enter a first name",
-  "playerOWins": "Player O wins",
-  "playerXWins": "Player X wins",
   "draw": "Draw",
-  "emptySnapshotAfterCreate": "Empty snapshot after create (no data returned).",
   "pleaseRetry": "Please retry",
   "errorTitle": "Error",
   "errorRetryLater": "An error occurred, please try again later.",
-  "quit": "Close",
+  "quit": "Quit",
   "boardCellEmpty": "Cell {row} {column} empty",
+  "@boardCellEmpty": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
   "boardCellCross": "Cell {row} {column} cross",
-  "boardCellCircle": "Cell {row} {column} circle"
+  "@boardCellCross": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "boardCellCircle": "Cell {row} {column} circle",
+  "@boardCellCircle": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "turnOf": "Turn: {player}",
+  "@turnOf": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "onlineUnavailable": "Online mode is unavailable in this build.",
+  "gameAlreadyFull": "This game already has two players.",
+  "ai": "AI",
+  "loading": "Loading",
+  "playerWithMark": "{name} ({mark})",
+  "@playerWithMark": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
+  "gameCodeValue": "Game code: {code}",
+  "@gameCodeValue": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "playerWins": "{player} wins",
+  "@playerWins": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "yourTurn": "Your turn",
+  "codeCopied": "Code copied",
+  "gameCode": "Game code",
+  "pleaseEnterGameCode": "Please enter the game code",
+  "nameTooLong": "{max} characters at most",
+  "@nameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "share": "Share",
+  "shareInvitation": "Join my tic-tac-toe game with the code {code}",
+  "@shareInvitation": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "opponentLeft": "Your opponent left the game.",
+  "gameAbandoned": "This game is over: a player left it.",
+  "leaveGameTitle": "Leave the game?",
+  "leaveGameMessage": "Your opponent will see that you left, and the game will end for both of you.",
+  "stay": "Stay",
+  "leave": "Leave",
+  "cancel": "Cancel",
+  "onlineFailedToStart": "Online mode could not start. Restart the app to try again.",
+  "serverNotAnswering": "The server is not answering. Check your connection and try again.",
+  "noGameCodeInClipboard": "The clipboard holds no game code.",
+  "invalidGameCode": "A game code has {length} letters and digits.",
+  "@invalidGameCode": {
+    "placeholders": {
+      "length": {
+        "type": "int"
+      }
+    }
+  },
+  "boardCellPlaying": "Cell {row} {column} being played",
+  "@boardCellPlaying": {
+    "placeholders": {
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "int"
+      }
+    }
+  },
+  "serverRefused": "The server refused this action. Please try again later.",
+  "opponentInactive": "No move from {player} for a minute. You can wait, or leave the game.",
+  "@opponentInactive": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  }
 }

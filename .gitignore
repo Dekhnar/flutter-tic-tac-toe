@@ -52,5 +52,8 @@ app.*.map.json
 **/GoogleService-Info.plist
 **/firebase_app_id_file.json
 **/firebase_options.dart
+firebase_options.json
 
 coverage/
+# Alchemist writes the images of failed goldens here
+**/failures/

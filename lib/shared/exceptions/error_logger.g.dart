@@ -6,25 +6,46 @@ part of 'error_logger.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$errorLoggerServiceHash() =>
-    r'd6d98738974acc46e858cc918aa3c72db38b505b';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [errorLoggerService].
-@ProviderFor(errorLoggerService)
-final errorLoggerServiceProvider =
-    AutoDisposeProvider<ErrorLoggerService>.internal(
-      errorLoggerService,
-      name: r'errorLoggerServiceProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$errorLoggerServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
+@ProviderFor(errorLogger)
+const errorLoggerProvider = ErrorLoggerProvider._();
+
+final class ErrorLoggerProvider
+    extends $FunctionalProvider<ErrorLogger, ErrorLogger, ErrorLogger>
+    with $Provider<ErrorLogger> {
+  const ErrorLoggerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'errorLoggerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$errorLoggerHash();
+
+  @$internal
+  @override
+  $ProviderElement<ErrorLogger> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ErrorLogger create(Ref ref) {
+    return errorLogger(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ErrorLogger value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ErrorLogger>(value),
     );
+  }
+}
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ErrorLoggerServiceRef = AutoDisposeProviderRef<ErrorLoggerService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+String _$errorLoggerHash() => r'd59efa192eb623e36a3bb151e6c930e7247f8dbc';

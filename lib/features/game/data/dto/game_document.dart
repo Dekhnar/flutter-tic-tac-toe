@@ -92,10 +92,12 @@ abstract final class GameDocument {
       null => null,
     };
     final guestId = playerId(GameField.guestId);
+    final cells = field<List<Object?>>(GameField.board);
+    if (cells.length != Board.cellCount) throw FormatException('board of game ${snapshot.id} is not 3×3', cells);
 
     // The document stores each seat flat, as the rules read it.
     return Game(
-      board: Board(cells: List.unmodifiable(field<List<Object?>>(GameField.board).map(_markOf))),
+      board: Board(cells: List.unmodifiable(cells.map(_markOf))),
       currentPlayerId: PlayerId(field<String>(GameField.currentPlayerId)),
       currentRoundIndex: field<int>(GameField.currentRoundIndex),
       currentWinnerId: playerId(GameField.currentWinnerId),

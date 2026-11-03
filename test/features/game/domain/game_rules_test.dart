@@ -76,7 +76,7 @@ void main() {
     test('is refused while no opponent has joined', () {
       final alone = _startedGame().copyWith(status: GameStatus.setup, guest: null);
 
-      expect(() => rules.start(alone), throwsA(isA<MoveOpponentMissingException>()));
+      expect(() => rules.start(alone), throwsA(isA<GameOpponentMissingException>()));
     });
   });
 
@@ -115,7 +115,7 @@ void main() {
     test('is refused while no opponent has joined', () {
       final alone = _startedGame().copyWith(guest: null);
 
-      expect(move(alone, playerId: _x, cell: 0), throwsA(isA<MoveOpponentMissingException>()));
+      expect(move(alone, playerId: _x, cell: 0), throwsA(isA<GameOpponentMissingException>()));
     });
   });
 

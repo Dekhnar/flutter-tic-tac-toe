@@ -20,7 +20,10 @@ import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_screen.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_board_grid.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_header.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
 import '../../../../shared/golden_test_utils/material_golden.dart';
 import '../../../../shared/tic_tac_toe_widget_test_wrapper.dart';
@@ -119,7 +122,7 @@ void main() {
         (MoveGameFinishedException(), i18n.roundIsOver),
         (MoveGameNotStartedException(), i18n.gameNotStartedYet),
         (MoveNotYourTurnException(), i18n.notYourTurn),
-        (MoveOpponentMissingException(), i18n.opponentMustJoin),
+        (GameOpponentMissingException(), i18n.opponentMustJoin),
       ];
 
       for (final (refusal, explanation) in refusals) {
@@ -155,6 +158,19 @@ void main() {
       await tester.pumpAndSettle();
 
       robot.expectText(i18n.pleaseRetry);
+    });
+
+    testWidgets('a move the server cannot be reached for asks to check the connection', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+
+      await robot.pumpStartedOnlineGame();
+      harness.appRepository.beforeMakeMove = () async => throw ServerNotAnsweringException(Exception('offline'));
+      await robot.tapCell(0);
+      await tester.pumpAndSettle();
+
+      robot.expectText(i18n.serverNotAnswering);
+      robot.expectCellEmpty(0);
     });
 
     testWidgets('the board takes no other move while the server handles one', (tester) async {
@@ -222,6 +238,48 @@ void main() {
     });
   });
 
+  group('Layout', () {
+    /// The host's board until an opponent joins: the header holds the game code and its copy and share buttons.
+    Future<void> pumpWaitingBoard(WidgetTester tester, Size size) async {
+      await tester.pumpScreen(
+        ProviderScope(
+          overrides: [gameProvider(_onlineSession).overrideWith((ref) => Stream.value(_buildSetupGame()))],
+          child: const GameBoardScreen(session: _onlineSession),
+        ),
+      );
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+    }
+
+    for (final size in const [Size(560, 520), Size(600, 560), Size(640, 600)]) {
+      testWidgets(
+        'a window barely wider than tall shows the whole header above the board (${size.width}×${size.height})',
+        (tester) async {
+          await pumpWaitingBoard(tester, size);
+
+          expect(
+            tester.getBottomLeft(find.byType(GameHeader)).dy,
+            lessThanOrEqualTo(tester.getTopLeft(find.byType(GameBoardGrid)).dy),
+          );
+          expect(tester.getRect(find.byTooltip(i18n.share)).right, lessThanOrEqualTo(size.width));
+        },
+      );
+    }
+
+    testWidgets('a landscape phone shows the header beside the board', (tester) async {
+      await pumpWaitingBoard(tester, const Size(844, 390));
+
+      expect(
+        tester.getTopRight(find.byType(GameHeader)).dx,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(GameBoardGrid)).dx),
+      );
+      expect(
+        tester.getRect(find.byTooltip(i18n.share)).right,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(GameBoardGrid)).dx),
+      );
+    });
+  });
+
   group('Game board goldens', () {
     screenTestGolden(
       'The board while waiting for an opponent',
@@ -285,6 +343,7 @@ class _GameBoardScreenRobot {
   final localRepository = InMemoryGameRepository();
 
   Future<GameSession> pumpLocalGame({String guestName = '', required String hostName, bool vsAi = false}) async {
+    addTearDown(localRepository.dispose);
     final gameId = await localRepository.createGame(guestName: guestName, hostName: hostName);
     final session = GameSession.local(gameId: gameId, vsAi: vsAi);
 
@@ -412,7 +471,7 @@ class _FirestoreTestHarness {
         await gameRef.update({GameField.status.name: GameStatus.finished.name});
       case MoveGameNotStartedException():
         await gameRef.update({GameField.status.name: GameStatus.setup.name});
-      case MoveOpponentMissingException():
+      case GameOpponentMissingException():
         await gameRef.update({GameField.guestId.name: null});
       case MoveNotYourTurnException():
         await gameRef.update({GameField.currentPlayerId.name: _luigi.value});

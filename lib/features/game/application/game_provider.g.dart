@@ -8,6 +8,47 @@ part of 'game_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// The online games, for as long as online play is available: an online session only exists then.
+
+@ProviderFor(onlineGameRepository)
+const onlineGameRepositoryProvider = OnlineGameRepositoryProvider._();
+
+/// The online games, for as long as online play is available: an online session only exists then.
+
+final class OnlineGameRepositoryProvider
+    extends $FunctionalProvider<OnlineGameRepository, OnlineGameRepository, OnlineGameRepository>
+    with $Provider<OnlineGameRepository> {
+  /// The online games, for as long as online play is available: an online session only exists then.
+  const OnlineGameRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'onlineGameRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$onlineGameRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<OnlineGameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  OnlineGameRepository create(Ref ref) {
+    return onlineGameRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OnlineGameRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlineGameRepository>(value));
+  }
+}
+
+String _$onlineGameRepositoryHash() => r'01dd80836672d60888a77e610ab37783eb562a36';
 
 @ProviderFor(sessionGameRepository)
 const sessionGameRepositoryProvider = SessionGameRepositoryFamily._();
@@ -143,109 +184,30 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
   String toString() => r'gameProvider';
 }
 
-/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-/// since nothing is left to leave.
+/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+/// or failed.
 
-@ProviderFor(leaveNeedsConfirmation)
-const leaveNeedsConfirmationProvider = LeaveNeedsConfirmationFamily._();
+@ProviderFor(GameActionsNotifier)
+const gameActionsProvider = GameActionsNotifierFamily._();
 
-/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-/// since nothing is left to leave.
-
-final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
-  /// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-  /// since nothing is left to leave.
-  const LeaveNeedsConfirmationProvider._({
-    required LeaveNeedsConfirmationFamily super.from,
+/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+/// or failed.
+final class GameActionsNotifierProvider extends $AsyncNotifierProvider<GameActionsNotifier, void> {
+  /// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+  /// or failed.
+  const GameActionsNotifierProvider._({
+    required GameActionsNotifierFamily super.from,
     required GameSession super.argument,
   }) : super(
          retry: null,
-         name: r'leaveNeedsConfirmationProvider',
+         name: r'gameActionsProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$leaveNeedsConfirmationHash();
-
-  @override
-  String toString() {
-    return r'leaveNeedsConfirmationProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $ProviderElement<bool> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
-
-  @override
-  bool create(Ref ref) {
-    final argument = this.argument as GameSession;
-    return leaveNeedsConfirmation(ref, argument);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(bool value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<bool>(value));
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is LeaveNeedsConfirmationProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$leaveNeedsConfirmationHash() => r'8f5ef7ffcc88713493f50f879a90a83c3b6227cc';
-
-/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-/// since nothing is left to leave.
-
-final class LeaveNeedsConfirmationFamily extends $Family with $FunctionalFamilyOverride<bool, GameSession> {
-  const LeaveNeedsConfirmationFamily._()
-    : super(
-        retry: null,
-        name: r'leaveNeedsConfirmationProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-  /// since nothing is left to leave.
-
-  LeaveNeedsConfirmationProvider call(GameSession session) =>
-      LeaveNeedsConfirmationProvider._(argument: session, from: this);
-
-  @override
-  String toString() => r'leaveNeedsConfirmationProvider';
-}
-
-/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
-
-@ProviderFor(GameActions)
-const gameActionsProvider = GameActionsFamily._();
-
-/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
-final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void> {
-  /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
-  const GameActionsProvider._({required GameActionsFamily super.from, required GameSession super.argument})
-    : super(
-        retry: null,
-        name: r'gameActionsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$gameActionsHash();
+  String debugGetCreateSourceHash() => _$gameActionsNotifierHash();
 
   @override
   String toString() {
@@ -256,11 +218,11 @@ final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void
 
   @$internal
   @override
-  GameActions create() => GameActions();
+  GameActionsNotifier create() => GameActionsNotifier();
 
   @override
   bool operator ==(Object other) {
-    return other is GameActionsProvider && other.argument == argument;
+    return other is GameActionsNotifierProvider && other.argument == argument;
   }
 
   @override
@@ -269,13 +231,14 @@ final class GameActionsProvider extends $AsyncNotifierProvider<GameActions, void
   }
 }
 
-String _$gameActionsHash() => r'99d68d540c4fef8dfd5601f1ca22eb17be063f7d';
+String _$gameActionsNotifierHash() => r'f8b33dd0a4689f49d4987db3a85355495b9a9b7f';
 
-/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+/// or failed.
 
-final class GameActionsFamily extends $Family
-    with $ClassFamilyOverride<GameActions, AsyncValue<void>, void, FutureOr<void>, GameSession> {
-  const GameActionsFamily._()
+final class GameActionsNotifierFamily extends $Family
+    with $ClassFamilyOverride<GameActionsNotifier, AsyncValue<void>, void, FutureOr<void>, GameSession> {
+  const GameActionsNotifierFamily._()
     : super(
         retry: null,
         name: r'gameActionsProvider',
@@ -284,17 +247,19 @@ final class GameActionsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+  /// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+  /// or failed.
 
-  GameActionsProvider call(GameSession session) => GameActionsProvider._(argument: session, from: this);
+  GameActionsNotifierProvider call(GameSession session) => GameActionsNotifierProvider._(argument: session, from: this);
 
   @override
   String toString() => r'gameActionsProvider';
 }
 
-/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
+/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+/// or failed.
 
-abstract class _$GameActions extends $AsyncNotifier<void> {
+abstract class _$GameActionsNotifier extends $AsyncNotifier<void> {
   late final _$args = ref.$arg as GameSession;
   GameSession get session => _$args;
 

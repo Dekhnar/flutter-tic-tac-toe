@@ -445,6 +445,24 @@ abstract class I18n {
   /// In en, this message translates to:
   /// **'Leave'**
   String get leave;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @onlineFailedToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Online mode could not start. Restart the app to try again.'**
+  String get onlineFailedToStart;
+
+  /// No description provided for @serverNotAnswering.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering. Check your connection and try again.'**
+  String get serverNotAnswering;
 }
 
 class _I18nDelegate extends LocalizationsDelegate<I18n> {

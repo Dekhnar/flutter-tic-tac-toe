@@ -4,14 +4,14 @@ import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session_start_provider.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
-import 'package:tic_tac_toe_app/features/game/presentation/home/game_mode_selection_provider.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/async_error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 void main() {
   late _RecordingLogger logger;
@@ -26,8 +26,8 @@ void main() {
       observers: [const AsyncErrorLogger()],
       overrides: [
         errorLoggerProvider.overrideWithValue(logger),
-        isOnlineAvailableProvider.overrideWithValue(false),
         localGameRepositoryProvider.overrideWithValue(games),
+        onlinePlayProvider.overrideWithValue(const OnlinePlayUnavailable(OnlineUnavailableReason.notConfigured)),
       ],
     );
     addTearDown(container.dispose);
@@ -56,10 +56,10 @@ void main() {
   });
 
   test('a game that cannot start from the home screen is reported once', () async {
-    container.listen(gameModeSelectionProvider, (_, _) {});
+    container.listen(gameSessionStartProvider, (_, _) {});
 
     await container
-        .read(gameModeSelectionProvider.notifier)
+        .read(gameSessionStartProvider.notifier)
         .startSession(GameCreateInput.joinOnlineLobby(gameId: const GameId('ABCDEF'), guestName: 'Luigi'));
 
     expect(logger.errors, [isA<OnlineUnavailableException>()]);

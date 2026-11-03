@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 import 'devices.dart';
 
-final _semanticsLabelStyle = GoogleFonts.raleway(color: Colors.black, fontSize: 10, height: 0.8);
+const _semanticsLabelStyle = TextStyle(
+  color: Colors.black,
+  fontFamily: ThemeBuilder.fontFamily,
+  fontSize: 10,
+  height: 0.8,
+);
 
 /// Renders [scenario] on every [GoldenScreen] (`goldens/<fileName>.<screen>.png`) and checks it against the
 /// accessibility guidelines: labelled tap targets of the minimum size on both platforms, and readable text contrast.

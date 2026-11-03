@@ -28,9 +28,6 @@ dependencies:
   # Routing
   auto_route: ^10.2.4
 
-  # UI
-  google_fonts: ^6.3.1
-
   freezed_annotation: ^3.1.0
 
   clock: ^1.1.2
@@ -59,7 +56,10 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
-  assets:
-    - assets/google_fonts/
+  # One face: the medium styles render in Regular too, the look the goldens pin.
+  fonts:
+    - family: Raleway
+      fonts:
+        - asset: assets/fonts/Raleway-Regular.ttf
   config:
     enable-swift-package-manager: true

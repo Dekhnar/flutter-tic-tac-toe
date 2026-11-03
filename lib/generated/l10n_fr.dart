@@ -202,4 +202,13 @@ class I18nFr extends I18n {
 
   @override
   String get leave => 'Quitter';
+
+  @override
+  String get cancel => 'Annuler';
+
+  @override
+  String get onlineFailedToStart => 'Le mode en ligne n\'a pas pu démarrer. Relance l\'application pour réessayer.';
+
+  @override
+  String get serverNotAnswering => 'Le serveur ne répond pas. Vérifie ta connexion et réessaie.';
 }

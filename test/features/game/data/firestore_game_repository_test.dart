@@ -9,6 +9,7 @@ import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_rep
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
@@ -155,6 +156,24 @@ void main() {
     await reading;
   });
 
+  test('a board that is not 3×3 ends the stream in an error, not in a crash of the board', () async {
+    gameId = await host.createGame(host: _jessy, hostName: 'Jessy');
+    await stored(gameId);
+
+    final reading = expectLater(host.watchGame(gameId), emitsThrough(emitsError(isA<FormatException>())));
+    await firestore.collection('games').doc(gameId.value).update({
+      GameField.board.name: ['X', '', '', '', '', '', '', ''],
+    });
+
+    await reading;
+  });
+
+  test('a write the server cannot be reached for says so, rather than failing for an unknown reason', () async {
+    final offline = FirestoreGameRepository(firestore: _Unreachable());
+
+    await expectLater(offline.createGame(host: _jessy, hostName: 'Jessy'), throwsA(isA<ServerNotAnsweringException>()));
+  });
+
   test('watching a game deleted from the server ends in an error', () async {
     gameId = await host.createGame(host: _jessy, hostName: 'Jessy');
     final deletion = expectLater(host.watchGame(gameId), emitsThrough(emitsError(isA<GameNotFoundException>())));
@@ -247,4 +266,14 @@ void main() {
       expect((next.board, next.status, next.currentPlayerId), (Board.empty, GameStatus.playing, _luigi));
     });
   });
+}
+
+/// Firestore on a device that cannot reach the server: it gives up on every transaction.
+final class _Unreachable extends Fake implements FirebaseFirestore {
+  @override
+  Future<T> runTransaction<T>(
+    TransactionHandler<T> transactionHandler, {
+    Duration timeout = const Duration(seconds: 30),
+    int maxAttempts = 5,
+  }) async => throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
 }

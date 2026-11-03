@@ -21,6 +21,10 @@ final class GameNotFoundException extends GameException {
   GameNotFoundException() : super(code: 'game_not_found');
 }
 
+final class GameOpponentMissingException extends GameException {
+  GameOpponentMissingException() : super(code: 'game_opponent_missing');
+}
+
 final class MoveCellAlreadyTakenException extends GameException {
   MoveCellAlreadyTakenException() : super(code: 'move_cell_already_taken');
 }
@@ -39,12 +43,4 @@ final class MoveGameNotStartedException extends GameException {
 
 final class MoveNotYourTurnException extends GameException {
   MoveNotYourTurnException() : super(code: 'move_not_your_turn');
-}
-
-final class MoveOpponentMissingException extends GameException {
-  MoveOpponentMissingException() : super(code: 'move_opponent_missing');
-}
-
-final class OnlineUnavailableException extends GameException {
-  OnlineUnavailableException() : super(code: 'online_unavailable');
 }

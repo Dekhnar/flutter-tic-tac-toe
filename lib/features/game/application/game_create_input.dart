@@ -14,36 +14,28 @@ sealed class GameCreateInput {
       GameCreateInputJoinOnlineLobby._;
 }
 
-sealed class GameCreateInputOffline extends GameCreateInput {
-  const GameCreateInputOffline();
-}
+final class GameCreateInputOffline1v1 extends GameCreateInput {
+  const GameCreateInputOffline1v1._({required this.guestName, required this.hostName});
 
-final class GameCreateInputOffline1v1 extends GameCreateInputOffline {
   final String guestName;
   final String hostName;
-
-  const GameCreateInputOffline1v1._({required this.guestName, required this.hostName});
 }
 
-final class GameCreateInputOfflineVsAi extends GameCreateInputOffline {
-  final String hostName;
-
+final class GameCreateInputOfflineVsAi extends GameCreateInput {
   const GameCreateInputOfflineVsAi._({required this.hostName});
-}
 
-sealed class GameCreateInputOnline extends GameCreateInput {
-  const GameCreateInputOnline();
-}
-
-final class GameCreateInputOnlineLobby extends GameCreateInputOnline {
   final String hostName;
-
-  const GameCreateInputOnlineLobby._({required this.hostName});
 }
 
-final class GameCreateInputJoinOnlineLobby extends GameCreateInputOnline {
+final class GameCreateInputOnlineLobby extends GameCreateInput {
+  const GameCreateInputOnlineLobby._({required this.hostName});
+
+  final String hostName;
+}
+
+final class GameCreateInputJoinOnlineLobby extends GameCreateInput {
+  const GameCreateInputJoinOnlineLobby._({required this.gameId, required this.guestName});
+
   final GameId gameId;
   final String guestName;
-
-  const GameCreateInputJoinOnlineLobby._({required this.gameId, required this.guestName});
 }

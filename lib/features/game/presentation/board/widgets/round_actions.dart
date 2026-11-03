@@ -25,7 +25,7 @@ class RoundActions extends ConsumerWidget {
       ),
     );
     final busy = ref.watch(gameActionsProvider(session).select((actions) => actions.isLoading));
-    GameActions actions() => ref.read(gameActionsProvider(session).notifier);
+    GameActionsNotifier actions() => ref.read(gameActionsProvider(session).notifier);
     final i18n = I18n.of(context);
 
     return Container(

@@ -17,7 +17,7 @@ flutter pub get
 flutter run
 ```
 
-The app runs right after a clone: **local and AI games need no setup**. Without Firebase, the online mode stays visible but tells the player it is unavailable.
+The app runs right after a clone: **local and AI games need no setup**. Without Firebase, the online mode stays visible but tells the player this build does not offer it.
 
 ### Online mode on the local emulators
 
@@ -48,6 +48,8 @@ On a real project (never on the emulators), the app also turns on:
 - **Crashlytics**, collecting from release builds only; nothing is collected before the app enables it. Android does not upload the R8 mapping, which needs `google-services.json`: enable `mappingFileUploadEnabled` in `android/app/build.gradle.kts` once the project has one. For symbolicated iOS reports, add Crashlytics' dSYM upload script to the Runner build phases.
 - **App Check**, with Play Integrity on Android and App Attest (DeviceCheck as a fallback) on Apple platforms; debug builds use the debug providers, whose token the console must allow. Register the apps in App Check, then turn on enforcement for Firestore and Auth.
 
+Each of these starts on its own: a failure leaves out only what depends on it, and is reported once the app knows where — through Crashlytics when that step went through. Online play stays on unless Firebase itself fails to start, and the online mode then says it could not start, not that the build lacks it.
+
 ### Release builds
 
 Android signs release builds with the upload key that `android/key.properties` (git-ignored) describes:
@@ -75,23 +77,24 @@ lib/
  ├─ composition.dart        # startup (Firebase, Crashlytics, App Check) and the implementation behind each contract
  ├─ app.dart                # MaterialApp, themes, i18n, router
  ├─ shared/                 # Firebase environment, routing, error logging
- ├─ design_system/          # foundations (theme, dimensions, typography) and components
+ ├─ design_system/          # foundations (theme, dimensions) and components
  └─ features/game/
      ├─ domain/             # Game, Player, Board, Cell, GameRules, TicTacToeAI, GameException, repository contracts
      ├─ data/               # Firestore and in-memory repositories, the Firestore game document, anonymous identity
-     ├─ application/        # GameSession and its rules, GameSessionStarter, the game and the actions on it, the AI
+     ├─ application/        # OnlinePlay, GameSession and its rules, starting one, the game and the actions on it, the AI
      └─ presentation/       # the message for each refusal, then one folder per screen:
          ├─ home/           #   game mode selection: creates or joins the game, then opens the board
          ├─ creation/       #   create / join dialogs, the player name field
-         └─ board/          #   board screen: header, grid, round actions; portrait and landscape
+         └─ board/          #   board screen: header, grid, round actions; the header beside the board when it fits
 ```
 
 - **`GameRules`** is the single source of truth for every change a game goes through — joining, starting, a move, the next round, leaving — on a `Game` that only holds game concepts (players, board, scores, round). A refusal throws the `GameException` that says why. Both repositories only store what it returns, and the security rules check the same rules on the server.
-- **One composition root.** The domain is plain Dart: it declares the repositories and the player identity as interfaces, which the application exposes as providers that throw until bound (`game_dependencies.dart`). [`composition.dart`](lib/composition.dart) starts what the app needs before its first frame and binds every contract — the online ones only when Firebase is initialized — and the one `ErrorLogger` the error handlers and the provider observer share (Crashlytics on a real project). Nothing else imports an implementation.
-- **The home screen starts a `GameSession`** through `GameSessionStarter`: it creates the local game, or signs in anonymously and creates or joins the online one. The home notifier is loading meanwhile (a barrier covers the modes) and holds the error when it fails (unknown code, game already full), which the screen shows.
-- **On the board, `gameProvider` only watches the game** and **`GameActions` acts on it**: loading while the repository handles a move, a start or a new round — the board takes no other action meanwhile — and the error when it refused, shown as a message.
-- **The AI is a player of the application layer**: `aiOpponentProvider` watches the game and, on the AI's turn, plays the move `TicTacToeAI` picks through `GameActions`, after a thinking time. It stops when the board closes. Which seat the AI plays belongs to the `GameSession`, not to the game.
-- **Leaving the board leaves the game**, however the player goes back: a local game is forgotten, and the opponent of an online one sees it abandoned — so the board asks first while an opponent is seated. Leaving is an explicit action (`GameActions.leave`), never a side effect of a provider being disposed. A device that is killed or loses its network does not leave: that would take a presence heartbeat.
+- **One composition root.** The domain is plain Dart: it declares the repositories and the player identity as interfaces, which the application exposes as providers that throw until bound (`game_dependencies.dart`). [`composition.dart`](lib/composition.dart) starts what the app needs before its first frame and binds every contract, and the one `ErrorLogger` the error handlers and the provider observer share (Crashlytics on a real project). Nothing else imports an implementation.
+- **Online play is one value**, `OnlinePlay`: available with the repository and the identity it needs, or unavailable with the reason — the build has no Firebase options, or Firebase failed to start. Nothing reaches the online services without going through it.
+- **The home screen starts a `GameSession`** through `GameSessionStarter`: it creates the local game, or signs in anonymously and creates or joins the online one. `GameSessionStartNotifier` is loading meanwhile — a barrier covers the modes, with a button to stop waiting — and holds the error when it fails (unknown code, game already full), which the screen shows. After 15 seconds the player is told the server is not answering, as when Firestore or Auth give up on a server they cannot reach (`ServerNotAnsweringException`). A session that comes once the player stopped waiting is left at once, so no opponent waits in a game nobody opens.
+- **On the board, `gameProvider` only watches the game** and **`GameActionsNotifier` acts on it**: loading while the repository handles a move, a start or a new round — the board takes no other action meanwhile — and the error when it refused, shown as a message. Only an online game waits to be started: a local one starts as soon as it is created. Notifiers that act live in the application layer, the AI using the board's; providers that only shape what a screen shows live with the screen.
+- **The AI is a player of the application layer**: `aiOpponentProvider` watches the game and, on the AI's turn, plays the move `TicTacToeAI` picks through `GameActionsNotifier`, after a thinking time. It stops when the board closes. Which seat the AI plays belongs to the `GameSession`, not to the game.
+- **Leaving the board leaves the game**, however the player goes back: a local game is forgotten, and the opponent of an online one sees it abandoned — so the board asks first while an opponent is seated. Leaving is an explicit action (`GameActionsNotifier.leave`), never a side effect of a provider being disposed. A device that is killed or loses its network does not leave: that would take a presence heartbeat.
 - **Repositories** implement `LocalGameRepository` (in memory) and `OnlineGameRepository` (Firestore) and only store. Every online write applies `GameRules` to the game read in a transaction.
 - **Players** sit in a game's two seats, host (X) and guest (O): a `Player` is a `PlayerId` — the anonymous Firebase uid online, a fixed seat on a local game — with a name and a win count. The Firestore document stores the seats flat, as the rules read them.
 - **Navigation:** screens are auto_route routes; dialogs are not, screens open them with `showDialog` and await their result.
@@ -112,7 +115,7 @@ One document per game, `games/{gameId}`: the game id is the code players share, 
 - **Firebase Auth** (anonymous) + **Cloud Firestore** for the online mode, **Crashlytics** and **App Check** on a real project
 - **share_plus** to send the game code
 - **gen-l10n** + ARB files for i18n (English, French); theme and language follow the device
-- **google_fonts** (Raleway, bundled in `assets/google_fonts`)
+- **Raleway**, declared in `pubspec.yaml` (Regular only: the medium styles render in it too)
 
 ---
 
@@ -143,8 +146,8 @@ flutter test --tags golden --update-goldens    # regenerate goldens after an int
 flutter test integration_test --dart-define-from-file=firebase_emulator.json
 ```
 
-- **Unit tests** cover the rules, the AI (every game a player can play against it, none won) and its timing (in fake time), both repositories (Firestore through `fake_cloud_firestore`), the anonymous identity, the composition, starting a session, the game mode selection, and the agreement between the app's writes and `firestore.rules`.
-- **Widget tests** drive the screens through robots: scenarios read as player actions and selectors live in one place. The home screen runs inside the real app and router, from the mode to the board. Online scenarios play the opponent through a second `FirestoreGameRepository` on the same fake database.
+- **Unit tests** cover the rules, the AI (every game a player can play against it, none won) and its timing (in fake time), both repositories (Firestore through `fake_cloud_firestore`), the anonymous identity, the startup with each Firebase step failing, starting a session (cancelled, or given up after its time limit), and the agreement between the app's writes and `firestore.rules`.
+- **Widget tests** drive the screens through robots: scenarios read as player actions and selectors live in one place. The home screen runs inside the real app and router, from the mode to the board. The board is laid out on a phone, a landscape phone, and windows barely wider than tall. Online scenarios play the opponent through a second `FirestoreGameRepository` on the same fake database.
 - **Goldens** ([Alchemist](https://pub.dev/packages/alchemist)) render each board state and the game modes in dark, light, large text and semantics views, with the real fonts. Text rasterization differs slightly between OSes: regenerate them on macOS. Each golden scenario, the home screen and its dialogs are also checked against the accessibility guidelines in both themes: labelled tap targets of the minimum size on Android and iOS, and text contrast.
 - **Integration tests** run the real app on a device against the emulators: local and AI games, a full online round against a second device, join errors, and the security rules refusing a cheating client (listing games, a game with extra fields or no expiry, taking a seat, a name too long, leaving a game one does not play, a forged time, playing out of turn, a fake victory, marking the opponent's cell, an inflated score, a deletion), and two players asking for the same change at once. Without the emulators, the online ones are skipped.
 

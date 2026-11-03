@@ -3,11 +3,19 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 
 part 'game_provider.g.dart';
+
+/// The online games, for as long as online play is available: an online session only exists then.
+@riverpod
+OnlineGameRepository onlineGameRepository(Ref ref) => switch (ref.watch(onlinePlayProvider)) {
+  OnlinePlayAvailable(:final repository) => repository,
+  OnlinePlayUnavailable(:final reason) => throw OnlineUnavailableException(reason),
+};
 
 @riverpod
 GameRepository sessionGameRepository(Ref ref, GameSession session) => switch (session) {
@@ -22,43 +30,38 @@ Duration? _noRetry(int retryCount, Object error) => null;
 Stream<Game> game(Ref ref, GameSession session) =>
     ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId);
 
-/// Whether the board asks before leaving: only a game it shows can end for an opponent, not one that failed to load,
-/// since nothing is left to leave.
+/// What is done on the board, by the player or the AI: loading while the game handles it, the error when it refused
+/// or failed.
 @riverpod
-bool leaveNeedsConfirmation(Ref ref, GameSession session) => switch (ref.watch(gameProvider(session))) {
-  AsyncData(:final value) => session.leaveEndsGameForOpponent(value),
-  _ => false,
-};
-
-/// What the player does on the board: loading while the game handles it, the error when it refused or failed.
-@riverpod
-class GameActions extends _$GameActions {
+class GameActionsNotifier extends _$GameActionsNotifier {
   @override
   FutureOr<void> build(GameSession session) {}
 
-  Future<void> startGame() => _run((repository) => repository.startGame(gameId: session.gameId));
+  /// Only an online game waits to be started: a local one starts as soon as it is created.
+  Future<void> startGame() => _run(() => ref.read(onlineGameRepositoryProvider).startGame(gameId: session.gameId));
 
-  Future<void> makeMove(Cell cell) => _run((repository) {
+  Future<void> makeMove(Cell cell) => _run(() {
     final game = ref.read(gameProvider(session)).requireValue;
-    return repository.makeMove(gameId: game.id, playerId: session.me ?? game.currentPlayerId, cell: cell);
+    return _repository.makeMove(gameId: game.id, playerId: session.me ?? game.currentPlayerId, cell: cell);
   });
 
-  Future<void> startNewRound() => _run((repository) => repository.startNewRound(gameId: session.gameId));
+  Future<void> startNewRound() => _run(() => _repository.startNewRound(gameId: session.gameId));
 
   /// The player leaves the game for good. The board closes right away: the leave runs to its end on its own, and a
   /// failure is logged rather than shown, the player having left already.
   Future<void> leave() {
     final errorLogger = ref.read(errorLoggerProvider);
-    return ref.read(sessionGameRepositoryProvider(session)).leaveGame(session.gameId).onError(errorLogger.log);
+    return _repository.leaveGame(session.gameId).onError(errorLogger.log);
   }
 
-  Future<void> _run(Future<void> Function(GameRepository repository) action) async {
+  GameRepository get _repository => ref.read(sessionGameRepositoryProvider(session));
+
+  Future<void> _run(Future<void> Function() action) async {
     // The board disables its controls while an action runs.
     if (state.isLoading) return;
 
-    final repository = ref.read(sessionGameRepositoryProvider(session));
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(() => action(repository));
+    final result = await AsyncValue.guard(action);
     if (ref.mounted) state = result;
   }
 }

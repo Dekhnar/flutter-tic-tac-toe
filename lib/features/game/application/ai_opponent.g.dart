@@ -48,15 +48,15 @@ final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duratio
 
 String _$aiThinkingTimeHash() => r'8ffe49ff93c8c554b6bb4ca7776623d46f57d063';
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
 
 @ProviderFor(aiOpponent)
 const aiOpponentProvider = AiOpponentFamily._();
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
 
 final class AiOpponentProvider extends $FunctionalProvider<void, void, void> with $Provider<void> {
-  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
   const AiOpponentProvider._({required AiOpponentFamily super.from, required GameSession super.argument})
     : super(
         retry: null,
@@ -104,7 +104,7 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void> wit
 
 String _$aiOpponentHash() => r'd1ce1efdafa88761ec97c1ccf9a27997b466a7ae';
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
 
 final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void, GameSession> {
   const AiOpponentFamily._()
@@ -116,7 +116,7 @@ final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void
         isAutoDispose: true,
       );
 
-  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+  /// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
 
   AiOpponentProvider call(GameSession session) => AiOpponentProvider._(argument: session, from: this);
 

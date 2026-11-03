@@ -202,4 +202,13 @@ class I18nEn extends I18n {
 
   @override
   String get leave => 'Leave';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get onlineFailedToStart => 'Online mode could not start. Restart the app to try again.';
+
+  @override
+  String get serverNotAnswering => 'The server is not answering. Check your connection and try again.';
 }

@@ -20,7 +20,7 @@ final class GameRules {
   /// The game once started, or null when it already is.
   Game? start(Game game) {
     if (game.status != GameStatus.setup) return null;
-    if (game.guest == null) throw MoveOpponentMissingException();
+    if (game.guest == null) throw GameOpponentMissingException();
 
     return game.copyWith(status: GameStatus.playing);
   }
@@ -31,7 +31,7 @@ final class GameRules {
     if (game.status == GameStatus.setup) throw MoveGameNotStartedException();
 
     final guest = game.guest;
-    if (guest == null) throw MoveOpponentMissingException();
+    if (guest == null) throw GameOpponentMissingException();
     if (game.currentPlayerId != playerId) throw MoveNotYourTurnException();
     if (!cell.isOnBoard) throw MoveCellIndexInvalidException();
     if (game.board[cell] != null) throw MoveCellAlreadyTakenException();

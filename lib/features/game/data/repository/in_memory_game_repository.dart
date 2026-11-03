@@ -37,9 +37,6 @@ final class InMemoryGameRepository implements LocalGameRepository {
   }
 
   @override
-  Future<void> startGame({required GameId gameId}) async => _update(gameId, _rules.start);
-
-  @override
   Future<void> startNewRound({required GameId gameId}) async => _update(gameId, _rules.startNewRound);
 
   @override

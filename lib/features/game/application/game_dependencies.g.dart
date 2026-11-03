@@ -50,75 +50,38 @@ final class LocalGameRepositoryProvider
 
 String _$localGameRepositoryHash() => r'8d5367fbdaef26cd03bfa281fc3d973ef6f7cb27';
 
-@ProviderFor(onlineGameRepository)
-const onlineGameRepositoryProvider = OnlineGameRepositoryProvider._();
+@ProviderFor(onlinePlay)
+const onlinePlayProvider = OnlinePlayProvider._();
 
-final class OnlineGameRepositoryProvider
-    extends $FunctionalProvider<OnlineGameRepository, OnlineGameRepository, OnlineGameRepository>
-    with $Provider<OnlineGameRepository> {
-  const OnlineGameRepositoryProvider._()
+final class OnlinePlayProvider extends $FunctionalProvider<OnlinePlay, OnlinePlay, OnlinePlay>
+    with $Provider<OnlinePlay> {
+  const OnlinePlayProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'onlineGameRepositoryProvider',
+        name: r'onlinePlayProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$onlineGameRepositoryHash();
+  String debugGetCreateSourceHash() => _$onlinePlayHash();
 
   @$internal
   @override
-  $ProviderElement<OnlineGameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<OnlinePlay> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
-  OnlineGameRepository create(Ref ref) {
-    return onlineGameRepository(ref);
+  OnlinePlay create(Ref ref) {
+    return onlinePlay(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(OnlineGameRepository value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlineGameRepository>(value));
+  Override overrideWithValue(OnlinePlay value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlinePlay>(value));
   }
 }
 
-String _$onlineGameRepositoryHash() => r'c60364aa8e785c6b56032665c7e152d54fdaae41';
-
-@ProviderFor(playerIdentity)
-const playerIdentityProvider = PlayerIdentityProvider._();
-
-final class PlayerIdentityProvider extends $FunctionalProvider<PlayerIdentity, PlayerIdentity, PlayerIdentity>
-    with $Provider<PlayerIdentity> {
-  const PlayerIdentityProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'playerIdentityProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$playerIdentityHash();
-
-  @$internal
-  @override
-  $ProviderElement<PlayerIdentity> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
-
-  @override
-  PlayerIdentity create(Ref ref) {
-    return playerIdentity(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PlayerIdentity value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<PlayerIdentity>(value));
-  }
-}
-
-String _$playerIdentityHash() => r'8ad2fd1dbe92564a73e7d400cbc25cffab0c2ca6';
+String _$onlinePlayHash() => r'97766840afb0ec06d8f1a73b026738f22e7c3be0';

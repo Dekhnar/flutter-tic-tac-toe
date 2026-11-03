@@ -1,4 +1,4 @@
-class Dimens {
+abstract final class Dimens {
   static const double halfPadding = 8;
   static const double halfSpacing = 8;
 
@@ -9,6 +9,9 @@ class Dimens {
   static const double standardRadius = 14;
 
   static const double boardMaxWidth = 480;
+
+  /// What the header beside a landscape board needs: the game code, and its copy and share buttons.
+  static const double boardSidePanelMinWidth = 240;
 
   static const double sliderWidth = 600;
 

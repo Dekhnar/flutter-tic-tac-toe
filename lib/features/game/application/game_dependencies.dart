@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 
 part 'game_dependencies.g.dart';
 
@@ -13,9 +13,4 @@ LocalGameRepository localGameRepository(Ref ref) =>
     throw UnimplementedError('localGameRepositoryProvider is bound in composition');
 
 @riverpod
-OnlineGameRepository onlineGameRepository(Ref ref) =>
-    throw UnimplementedError('onlineGameRepositoryProvider is bound in composition when Firebase is available');
-
-@riverpod
-PlayerIdentity playerIdentity(Ref ref) =>
-    throw UnimplementedError('playerIdentityProvider is bound in composition when Firebase is available');
+OnlinePlay onlinePlay(Ref ref) => throw UnimplementedError('onlinePlayProvider is bound in composition');

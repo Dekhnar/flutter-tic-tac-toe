@@ -2,27 +2,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
-import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 part 'game_session_starter.g.dart';
 
 /// Creates or joins the game the player chose; the board then only watches it.
 final class GameSessionStarter {
-  const GameSessionStarter({
-    required LocalGameRepository localRepository,
-    OnlineGameRepository? onlineRepository,
-    PlayerIdentity? playerIdentity,
-  }) : _localRepository = localRepository,
-       _onlineRepository = onlineRepository,
-       _playerIdentity = playerIdentity;
+  const GameSessionStarter({required LocalGameRepository localRepository, required OnlinePlay onlinePlay})
+    : _localRepository = localRepository,
+      _onlinePlay = onlinePlay;
 
   final LocalGameRepository _localRepository;
-  final OnlineGameRepository? _onlineRepository;
-  final PlayerIdentity? _playerIdentity;
+  final OnlinePlay _onlinePlay;
 
   Future<GameSession> start(GameCreateInput input) async {
     switch (input) {
@@ -33,31 +25,33 @@ final class GameSessionStarter {
         final gameId = await _localRepository.createGame(guestName: '', hostName: hostName);
         return GameSession.local(gameId: gameId, vsAi: true);
       case GameCreateInputOnlineLobby(:final hostName):
-        final (repository, me) = await _signInOnline();
-        final gameId = await repository.createGame(host: me, hostName: hostName);
+        final online = _online();
+        final me = await online.identity.signIn();
+        final gameId = await online.repository.createGame(host: me, hostName: hostName);
         return GameSession.online(gameId: gameId, me: me);
       case GameCreateInputJoinOnlineLobby(:final gameId, :final guestName):
-        final (repository, me) = await _signInOnline();
-        await repository.joinGame(gameId, guest: me, guestName: guestName);
+        final online = _online();
+        final me = await online.identity.signIn();
+        await online.repository.joinGame(gameId, guest: me, guestName: guestName);
         return GameSession.online(gameId: gameId, me: me);
     }
   }
 
-  Future<(OnlineGameRepository, PlayerId)> _signInOnline() async {
-    final (repository, identity) = (_onlineRepository, _playerIdentity);
-    if (repository == null || identity == null) throw OnlineUnavailableException();
+  /// Leaves the game of a [session] nobody is going to open.
+  Future<void> leave(GameSession session) => switch (session) {
+    LocalGameSession() => _localRepository.leaveGame(session.gameId),
+    OnlineGameSession() => _online().repository.leaveGame(session.gameId),
+  };
 
-    return (repository, await identity.signIn());
-  }
+  OnlinePlayAvailable _online() => switch (_onlinePlay) {
+    final OnlinePlayAvailable online => online,
+    OnlinePlayUnavailable(:final reason) => throw OnlineUnavailableException(reason),
+  };
 }
 
 /// Holds the dependencies themselves rather than a `Ref`, which may be disposed before a creation completes.
 @riverpod
-GameSessionStarter gameSessionStarter(Ref ref) {
-  final isOnlineAvailable = ref.watch(isOnlineAvailableProvider);
-  return GameSessionStarter(
-    localRepository: ref.watch(localGameRepositoryProvider),
-    onlineRepository: isOnlineAvailable ? ref.watch(onlineGameRepositoryProvider) : null,
-    playerIdentity: isOnlineAvailable ? ref.watch(playerIdentityProvider) : null,
-  );
-}
+GameSessionStarter gameSessionStarter(Ref ref) => GameSessionStarter(
+  localRepository: ref.watch(localGameRepositoryProvider),
+  onlinePlay: ref.watch(onlinePlayProvider),
+);

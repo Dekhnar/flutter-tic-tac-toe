@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="tic_tac_toe_app"
+        android:label="Tic Tac Toe"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Crashlytics collects nothing until the app enables it: release builds on a real project only. -->

@@ -4,10 +4,11 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tic_tac_toe_app/app.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
+import 'package:tic_tac_toe_app/features/game/application/game_session_start_provider.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
@@ -17,7 +18,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_name.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 import '../../../../shared/fakes/pending_local_game_repository.dart';
 import '../../../../shared/golden_test_utils/devices.dart';
@@ -44,10 +44,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
       final semantics = tester.ensureSemantics();
       final robot = _HomeRobot(tester);
-      await robot.launch(
-        localRepository: games,
-        online: [playerIdentityProvider.overrideWithValue(const _SignedIn(_luigi))],
-      );
+      await robot.launch(localRepository: games, online: _onlineAs(_luigi));
 
       Future<void> expectAccessible() async {
         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
@@ -69,10 +66,7 @@ void main() {
 
   testWidgets('the creation dialogs fit a landscape phone with its keyboard open', (tester) async {
     final robot = _HomeRobot(tester);
-    await robot.launch(
-      localRepository: games,
-      online: [playerIdentityProvider.overrideWithValue(const _SignedIn(_luigi))],
-    );
+    await robot.launch(localRepository: games, online: _onlineAs(_luigi));
     tester.view.physicalSize = const Size(844, 390);
     tester.view.viewInsets = const FakeViewPadding(bottom: 160);
     await tester.pumpAndSettle();
@@ -153,10 +147,7 @@ void main() {
       robot = _HomeRobot(tester);
       await robot.launch(
         localRepository: games,
-        online: [
-          onlineGameRepositoryProvider.overrideWithValue(FirestoreGameRepository(firestore: firestore)),
-          playerIdentityProvider.overrideWithValue(const _SignedIn(_jessy)),
-        ],
+        online: _onlineAs(_jessy, repository: FirestoreGameRepository(firestore: firestore)),
       );
       final gameId = await robot.createOnlineGame(hostName: 'Jessy');
       if (joined) {
@@ -236,6 +227,53 @@ void main() {
     expect(find.text('Jessy (X)'), findsOneWidget);
   });
 
+  group('A game that takes long to start', () {
+    late PendingLocalGameRepository pending;
+    late _HomeRobot robot;
+
+    Future<void> startSoloGame(WidgetTester tester) async {
+      robot = _HomeRobot(tester);
+      pending = PendingLocalGameRepository(games);
+      await robot.launch(localRepository: pending);
+      await robot.chooseMode(i18n.soloVsAi);
+      await robot.enterNames(['Jessy']);
+      await tester.tap(find.text(i18n.start));
+      await tester.pump();
+    }
+
+    /// Whether the game created once the player stopped waiting is still on the device.
+    Future<bool> lateGameIsKept(WidgetTester tester) async {
+      pending.created.complete();
+      await tester.pumpAndSettle();
+      return (await tester.runAsync(
+            () => games.watchGame(pending.createdGames.single).first.then((_) => true, onError: (_) => false),
+          )) ??
+          true;
+    }
+
+    testWidgets('can be cancelled: the player is back on the modes, and the game is left', (tester) async {
+      await startSoloGame(tester);
+
+      await robot.tapText(i18n.cancel);
+
+      expect(find.bySemanticsLabel(i18n.loading), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(await lateGameIsKept(tester), isFalse);
+      expect(find.text('Jessy (X)'), findsNothing);
+    });
+
+    testWidgets('is given up after a while, saying the server is not answering', (tester) async {
+      await startSoloGame(tester);
+
+      await tester.pump(GameSessionStartNotifier.timeLimit);
+      await tester.pumpAndSettle();
+
+      robot.expectSnackBar(i18n.serverNotAnswering);
+      expect(find.bySemanticsLabel(i18n.loading), findsNothing);
+      expect(await lateGameIsKept(tester), isFalse);
+    });
+  });
+
   testWidgets('a name stops where the server would refuse it, counting as the server does', (tester) async {
     final robot = _HomeRobot(tester);
     await robot.launch(localRepository: games);
@@ -255,13 +293,7 @@ void main() {
     final gameId = await server.createGame(host: const PlayerId('jessy-uid'), hostName: 'Jessy');
     await server.joinGame(gameId, guest: const PlayerId('wario-uid'), guestName: 'Wario');
     final robot = _HomeRobot(tester);
-    await robot.launch(
-      localRepository: games,
-      online: [
-        onlineGameRepositoryProvider.overrideWithValue(server),
-        playerIdentityProvider.overrideWithValue(const _SignedIn(_luigi)),
-      ],
-    );
+    await robot.launch(localRepository: games, online: _onlineAs(_luigi, repository: server));
 
     // Codes are case-insensitive for the player.
     await robot.joinOnlineGame(GameId(gameId.value.toLowerCase()), guestName: 'Luigi');
@@ -277,7 +309,10 @@ class _HomeRobot {
 
   final WidgetTester tester;
 
-  Future<void> launch({required LocalGameRepository localRepository, List<Override> online = const []}) async {
+  Future<void> launch({
+    required LocalGameRepository localRepository,
+    OnlinePlay online = const OnlinePlayUnavailable(OnlineUnavailableReason.notConfigured),
+  }) async {
     tester.view.physicalSize = GoldenScreen.iphone11.size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -285,9 +320,8 @@ class _HomeRobot {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          isOnlineAvailableProvider.overrideWithValue(online.isNotEmpty),
           localGameRepositoryProvider.overrideWithValue(localRepository),
-          ...online,
+          onlinePlayProvider.overrideWithValue(online),
         ],
         child: const App(),
       ),
@@ -338,6 +372,12 @@ class _HomeRobot {
   void expectSnackBar(String message) =>
       expect(find.descendant(of: find.byType(SnackBar), matching: find.text(message)), findsOneWidget);
 }
+
+/// Online play on this device, signed in as [player].
+OnlinePlay _onlineAs(PlayerId player, {OnlineGameRepository? repository}) => OnlinePlayAvailable(
+  identity: _SignedIn(player),
+  repository: repository ?? FirestoreGameRepository(firestore: FakeFirebaseFirestore()),
+);
 
 final class _SignedIn implements PlayerIdentity {
   const _SignedIn(this._player);

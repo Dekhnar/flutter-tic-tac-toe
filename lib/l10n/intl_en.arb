@@ -133,5 +133,8 @@
   "leaveGameTitle": "Leave the game?",
   "leaveGameMessage": "Your opponent will see that you left, and the game will end for both of you.",
   "stay": "Stay",
-  "leave": "Leave"
+  "leave": "Leave",
+  "cancel": "Cancel",
+  "onlineFailedToStart": "Online mode could not start. Restart the app to try again.",
+  "serverNotAnswering": "The server is not answering. Check your connection and try again."
 }

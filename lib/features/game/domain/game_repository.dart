@@ -10,20 +10,21 @@ abstract interface class GameRepository {
 
   Future<void> startNewRound({required GameId gameId});
 
-  Future<void> startGame({required GameId gameId});
-
   /// Leaves the game for good: a local game is forgotten, the opponent of an online one sees it abandoned.
   Future<void> leaveGame(GameId gameId);
 }
 
-/// Games played on this device, both players sharing the screen.
+/// Games played on this device, both players sharing the screen: they start as soon as they are created.
 abstract interface class LocalGameRepository implements GameRepository {
   Future<GameId> createGame({required String guestName, required String hostName});
 }
 
-/// Games played between two devices, joined with the game id: a short code the host shares.
+/// Games played between two devices, joined with the game id: a short code the host shares. The game starts once the
+/// guest sat down and a player starts it.
 abstract interface class OnlineGameRepository implements GameRepository {
   Future<GameId> createGame({required PlayerId host, required String hostName});
 
   Future<void> joinGame(GameId gameId, {required PlayerId guest, required String guestName});
+
+  Future<void> startGame({required GameId gameId});
 }

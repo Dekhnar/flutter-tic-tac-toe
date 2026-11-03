@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe_app/design_system/foundations/dimens.dart';
-import 'package:tic_tac_toe_app/design_system/foundations/typography.dart';
 
 /// Material 3 themes on black and white surfaces. The brand green reads on dark backgrounds only: on light ones, a
 /// deeper green of the same hue keeps text at the 4.5:1 contrast WCAG asks for.
-final class ThemeBuilder {
+abstract final class ThemeBuilder {
+  static const fontFamily = 'Raleway';
+
   static const _brandGreen = Color(0xFF00BB31);
   static const _deepGreen = Color(0xFF00731F);
 
@@ -24,7 +25,12 @@ final class ThemeBuilder {
       inverseSurface: ink,
       onInverseSurface: paper,
     );
-    final textTheme = buildTextTheme(ThemeData(brightness: brightness).textTheme, colorScheme.onSurface);
+    final baseTextTheme = ThemeData(brightness: brightness).textTheme;
+    final textTheme = baseTextTheme.apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+      fontFamily: fontFamily,
+    );
 
     return ThemeData(
       colorScheme: colorScheme,

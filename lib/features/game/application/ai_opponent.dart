@@ -12,7 +12,7 @@ part 'ai_opponent.g.dart';
 @riverpod
 Duration aiThinkingTime(Ref ref) => const Duration(seconds: 1);
 
-/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActions].
+/// Plays the AI's turns in the game of [session], as the player's moves are played: through [GameActionsNotifier].
 @riverpod
 void aiOpponent(Ref ref, GameSession session) {
   final thinkingTime = ref.watch(aiThinkingTimeProvider);
@@ -29,7 +29,7 @@ void aiOpponent(Ref ref, GameSession session) {
 }
 
 /// The AI picks its cell once it is done thinking, on the board as it is then.
-void _play(Game? game, GameSession session, GameActions actions) {
+void _play(Game? game, GameSession session, GameActionsNotifier actions) {
   if (game == null || !session.isAiTurn(game)) return;
 
   final cell = const TicTacToeAI().nextMove(game.board, mark: game.markOf(game.currentPlayerId));

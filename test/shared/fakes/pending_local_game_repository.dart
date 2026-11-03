@@ -34,9 +34,6 @@ final class PendingLocalGameRepository implements LocalGameRepository {
       _repository.makeMove(gameId: gameId, playerId: playerId, cell: cell);
 
   @override
-  Future<void> startGame({required GameId gameId}) => _repository.startGame(gameId: gameId);
-
-  @override
   Future<void> startNewRound({required GameId gameId}) => _repository.startNewRound(gameId: gameId);
 
   @override

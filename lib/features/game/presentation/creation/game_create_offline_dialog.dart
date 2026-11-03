@@ -6,8 +6,9 @@ import 'package:tic_tac_toe_app/features/game/presentation/creation/player_name_
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
 class GameCreateOfflineDialog extends StatefulWidget {
-  final bool vsAi;
   const GameCreateOfflineDialog({super.key, this.vsAi = false});
+
+  final bool vsAi;
 
   @override
   State<GameCreateOfflineDialog> createState() => _GameCreateOfflineDialogState();

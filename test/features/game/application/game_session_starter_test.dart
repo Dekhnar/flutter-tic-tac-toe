@@ -7,13 +7,12 @@ import 'package:tic_tac_toe_app/features/game/application/game_create_input.dart
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session_starter.dart';
+import 'package:tic_tac_toe_app/features/game/application/online_play.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/firestore_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/data/repository/in_memory_game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
-import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/player_identity.dart';
-import 'package:tic_tac_toe_app/shared/firebase/online_availability_provider.dart';
 
 const _jessy = PlayerId('jessy-uid');
 const _luigi = PlayerId('luigi-uid');
@@ -31,13 +30,12 @@ void main() {
   ProviderContainer containerSignedInAs(PlayerIdentity identity, {bool isOnlineAvailable = true}) {
     final container = ProviderContainer(
       overrides: [
-        isOnlineAvailableProvider.overrideWithValue(isOnlineAvailable),
         localGameRepositoryProvider.overrideWithValue(localRepository),
-        // As in the composition: the online contracts are bound only when Firebase is available.
-        if (isOnlineAvailable) ...[
-          onlineGameRepositoryProvider.overrideWith((ref) => FirestoreGameRepository(firestore: firestore)),
-          playerIdentityProvider.overrideWithValue(identity),
-        ],
+        onlinePlayProvider.overrideWithValue(
+          isOnlineAvailable
+              ? OnlinePlayAvailable(identity: identity, repository: FirestoreGameRepository(firestore: firestore))
+              : const OnlinePlayUnavailable(OnlineUnavailableReason.notConfigured),
+        ),
       ],
     );
     addTearDown(container.dispose);

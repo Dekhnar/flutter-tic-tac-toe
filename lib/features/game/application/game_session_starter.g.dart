@@ -48,4 +48,4 @@ final class GameSessionStarterProvider
   }
 }
 
-String _$gameSessionStarterHash() => r'b1f6ae9c62244dae041da7be4369acd54578f861';
+String _$gameSessionStarterHash() => r'72117377d01981bebbb17ff515228d9ee7730189';

@@ -9,6 +9,7 @@ import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_rules.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
 /// Stores online games in Firestore. Every write applies [GameRules] to the game as the server has it, in a
 /// transaction, and `firestore.rules` check the result again on the server.
@@ -109,13 +110,24 @@ final class FirestoreGameRepository implements OnlineGameRepository {
 
   /// A transaction that read the game before the other player changed it is refused by the rules, which check the
   /// write against the new game, rather than retried by Firestore: it runs once more, against the game as it is now.
-  Future<T> _runTransaction<T>(TransactionHandler<T> write) async {
+  Future<T> _runTransaction<T>(TransactionHandler<T> write) => _reachingServer(() async {
     try {
       return await _firestore.runTransaction(write);
     } on FirebaseException catch (error) {
       if (error.code != 'permission-denied') rethrow;
 
       return _firestore.runTransaction(write);
+    }
+  });
+
+  /// Firestore gives up with `unavailable` on a server it cannot reach.
+  static Future<T> _reachingServer<T>(Future<T> Function() request) async {
+    try {
+      return await request();
+    } on FirebaseException catch (error, stackTrace) {
+      if (error.code != 'unavailable') rethrow;
+
+      Error.throwWithStackTrace(ServerNotAnsweringException(error), stackTrace);
     }
   }
 

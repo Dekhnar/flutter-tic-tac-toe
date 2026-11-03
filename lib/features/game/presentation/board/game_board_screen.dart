@@ -8,6 +8,7 @@ import 'package:tic_tac_toe_app/features/game/application/ai_opponent.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
+import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_board_grid.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/game_header.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/widgets/round_actions.dart';
@@ -51,9 +52,9 @@ class GameBoardScreen extends ConsumerWidget {
             (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
             (true, _) => LayoutBuilder(
               builder:
-                  (context, constraints) => switch (constraints.maxWidth > constraints.maxHeight) {
-                    true => _LandscapeBoard(session: session, height: constraints.maxHeight),
-                    false => _PortraitBoard(session: session),
+                  (context, constraints) => switch (_LandscapeBoard.boardSideWithin(constraints)) {
+                    final boardSide? => _LandscapeBoard(session: session, boardSide: boardSide),
+                    null => _PortraitBoard(session: session),
                   },
             ),
           },
@@ -177,10 +178,20 @@ class _PortraitBoard extends StatelessWidget {
 
 /// The header and the actions beside a board as tall as the screen.
 class _LandscapeBoard extends StatelessWidget {
-  const _LandscapeBoard({required this.session, required this.height});
+  const _LandscapeBoard({required this.session, required this.boardSide});
 
   final GameSession session;
-  final double height;
+  final double boardSide;
+
+  /// The side of a board as tall as [constraints] allow, or null when the screen is not wide enough to leave the header
+  /// and the actions room beside it.
+  static double? boardSideWithin(BoxConstraints constraints) {
+    if (constraints.maxWidth <= constraints.maxHeight) return null;
+
+    final boardSide = (constraints.maxHeight - 2 * Dimens.standardPadding).clamp(0.0, Dimens.boardMaxWidth);
+    final roomBeside = constraints.maxWidth - boardSide - 2 * Dimens.standardPadding;
+    return roomBeside >= Dimens.boardSidePanelMinWidth ? boardSide : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -193,10 +204,7 @@ class _LandscapeBoard extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.all(Dimens.standardPadding),
-          child: SizedBox.square(
-            dimension: (height - 2 * Dimens.standardPadding).clamp(0, Dimens.boardMaxWidth),
-            child: GameBoardGrid(session: session),
-          ),
+          child: SizedBox.square(dimension: boardSide, child: GameBoardGrid(session: session)),
         ),
       ],
     );

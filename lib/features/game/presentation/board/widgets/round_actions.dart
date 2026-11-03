@@ -8,7 +8,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// Starts the game once the opponent is there, then the next round once one ends.
 class RoundActions extends ConsumerWidget {
   const RoundActions({super.key, required this.session});
 

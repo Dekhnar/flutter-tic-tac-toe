@@ -15,7 +15,9 @@ const aiThinkingTimeProvider = AiThinkingTimeProvider._();
 
 /// Gives the player time to see their own move land before the answer.
 
-final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duration, Duration> with $Provider<Duration> {
+final class AiThinkingTimeProvider
+    extends $FunctionalProvider<Duration, Duration, Duration>
+    with $Provider<Duration> {
   /// Gives the player time to see their own move land before the answer.
   const AiThinkingTimeProvider._()
     : super(
@@ -33,7 +35,8 @@ final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duratio
 
   @$internal
   @override
-  $ProviderElement<Duration> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<Duration> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   Duration create(Ref ref) {
@@ -42,7 +45,10 @@ final class AiThinkingTimeProvider extends $FunctionalProvider<Duration, Duratio
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(Duration value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<Duration>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Duration>(value),
+    );
   }
 }
 
@@ -57,17 +63,20 @@ const aiOpponentProvider = AiOpponentFamily._();
 /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
 /// thinking, so the AI always plays on the game as it is.
 
-final class AiOpponentProvider extends $FunctionalProvider<void, void, void> with $Provider<void> {
+final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
   /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
   /// thinking, so the AI always plays on the game as it is.
-  const AiOpponentProvider._({required AiOpponentFamily super.from, required GameSession super.argument})
-    : super(
-        retry: null,
-        name: r'aiOpponentProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  const AiOpponentProvider._({
+    required AiOpponentFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: null,
+         name: r'aiOpponentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$aiOpponentHash();
@@ -81,7 +90,8 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void> wit
 
   @$internal
   @override
-  $ProviderElement<void> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   void create(Ref ref) {
@@ -91,7 +101,10 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void> wit
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(void value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<void>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
   }
 
   @override
@@ -105,12 +118,13 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void> wit
   }
 }
 
-String _$aiOpponentHash() => r'6e12ef0f496732f68598b82a27f0c85203d85a0b';
+String _$aiOpponentHash() => r'c6868526ca10963b567c2b47397b97bcd6d02c5d';
 
 /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
 /// thinking, so the AI always plays on the game as it is.
 
-final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void, GameSession> {
+final class AiOpponentFamily extends $Family
+    with $FunctionalFamilyOverride<void, GameSession> {
   const AiOpponentFamily._()
     : super(
         retry: null,
@@ -123,7 +137,8 @@ final class AiOpponentFamily extends $Family with $FunctionalFamilyOverride<void
   /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
   /// thinking, so the AI always plays on the game as it is.
 
-  AiOpponentProvider call(GameSession session) => AiOpponentProvider._(argument: session, from: this);
+  AiOpponentProvider call(GameSession session) =>
+      AiOpponentProvider._(argument: session, from: this);
 
   @override
   String toString() => r'aiOpponentProvider';

@@ -16,7 +16,8 @@ const gameBoardActionsProvider = GameBoardActionsNotifierFamily._();
 
 /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
 /// One action at a time, each given [timeLimit] to complete.
-final class GameBoardActionsNotifierProvider extends $AsyncNotifierProvider<GameBoardActionsNotifier, void> {
+final class GameBoardActionsNotifierProvider
+    extends $AsyncNotifierProvider<GameBoardActionsNotifier, void> {
   /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
   /// One action at a time, each given [timeLimit] to complete.
   const GameBoardActionsNotifierProvider._({
@@ -46,7 +47,8 @@ final class GameBoardActionsNotifierProvider extends $AsyncNotifierProvider<Game
 
   @override
   bool operator ==(Object other) {
-    return other is GameBoardActionsNotifierProvider && other.argument == argument;
+    return other is GameBoardActionsNotifierProvider &&
+        other.argument == argument;
   }
 
   @override
@@ -55,13 +57,21 @@ final class GameBoardActionsNotifierProvider extends $AsyncNotifierProvider<Game
   }
 }
 
-String _$gameBoardActionsNotifierHash() => r'2a0aca0e3f09f451c3ecfd505affe033eef1f1b1';
+String _$gameBoardActionsNotifierHash() =>
+    r'b3dd64625a12284be00fc16deda441a456186183';
 
 /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
 /// One action at a time, each given [timeLimit] to complete.
 
 final class GameBoardActionsNotifierFamily extends $Family
-    with $ClassFamilyOverride<GameBoardActionsNotifier, AsyncValue<void>, void, FutureOr<void>, GameSession> {
+    with
+        $ClassFamilyOverride<
+          GameBoardActionsNotifier,
+          AsyncValue<void>,
+          void,
+          FutureOr<void>,
+          GameSession
+        > {
   const GameBoardActionsNotifierFamily._()
     : super(
         retry: null,
@@ -95,8 +105,129 @@ abstract class _$GameBoardActionsNotifier extends $AsyncNotifier<void> {
     build(_$args);
     final ref = this.ref as $Ref<AsyncValue<void>, void>;
     final element =
-        ref.element as $ClassProviderElement<AnyNotifier<AsyncValue<void>, void>, AsyncValue<void>, Object?, Object?>;
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
     element.handleValue(ref, null);
+  }
+}
+
+/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+
+@ProviderFor(PendingMoveNotifier)
+const pendingMoveProvider = PendingMoveNotifierFamily._();
+
+/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+final class PendingMoveNotifierProvider
+    extends $NotifierProvider<PendingMoveNotifier, Cell?> {
+  /// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+  /// the server's answer. Only [GameBoardActionsNotifier] sets it.
+  const PendingMoveNotifierProvider._({
+    required PendingMoveNotifierFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: null,
+         name: r'pendingMoveProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingMoveNotifierHash();
+
+  @override
+  String toString() {
+    return r'pendingMoveProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  PendingMoveNotifier create() => PendingMoveNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Cell? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Cell?>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PendingMoveNotifierProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$pendingMoveNotifierHash() =>
+    r'75ea8878924e149e5410e78f389e1b8674b8b00d';
+
+/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+
+final class PendingMoveNotifierFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          PendingMoveNotifier,
+          Cell?,
+          Cell?,
+          Cell?,
+          GameSession
+        > {
+  const PendingMoveNotifierFamily._()
+    : super(
+        retry: null,
+        name: r'pendingMoveProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+  /// the server's answer. Only [GameBoardActionsNotifier] sets it.
+
+  PendingMoveNotifierProvider call(GameSession session) =>
+      PendingMoveNotifierProvider._(argument: session, from: this);
+
+  @override
+  String toString() => r'pendingMoveProvider';
+}
+
+/// The cell of a move this device made, until the game shows it: online, the game comes back on its own stream, after
+/// the server's answer. Only [GameBoardActionsNotifier] sets it.
+
+abstract class _$PendingMoveNotifier extends $Notifier<Cell?> {
+  late final _$args = ref.$arg as GameSession;
+  GameSession get session => _$args;
+
+  Cell? build(GameSession session);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build(_$args);
+    final ref = this.ref as $Ref<Cell?, Cell?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Cell?, Cell?>,
+              Cell?,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
   }
 }
 
@@ -107,7 +238,9 @@ const leaveNeedsConfirmationProvider = LeaveNeedsConfirmationFamily._();
 
 /// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
 
-final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
+final class LeaveNeedsConfirmationProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
   /// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
   const LeaveNeedsConfirmationProvider._({
     required LeaveNeedsConfirmationFamily super.from,
@@ -132,7 +265,8 @@ final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, boo
 
   @$internal
   @override
-  $ProviderElement<bool> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   bool create(Ref ref) {
@@ -142,12 +276,16 @@ final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, boo
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(bool value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<bool>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
   }
 
   @override
   bool operator ==(Object other) {
-    return other is LeaveNeedsConfirmationProvider && other.argument == argument;
+    return other is LeaveNeedsConfirmationProvider &&
+        other.argument == argument;
   }
 
   @override
@@ -156,11 +294,13 @@ final class LeaveNeedsConfirmationProvider extends $FunctionalProvider<bool, boo
   }
 }
 
-String _$leaveNeedsConfirmationHash() => r'8f5ef7ffcc88713493f50f879a90a83c3b6227cc';
+String _$leaveNeedsConfirmationHash() =>
+    r'8f5ef7ffcc88713493f50f879a90a83c3b6227cc';
 
 /// Only a game the board shows can end for an opponent: one that failed to load leaves nothing to confirm.
 
-final class LeaveNeedsConfirmationFamily extends $Family with $FunctionalFamilyOverride<bool, GameSession> {
+final class LeaveNeedsConfirmationFamily extends $Family
+    with $FunctionalFamilyOverride<bool, GameSession> {
   const LeaveNeedsConfirmationFamily._()
     : super(
         retry: null,

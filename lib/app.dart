@@ -4,7 +4,6 @@ import 'package:tic_tac_toe_app/design_system/foundations/theme.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.dart';
 
-/// Theme and language follow the device settings, including while the app runs.
 class App extends StatefulWidget {
   const App({super.key});
 

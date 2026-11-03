@@ -16,7 +16,7 @@ import 'package:tic_tac_toe_app/features/game/presentation/game_error_message.da
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 import 'package:tic_tac_toe_app/shared/routing/auto_router.gr.dart';
 
-/// Shows the game of [session]; against the AI, the AI plays meanwhile. Leaving the board leaves the game.
+/// Leaving the board leaves the game.
 @RoutePage()
 class GameBoardScreen extends ConsumerWidget {
   const GameBoardScreen({super.key, required this.session});
@@ -176,7 +176,6 @@ class _PortraitBoard extends StatelessWidget {
   }
 }
 
-/// The header and the actions beside a board as tall as the screen.
 class _LandscapeBoard extends StatelessWidget {
   const _LandscapeBoard({required this.session, required this.boardSide});
 

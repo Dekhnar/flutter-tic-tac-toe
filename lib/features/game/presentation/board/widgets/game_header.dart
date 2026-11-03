@@ -10,7 +10,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// The players and their scores, and where the game stands.
 class GameHeader extends ConsumerWidget {
   const GameHeader({super.key, required this.session});
 
@@ -80,7 +79,6 @@ class GameHeader extends ConsumerWidget {
   }
 }
 
-/// Until the opponent joins, the host can copy the game code or share it.
 class _WaitingForOpponent extends StatelessWidget {
   const _WaitingForOpponent({required this.gameId});
 

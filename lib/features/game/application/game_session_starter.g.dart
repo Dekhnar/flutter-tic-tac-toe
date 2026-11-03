@@ -16,7 +16,12 @@ const gameSessionStarterProvider = GameSessionStarterProvider._();
 /// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
 
 final class GameSessionStarterProvider
-    extends $FunctionalProvider<GameSessionStarter, GameSessionStarter, GameSessionStarter>
+    extends
+        $FunctionalProvider<
+          GameSessionStarter,
+          GameSessionStarter,
+          GameSessionStarter
+        >
     with $Provider<GameSessionStarter> {
   /// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
   const GameSessionStarterProvider._()
@@ -35,7 +40,9 @@ final class GameSessionStarterProvider
 
   @$internal
   @override
-  $ProviderElement<GameSessionStarter> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<GameSessionStarter> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   GameSessionStarter create(Ref ref) {
@@ -44,8 +51,12 @@ final class GameSessionStarterProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(GameSessionStarter value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GameSessionStarter>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GameSessionStarter>(value),
+    );
   }
 }
 
-String _$gameSessionStarterHash() => r'72117377d01981bebbb17ff515228d9ee7730189';
+String _$gameSessionStarterHash() =>
+    r'72117377d01981bebbb17ff515228d9ee7730189';

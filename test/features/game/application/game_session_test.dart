@@ -17,6 +17,28 @@ const _waiting = Game(
 final _withOpponent = _waiting.copyWith(guest: const Player(id: PlayerId('luigi-uid'), name: 'Luigi'));
 
 void main() {
+  group('A move from this device is for', () {
+    final playing = _withOpponent.copyWith(status: GameStatus.playing, currentPlayerId: const PlayerId('luigi-uid'));
+
+    test('its own player online, whoever is to play', () {
+      expect(_online.playsFor(playing), _jessy);
+      expect(_online.canPlay(playing), isFalse);
+    });
+
+    test('the player whose turn it is on a local game', () {
+      expect(_local.playsFor(playing), const PlayerId('luigi-uid'));
+      expect(_local.canPlay(playing), isTrue);
+    });
+
+    test('nobody on the AI\'s turn', () {
+      const vsAi = GameSession.local(gameId: _gameId, vsAi: true);
+
+      expect(vsAi.playsFor(playing), isNull);
+      expect(vsAi.canPlay(playing), isFalse);
+      expect(vsAi.playsFor(playing.copyWith(currentPlayerId: _jessy)), _jessy);
+    });
+  });
+
   group('Leaving ends the game for an opponent', () {
     test('who sits in an online game being set up, played or just finished', () {
       for (final status in [GameStatus.setup, GameStatus.playing, GameStatus.finished]) {

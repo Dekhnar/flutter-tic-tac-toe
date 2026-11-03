@@ -3,7 +3,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game_code.dart';
 
 part 'game_create_input.freezed.dart';
 
-/// The game the player chose in a creation dialog.
 @freezed
 sealed class GameCreateInput with _$GameCreateInput {
   const factory GameCreateInput.local({required String guestName, required String hostName}) = LocalGameInput;

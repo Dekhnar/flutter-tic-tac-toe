@@ -198,6 +198,23 @@ void main() {
       expect((await host.watchGame(gameId).first).currentRoundIndex, 1);
     });
 
+    Future<void> touchGame() => firestore.collection('games').doc(gameId.value).update({
+      GameField.updatedAt.name: FieldValue.serverTimestamp(),
+    });
+
+    test('runs again while the game keeps changing, three times at most', () async {
+      refusing = _Refusing(firestore, refusals: 2, meanwhile: touchGame);
+      await FirestoreGameRepository(firestore: refusing).startNewRound(gameId: gameId);
+      expect(refusing.transactions, 3);
+
+      refusing = _Refusing(firestore, refusals: 10, meanwhile: touchGame);
+      await expectLater(
+        FirestoreGameRepository(firestore: refusing).startNewRound(gameId: gameId),
+        throwsA(isA<ServerRefusedException>()),
+      );
+      expect(refusing.transactions, 3);
+    });
+
     test('of a game nobody changed is reported as refused, without asking again', () async {
       refusing = _Refusing(firestore);
 
@@ -317,12 +334,14 @@ final class _Unreachable extends Fake implements FirebaseFirestore {
   }) async => throw FirebaseException(plugin: 'cloud_firestore', code: code);
 }
 
-/// Firestore whose rules refuse the first transaction: it reads the game, [meanwhile] runs, and the write is refused.
+/// Firestore whose rules refuse the first [refusals] transactions: each reads the game, [meanwhile] runs, and the write
+/// is refused.
 final class _Refusing extends Fake implements FirebaseFirestore {
-  _Refusing(this._firestore, {this.meanwhile});
+  _Refusing(this._firestore, {this.meanwhile, this.refusals = 1});
 
   final FakeFirebaseFirestore _firestore;
   final Future<void> Function()? meanwhile;
+  final int refusals;
   int transactions = 0;
 
   @override
@@ -334,7 +353,7 @@ final class _Refusing extends Fake implements FirebaseFirestore {
     Duration timeout = const Duration(seconds: 30),
     int maxAttempts = 5,
   }) async {
-    if (++transactions > 1) return _firestore.runTransaction(transactionHandler);
+    if (++transactions > refusals) return _firestore.runTransaction(transactionHandler);
 
     await transactionHandler(_RefusedTransaction());
     await meanwhile?.call();

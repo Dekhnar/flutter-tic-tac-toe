@@ -479,7 +479,7 @@ abstract class I18n {
   /// No description provided for @serverRefused.
   ///
   /// In en, this message translates to:
-  /// **'The server refused this action. Update the app, then try again.'**
+  /// **'The server refused this action. Please try again later.'**
   String get serverRefused;
 }
 

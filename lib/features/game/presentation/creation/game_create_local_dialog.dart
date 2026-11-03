@@ -5,7 +5,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/creation/player_name_field.dart';
 import 'package:tic_tac_toe_app/generated/l10n.dart';
 
-/// Names the players of a game on this device: both of them, or only the host against the AI.
 class GameCreateLocalDialog extends StatefulWidget {
   const GameCreateLocalDialog({super.key, this.vsAi = false});
 

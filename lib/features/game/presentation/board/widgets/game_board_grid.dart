@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,55 +29,40 @@ class GameBoardGrid extends StatelessWidget {
   }
 }
 
-/// A cell the player tapped shows a progress indicator until the game shows the move: online, the move takes a server
-/// round trip, and the game comes back on its own stream.
-class _GameCell extends ConsumerStatefulWidget {
+/// The cell of a move on its way shows a progress indicator until the game shows the move.
+class _GameCell extends ConsumerWidget {
   const _GameCell({super.key, required this.cell, required this.session});
 
   final Cell cell;
   final GameSession session;
 
-  @override
-  ConsumerState<_GameCell> createState() => _GameCellState();
-}
+  bool _isPlayable(AsyncValue<Game> asyncGame) => switch (asyncGame) {
+    // A game that failed to load keeps showing its last board, but takes no move.
+    AsyncData(value: final game) => game.board[cell] == null && session.canPlay(game),
+    _ => false,
+  };
 
-class _GameCellState extends ConsumerState<_GameCell> {
-  bool _isPlayed = false;
+  /// A second tap can land before the board rebuilt from the first one: the game decides, as it is now.
+  void _play(WidgetRef ref) {
+    if (!_isPlayable(ref.read(gameProvider(session)))) return;
 
-  Future<void> _play() async {
-    setState(() => _isPlayed = true);
-    final actions = gameBoardActionsProvider(widget.session);
-    await ref.read(actions.notifier).makeMove(widget.cell);
-    if (mounted && ref.read(actions).hasError) setState(() => _isPlayed = false);
+    unawaited(ref.read(gameBoardActionsProvider(session).notifier).makeMove(cell));
   }
 
   @override
-  Widget build(BuildContext context) {
-    final cell = widget.cell;
-    final session = widget.session;
-    ref.listen(gameProvider(session).select((game) => game.value?.board[cell]), (_, _) {
-      if (_isPlayed) setState(() => _isPlayed = false);
-    });
-    final (mark, playable) = ref.watch(
-      gameProvider(session).select((asyncGame) {
-        final mark = asyncGame.value?.board[cell];
-        // A game that failed to load keeps showing its last board, but takes no move.
-        final playable = switch (asyncGame) {
-          AsyncData(value: final game) => mark == null && session.canPlay(game),
-          _ => false,
-        };
-        return (mark, playable);
-      }),
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mark = ref.watch(gameProvider(session).select((asyncGame) => asyncGame.value?.board[cell]));
+    final playable = ref.watch(gameProvider(session).select(_isPlayable));
     final busy = ref.watch(gameBoardActionsProvider(session).select((actions) => actions.isLoading));
+    final pending = ref.watch(pendingMoveProvider(session).select((move) => move == cell));
 
-    final onTap = playable && !busy ? _play : null;
+    final onTap = playable && !busy ? () => _play(ref) : null;
     final i18n = I18n.of(context);
     final (row, column) = (cell.row + 1, cell.column + 1);
 
     return Semantics(
       label: switch (mark) {
-        null when _isPlayed => i18n.boardCellPlaying(row, column),
+        null when pending => i18n.boardCellPlaying(row, column),
         null => i18n.boardCellEmpty(row, column),
         CellMark.X => i18n.boardCellCross(row, column),
         CellMark.O => i18n.boardCellCircle(row, column),
@@ -87,7 +74,7 @@ class _GameCellState extends ConsumerState<_GameCell> {
         child: BaseCardButton(
           onTap: onTap,
           child: switch (mark) {
-            null when _isPlayed => const Center(child: CircularProgressIndicator()),
+            null when pending => const Center(child: CircularProgressIndicator()),
             null => const SizedBox.shrink(),
             final mark => Center(child: Text(mark.name, style: Theme.of(context).textTheme.headlineLarge)),
           },

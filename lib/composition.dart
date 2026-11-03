@@ -27,7 +27,6 @@ Future<ProviderContainer> createAppContainer({FirebaseStartup firebase = const F
   );
 }
 
-/// Binds the contracts of `game_dependencies.dart`.
 List<Override> bindGameProviders({required OnlinePlay onlinePlay}) => [
   localGameRepositoryProvider.overrideWith((ref) {
     final repository = InMemoryGameRepository();
@@ -90,7 +89,6 @@ class FirebaseStartup {
     repository: FirestoreGameRepository(firestore: FirebaseFirestore.instance),
   );
 
-  /// Collected from release builds only.
   Future<ErrorLogger> enableCrashReports() async {
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
     return CrashlyticsErrorLogger(FirebaseCrashlytics.instance);

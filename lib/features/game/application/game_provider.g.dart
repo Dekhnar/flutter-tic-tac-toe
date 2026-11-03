@@ -16,7 +16,12 @@ const onlineGameRepositoryProvider = OnlineGameRepositoryProvider._();
 /// Throws while online play is off: no online session exists then.
 
 final class OnlineGameRepositoryProvider
-    extends $FunctionalProvider<OnlineGameRepository, OnlineGameRepository, OnlineGameRepository>
+    extends
+        $FunctionalProvider<
+          OnlineGameRepository,
+          OnlineGameRepository,
+          OnlineGameRepository
+        >
     with $Provider<OnlineGameRepository> {
   /// Throws while online play is off: no online session exists then.
   const OnlineGameRepositoryProvider._()
@@ -35,7 +40,9 @@ final class OnlineGameRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<OnlineGameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<OnlineGameRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   OnlineGameRepository create(Ref ref) {
@@ -44,16 +51,21 @@ final class OnlineGameRepositoryProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(OnlineGameRepository value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<OnlineGameRepository>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OnlineGameRepository>(value),
+    );
   }
 }
 
-String _$onlineGameRepositoryHash() => r'01dd80836672d60888a77e610ab37783eb562a36';
+String _$onlineGameRepositoryHash() =>
+    r'01dd80836672d60888a77e610ab37783eb562a36';
 
 @ProviderFor(sessionGameRepository)
 const sessionGameRepositoryProvider = SessionGameRepositoryFamily._();
 
-final class SessionGameRepositoryProvider extends $FunctionalProvider<GameRepository, GameRepository, GameRepository>
+final class SessionGameRepositoryProvider
+    extends $FunctionalProvider<GameRepository, GameRepository, GameRepository>
     with $Provider<GameRepository> {
   const SessionGameRepositoryProvider._({
     required SessionGameRepositoryFamily super.from,
@@ -78,7 +90,8 @@ final class SessionGameRepositoryProvider extends $FunctionalProvider<GameReposi
 
   @$internal
   @override
-  $ProviderElement<GameRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<GameRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   GameRepository create(Ref ref) {
@@ -88,7 +101,10 @@ final class SessionGameRepositoryProvider extends $FunctionalProvider<GameReposi
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(GameRepository value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GameRepository>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GameRepository>(value),
+    );
   }
 
   @override
@@ -102,9 +118,11 @@ final class SessionGameRepositoryProvider extends $FunctionalProvider<GameReposi
   }
 }
 
-String _$sessionGameRepositoryHash() => r'c7cc9425e3866630f3f24dc1075743200e4f2975';
+String _$sessionGameRepositoryHash() =>
+    r'c7cc9425e3866630f3f24dc1075743200e4f2975';
 
-final class SessionGameRepositoryFamily extends $Family with $FunctionalFamilyOverride<GameRepository, GameSession> {
+final class SessionGameRepositoryFamily extends $Family
+    with $FunctionalFamilyOverride<GameRepository, GameSession> {
   const SessionGameRepositoryFamily._()
     : super(
         retry: null,
@@ -124,16 +142,19 @@ final class SessionGameRepositoryFamily extends $Family with $FunctionalFamilyOv
 @ProviderFor(game)
 const gameProvider = GameFamily._();
 
-final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Stream<Game>>
+final class GameProvider
+    extends $FunctionalProvider<AsyncValue<Game>, Game, Stream<Game>>
     with $FutureModifier<Game>, $StreamProvider<Game> {
-  const GameProvider._({required GameFamily super.from, required GameSession super.argument})
-    : super(
-        retry: _noRetry,
-        name: r'gameProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  const GameProvider._({
+    required GameFamily super.from,
+    required GameSession super.argument,
+  }) : super(
+         retry: _noRetry,
+         name: r'gameProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$gameHash();
@@ -147,7 +168,8 @@ final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Str
 
   @$internal
   @override
-  $StreamProviderElement<Game> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
+  $StreamProviderElement<Game> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
   Stream<Game> create(Ref ref) {
@@ -168,7 +190,8 @@ final class GameProvider extends $FunctionalProvider<AsyncValue<Game>, Game, Str
 
 String _$gameHash() => r'5732a176b245e7add54ef3c36ed63dbe2500f862';
 
-final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Game>, GameSession> {
+final class GameFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<Game>, GameSession> {
   const GameFamily._()
     : super(
         retry: _noRetry,
@@ -178,7 +201,8 @@ final class GameFamily extends $Family with $FunctionalFamilyOverride<Stream<Gam
         isAutoDispose: true,
       );
 
-  GameProvider call(GameSession session) => GameProvider._(argument: session, from: this);
+  GameProvider call(GameSession session) =>
+      GameProvider._(argument: session, from: this);
 
   @override
   String toString() => r'gameProvider';

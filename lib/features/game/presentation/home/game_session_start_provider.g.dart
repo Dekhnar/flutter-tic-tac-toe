@@ -16,7 +16,8 @@ const gameSessionStartProvider = GameSessionStartNotifierProvider._();
 
 /// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
 /// cancelling, or after [timeLimit].
-final class GameSessionStartNotifierProvider extends $AsyncNotifierProvider<GameSessionStartNotifier, void> {
+final class GameSessionStartNotifierProvider
+    extends $AsyncNotifierProvider<GameSessionStartNotifier, void> {
   /// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
   /// cancelling, or after [timeLimit].
   const GameSessionStartNotifierProvider._()
@@ -38,7 +39,8 @@ final class GameSessionStartNotifierProvider extends $AsyncNotifierProvider<Game
   GameSessionStartNotifier create() => GameSessionStartNotifier();
 }
 
-String _$gameSessionStartNotifierHash() => r'815a74fb1ba1795c4f975a722e7deaa7eb5a78c8';
+String _$gameSessionStartNotifierHash() =>
+    r'815a74fb1ba1795c4f975a722e7deaa7eb5a78c8';
 
 /// Starting the game the player chose: loading meanwhile, then the error if it failed. The player stops waiting by
 /// cancelling, or after [timeLimit].
@@ -51,7 +53,13 @@ abstract class _$GameSessionStartNotifier extends $AsyncNotifier<void> {
     build();
     final ref = this.ref as $Ref<AsyncValue<void>, void>;
     final element =
-        ref.element as $ClassProviderElement<AnyNotifier<AsyncValue<void>, void>, AsyncValue<void>, Object?, Object?>;
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>, void>,
+              AsyncValue<void>,
+              Object?,
+              Object?
+            >;
     element.handleValue(ref, null);
   }
 }

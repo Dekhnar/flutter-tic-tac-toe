@@ -9,7 +9,6 @@ final class ServerNotAnsweringException implements ExpectedException {
   ServerNotAnsweringException.after(Duration timeLimit)
     : this(TimeoutException('No answer within $timeLimit', timeLimit));
 
-  /// The network error, or the time limit that ran out.
   final Object cause;
 
   @override

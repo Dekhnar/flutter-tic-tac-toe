@@ -23,7 +23,6 @@ enum OnlineUnavailableReason {
   notConfigured,
 }
 
-/// The player asked for online play while it is off.
 final class OnlineUnavailableException implements ExpectedException {
   OnlineUnavailableException(this.reason);
 

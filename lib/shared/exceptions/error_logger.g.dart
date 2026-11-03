@@ -12,7 +12,8 @@ part of 'error_logger.dart';
 @ProviderFor(errorLogger)
 const errorLoggerProvider = ErrorLoggerProvider._();
 
-final class ErrorLoggerProvider extends $FunctionalProvider<ErrorLogger, ErrorLogger, ErrorLogger>
+final class ErrorLoggerProvider
+    extends $FunctionalProvider<ErrorLogger, ErrorLogger, ErrorLogger>
     with $Provider<ErrorLogger> {
   const ErrorLoggerProvider._()
     : super(
@@ -30,7 +31,8 @@ final class ErrorLoggerProvider extends $FunctionalProvider<ErrorLogger, ErrorLo
 
   @$internal
   @override
-  $ProviderElement<ErrorLogger> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<ErrorLogger> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   ErrorLogger create(Ref ref) {
@@ -39,7 +41,10 @@ final class ErrorLoggerProvider extends $FunctionalProvider<ErrorLogger, ErrorLo
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(ErrorLogger value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<ErrorLogger>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ErrorLogger>(value),
+    );
   }
 }
 

@@ -28,6 +28,7 @@ final class FirestoreGameRepository implements OnlineGameRepository {
   static const lifetime = Duration(days: 30);
 
   static const _codeAttempts = 5;
+  static const _writeAttempts = 3;
   static const _rules = GameRules();
 
   final Clock _clock;
@@ -59,7 +60,6 @@ final class FirestoreGameRepository implements OnlineGameRepository {
   Future<void> joinGame(GameCode code, {required PlayerId guest, required String guestName}) =>
       _update(code, GameWrite.join, (game) => _rules.join(game, guest: guest, guestName: guestName));
 
-  /// Leaving a game the server no longer has changes nothing.
   @override
   Future<void> leaveGame(GameId gameId) async {
     try {
@@ -79,11 +79,8 @@ final class FirestoreGameRepository implements OnlineGameRepository {
   Future<void> startGame({required GameId gameId}) => _update(gameId, GameWrite.start, _rules.start);
 
   @override
-  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) => _update(
-    gameId,
-    GameWrite.move,
-    (game) => GameChange.changed(_rules.applyMove(game: game, playerId: playerId, cell: cell)),
-  );
+  Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) =>
+      _update(gameId, GameWrite.move, (game) => _rules.applyMove(game: game, playerId: playerId, cell: cell));
 
   @override
   Future<void> startNewRound({required GameId gameId}) => _update(gameId, GameWrite.newRound, _rules.startNewRound);
@@ -93,29 +90,29 @@ final class FirestoreGameRepository implements OnlineGameRepository {
   /// Applies [change] to the game as the server has it.
   ///
   /// The rules check a write against the game as it is when the write lands. A transaction that read the game before
-  /// the other player changed it is therefore refused with `permission-denied` rather than retried by Firestore: it
-  /// runs once more when the game did change. A refusal of an unchanged game stands.
+  /// the other player changed it therefore fails with `permission-denied`, not with a conflict Firestore would retry.
+  /// It runs again while the game keeps changing in between, [_writeAttempts] times at most; the refusal of a game
+  /// nobody changed stands.
   Future<void> _update(GameId gameId, GameWrite write, GameChange Function(Game game) change) {
     final gameRef = _gameRef(gameId);
-    Object? readVersion;
-    Future<void> attempt() => _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(gameRef);
-      readVersion = GameDocument.versionOf(snapshot);
-      if (change(GameDocument.read(snapshot)) case GameChanged(:final game)) {
-        transaction.update(gameRef, GameDocument.write(write, game));
-      }
-    });
 
     return _reachingServer(() async {
-      try {
-        await attempt();
-      } on FirebaseException catch (error) {
-        if (error.code != 'permission-denied') rethrow;
+      for (var attempt = 1; ; attempt++) {
+        Object? readVersion;
+        try {
+          return await _firestore.runTransaction((transaction) async {
+            final snapshot = await transaction.get(gameRef);
+            readVersion = GameDocument.versionOf(snapshot);
+            if (change(GameDocument.read(snapshot)) case GameChanged(:final game)) {
+              transaction.update(gameRef, GameDocument.write(write, game));
+            }
+          });
+        } on FirebaseException catch (error) {
+          if (error.code != 'permission-denied' || attempt == _writeAttempts) rethrow;
 
-        final current = await gameRef.get(const GetOptions(source: Source.server));
-        if (GameDocument.versionOf(current) == readVersion) rethrow;
-
-        await attempt();
+          final current = await gameRef.get(const GetOptions(source: Source.server));
+          if (GameDocument.versionOf(current) == readVersion) rethrow;
+        }
       }
     });
   }

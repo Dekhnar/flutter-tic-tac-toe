@@ -223,5 +223,5 @@ class I18nFr extends I18n {
   }
 
   @override
-  String get serverRefused => 'Le serveur a refusé cette action. Mets l\'application à jour, puis réessaie.';
+  String get serverRefused => 'Le serveur a refusé cette action. Réessaie plus tard.';
 }

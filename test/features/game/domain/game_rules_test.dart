@@ -10,10 +10,15 @@ const _o = PlayerId('mario');
 void main() {
   const rules = GameRules();
 
-  Game play(Game game, List<int> cells) =>
-      cells.fold(game, (game, cell) => rules.applyMove(game: game, playerId: game.currentPlayerId, cell: Cell(cell)));
+  Game play(Game game, List<int> cells) => cells.fold(
+    game,
+    (game, cell) => switch (rules.applyMove(game: game, playerId: game.currentPlayerId, cell: Cell(cell))) {
+      GameChanged(:final game) => game,
+      GameAlreadyDone() => throw TestFailure('A move is never already done'),
+    },
+  );
 
-  Game Function() move(Game game, {required PlayerId playerId, required int cell}) =>
+  GameChange Function() move(Game game, {required PlayerId playerId, required int cell}) =>
       () => rules.applyMove(game: game, playerId: playerId, cell: Cell(cell));
 
   group('Joining', () {
@@ -62,8 +67,8 @@ void main() {
       final abandoned = _startedGame().copyWith(status: GameStatus.abandoned);
 
       expect(move(abandoned, playerId: _x, cell: 0), throwsA(isA<GameAbandonedException>()));
-      expect(rules.start(abandoned), const GameChange.alreadyDone());
-      expect(rules.startNewRound(abandoned), const GameChange.alreadyDone());
+      expect(() => rules.start(abandoned), throwsA(isA<GameAbandonedException>()));
+      expect(() => rules.startNewRound(abandoned), throwsA(isA<GameAbandonedException>()));
     });
   });
 

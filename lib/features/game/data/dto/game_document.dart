@@ -67,11 +67,9 @@ enum GameWrite {
 
   final Set<GameField> fields;
 
-  /// The fields the server sets to the time of the write.
   static const serverTimeFields = {GameField.createdAt, GameField.lastPlayAt, GameField.updatedAt};
 }
 
-/// Maps a [Game] to its Firestore document and back. The document also holds the times only the server needs.
 abstract final class GameDocument {
   /// The fields [write] changes, taken from [game] as it is once changed. Only a creation sets [expiresAt].
   static Map<String, Object?> write(GameWrite write, Game game, {DateTime? expiresAt}) => {

@@ -5,7 +5,6 @@ import 'package:tic_tac_toe_app/shared/exceptions/expected_exception.dart';
 
 part 'error_logger.g.dart';
 
-/// Receives every error, from the global error handlers and the provider observer alike.
 abstract interface class ErrorLogger {
   /// A [fatal] error is one nothing caught: the app may be in a broken state.
   void log(Object error, StackTrace? stackTrace, {bool fatal = false});

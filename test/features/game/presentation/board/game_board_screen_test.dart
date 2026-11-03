@@ -75,6 +75,23 @@ void main() {
 
       robot.expectMarkedCellCount(2);
     });
+
+    testWidgets('two cells tapped at once against the AI make one move: the player never plays for the AI', (
+      tester,
+    ) async {
+      final robot = _GameBoardScreenRobot(tester);
+      await robot.pumpLocalGame(hostName: 'Jessy', vsAi: true);
+
+      await robot.tapCellsAtOnce(0, 1);
+      await tester.pump();
+
+      robot.expectCellHasMark(0, 'X');
+      robot.expectCellEmpty(1);
+      expect(find.byType(SnackBar), findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      robot.expectMarkedCellCount(2);
+      robot.expectText(i18n.turnOf('Jessy (X)'));
+    });
   });
 
   group('Online game', () {
@@ -199,10 +216,7 @@ void main() {
 
       await robot.tapCell(4);
 
-      expect(
-        find.descendant(of: find.byKey(const Key('cell_4')), matching: find.byType(CircularProgressIndicator)),
-        findsOne,
-      );
+      expect(robot.spinnerIn(4), findsOneWidget);
       expect(find.bySemanticsLabel(i18n.boardCellPlaying(2, 2)), findsOneWidget);
 
       serverAnswer.complete();
@@ -232,6 +246,25 @@ void main() {
       await robot.tapCell(0);
       await tester.pumpAndSettle();
       robot.expectCellHasMark(0, 'X');
+    });
+
+    testWidgets('two cells tapped at once make one move, and only its cell shows it on its way', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpStartedOnlineGame();
+      final serverAnswer = Completer<void>();
+      harness.appRepository.beforeMakeMove = () => serverAnswer.future;
+
+      await robot.tapCellsAtOnce(0, 1);
+      await tester.pump();
+      expect(robot.spinnerIn(0), findsOneWidget);
+      expect(robot.spinnerIn(1), findsNothing);
+
+      serverAnswer.complete();
+      await tester.pumpAndSettle();
+      robot.expectCellHasMark(0, 'X');
+      robot.expectCellEmpty(1);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('the board takes no other move while the server handles one', (tester) async {
@@ -472,6 +505,20 @@ class _GameBoardScreenRobot {
       return mark.evaluate().isNotEmpty;
     });
     expect(markedCells, hasLength(count));
+  }
+
+  Finder spinnerIn(int index) =>
+      find.descendant(of: find.byKey(Key('cell_$index')), matching: find.byType(CircularProgressIndicator));
+
+  /// Two fingers land on two cells and lift before the next frame, so both taps reach the handlers of the same frame.
+  Future<void> tapCellsAtOnce(int first, int second) async {
+    final fingers = [
+      for (final (pointer, index) in [(11, first), (12, second)])
+        await tester.startGesture(tester.getCenter(find.byKey(Key('cell_$index'))), pointer: pointer),
+    ];
+    for (final finger in fingers) {
+      await finger.up();
+    }
   }
 
   Future<void> tapCell(int index) async {

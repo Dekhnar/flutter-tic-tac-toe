@@ -28,13 +28,14 @@ final class GameRules {
   }
 
   GameChange start(Game game) {
+    if (game.status == GameStatus.abandoned) throw GameAbandonedException();
     if (game.status != GameStatus.setup) return const GameChange.alreadyDone();
     if (game.guest == null) throw GameOpponentMissingException();
 
     return GameChange.changed(game.copyWith(status: GameStatus.playing));
   }
 
-  Game applyMove({required Game game, required PlayerId playerId, required Cell cell}) {
+  GameChange applyMove({required Game game, required PlayerId playerId, required Cell cell}) {
     if (game.status == GameStatus.abandoned) throw GameAbandonedException();
     if (game.status == GameStatus.finished) throw MoveGameFinishedException();
     if (game.status == GameStatus.setup) throw MoveGameNotStartedException();
@@ -51,21 +52,24 @@ final class GameRules {
     final hasLine = board.hasLine(mark);
 
     if (!hasLine && !board.isFull) {
-      return played.copyWith(currentPlayerId: playerId == game.host.id ? guest.id : game.host.id);
+      return GameChange.changed(played.copyWith(currentPlayerId: playerId == game.host.id ? guest.id : game.host.id));
     }
 
     Player scored(Player player) => hasLine && player.id == playerId ? player.copyWith(wins: player.wins + 1) : player;
-    return played.copyWith(
-      currentWinnerId: hasLine ? playerId : null,
-      guest: scored(guest),
-      host: scored(game.host),
-      status: GameStatus.finished,
+    return GameChange.changed(
+      played.copyWith(
+        currentWinnerId: hasLine ? playerId : null,
+        guest: scored(guest),
+        host: scored(game.host),
+        status: GameStatus.finished,
+      ),
     );
   }
 
-  /// The next round starts on an empty board, the players taking turns to start; asked during a round, it is already
-  /// there.
+  /// The players take turns to start a round. Asked during a round, the next one is already there.
   GameChange startNewRound(Game game) {
+    if (game.status == GameStatus.abandoned) throw GameAbandonedException();
+
     final guest = game.guest;
     if (game.status != GameStatus.finished || guest == null) return const GameChange.alreadyDone();
 
@@ -81,7 +85,6 @@ final class GameRules {
     );
   }
 
-  /// A player leaves for good: the other one can no longer play.
   GameChange leave(Game game) => switch (game.status) {
     GameStatus.abandoned => const GameChange.alreadyDone(),
     _ => GameChange.changed(game.copyWith(status: GameStatus.abandoned)),

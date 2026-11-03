@@ -33,13 +33,13 @@ void main() {
     late GameSession session;
 
     /// A started local game whose board is open; its moves land once [_SlowMoves.answer] completes.
-    Future<void> openBoard() async {
+    Future<void> openBoard({bool vsAi = false}) async {
       final memory = InMemoryGameRepository();
       addTearDown(memory.dispose);
       games = _SlowMoves(memory);
       container = ProviderContainer(overrides: [localGameRepositoryProvider.overrideWithValue(games)]);
       addTearDown(container.dispose);
-      session = GameSession.local(gameId: await games.createGame(guestName: 'Mario', hostName: 'Jessy'));
+      session = GameSession.local(gameId: await games.createGame(guestName: 'Mario', hostName: 'Jessy'), vsAi: vsAi);
       container.listen(gameProvider(session), (_, _) {});
       container.listen(gameBoardActionsProvider(session), (_, _) {});
       await container.read(gameProvider(session).future);
@@ -70,6 +70,18 @@ void main() {
 
       await actions().makeMove(const Cell(0));
       expect(state(), const AsyncData<void>(null));
+    });
+
+    test('never play for the AI: a move on its turn is refused, and the board does not change', () async {
+      await openBoard(vsAi: true);
+      games.answer.complete();
+      await actions().makeMove(const Cell(0));
+      await pumpEventQueue();
+
+      await actions().makeMove(const Cell(1));
+
+      expect(state().error, isA<MoveNotYourTurnException>());
+      expect(games.moves, [const Cell(0)]);
     });
 
     test('a move not done in time is given up: the server is not answering', () {

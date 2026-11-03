@@ -36,7 +36,14 @@ void main() {
       const rules = GameRules();
       final finishedGames = <Game>[];
 
-      Game play(Game game, PlayerId player, Cell cell) => rules.applyMove(game: game, playerId: player, cell: cell);
+      Game play(Game game, PlayerId player, Cell cell) => switch (rules.applyMove(
+        game: game,
+        playerId: player,
+        cell: cell,
+      )) {
+        GameChanged(:final game) => game,
+        GameAlreadyDone() => throw TestFailure('A move is never already done'),
+      };
 
       void playEveryAnswer(Game game) {
         if (game.status == GameStatus.finished) {

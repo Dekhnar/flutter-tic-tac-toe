@@ -7,7 +7,6 @@ import 'package:tic_tac_toe_app/features/game/domain/game_repository.dart';
 
 part 'game_session_starter.g.dart';
 
-/// Creates or joins the game the player chose, before its board opens.
 final class GameSessionStarter {
   const GameSessionStarter({required LocalGameRepository localRepository, required OnlinePlay onlinePlay})
     : _localRepository = localRepository,

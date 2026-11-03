@@ -5,7 +5,6 @@ import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception
 import 'package:tic_tac_toe_app/shared/exceptions/server_refused_exception.dart';
 
 extension GameErrorMessage on I18n {
-  /// What the player reads when the game refused what they asked, or could not do it.
   String gameError(Object error) => switch (error) {
     final GameException refusal => _refusal(refusal),
     OnlineUnavailableException(:final reason) => onlineUnavailableBecause(reason),

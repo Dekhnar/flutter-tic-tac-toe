@@ -93,13 +93,14 @@ lib/
 - **`GameRules` is the only place a game changes**: join, start, move, next round, leave. A refusal throws the `GameException` that says why. A request already fulfilled, which happens when both players ask at once, returns `GameChange.alreadyDone()` and writes nothing. Both repositories store what the rules return, and `firestore.rules` enforce the same rules on the server.
 - **`GameCode`** is the online game id: six characters without 0/O and 1/I. The join dialog checks a code on the device, and finds it in pasted text, such as the invitation the host shared.
 - **`OnlinePlay`** is either available, with the repository and identity it needs, or unavailable, with the reason. No code reaches the online services otherwise.
-- **State the screens show lives with them.** `GameSessionStartNotifier` (home) and `GameBoardActionsNotifier` (board) hold the loading and error states and run one action at a time. They stop waiting after 15 s and 10 s respectively, with `ServerNotAnsweringException`. The application layer holds no UI state.
+- **State the screens show lives with them.** `GameSessionStartNotifier` (home) and `GameBoardActionsNotifier` (board) hold the loading and error states and run one action at a time. They stop waiting after 15 s and 10 s respectively, with `ServerNotAnsweringException`. The board's notifier also holds the cell of a move on its way (`pendingMoveProvider`), until the game shows it. The application layer holds no UI state.
+- **A move from this device is for `GameSession.playsFor`**: this device's player online, the player whose turn it is on a local game, never the AI. The board's notifier refuses any other move, and a cell checks the game again when tapped, since two taps can land in the same frame.
 - **A session that starts after the player stopped waiting opens no board.** A game created for it is left, since nobody else knows its code. A seat taken in someone else's game is kept: joining is idempotent, so the player's retry opens that game.
 - **The AI** watches the game of a local session against it and, after a thinking time, plays the move `TicTacToeAI` picks through the repository. It stops when the board closes.
 - **Leaving the board leaves the game**, however the player goes back. A local game is forgotten, and the opponent of an online one sees it abandoned, so the board asks first while an opponent is seated.
 - **Navigation:** screens are auto_route routes. Dialogs open with `showDialog` and close themselves with `Navigator.pop`. Closing the board goes through the router, and closes any dialog over it.
 
-**Errors.** `ExpectedException`s (refusals, the server not answering) are shown to the player and logged as breadcrumbs. Anything else is reported to Crashlytics. A write the server refuses outside the game's rules, such as an App Check failure or an outdated app, is a `ServerRefusedException`: it is reported, and the player is asked to update the app.
+**Errors.** `ExpectedException`s (refusals, the server not answering) are shown to the player and logged as breadcrumbs. Anything else is reported to Crashlytics. A write the server refuses outside the game's rules, such as an App Check failure or an outdated app, is a `ServerRefusedException`: it is reported, and the player is told the server refused the action.
 
 **Known limits.** A device that is killed or loses its network does not leave its game: that would take a presence heartbeat (an RTDB `onDisconnect`, or a `lastSeen` field and a scheduled function). The strict field lists of the rules make every new document field a joint release of the app and the rules. Game creation is limited only by App Check.
 
@@ -114,7 +115,7 @@ The rules also enforce the following:
 - names are at most 20 UTF-16 code units, as the app counts them;
 - a move comes from the player whose turn it is, and is checked against the board: one empty cell takes the mark, the round ends only on a real line or a full board, and only the winner scores.
 
-Every write runs in a transaction. The rules check a write against the game as it is when the write lands, so a transaction that read the game before the other player changed it fails with `permission-denied`, not a conflict Firestore would retry. The repository then runs it once more, but only if the game's `updatedAt` changed since; otherwise the refusal stands.
+Every write runs in a transaction. The rules check a write against the game as it is when the write lands, so a transaction that read the game before the other player changed it fails with `permission-denied`, not a conflict Firestore would retry. The repository then runs it again while the game's `updatedAt` keeps changing in between, three times at most; the refusal of a game nobody changed stands.
 
 ---
 
@@ -142,6 +143,9 @@ flutter gen-l10n   # also run by flutter pub get, run and build; writes lib/gene
 # Static analysis: strict casts, inference and raw types, plus riverpod_lint
 flutter analyze
 dart run custom_lint
+
+# Formatting (120 columns): hand-written files only, generated ones keep the generators' output
+dart format $(git ls-files '*.dart' | grep -vE '\.(g|freezed|gr)\.dart$|^lib/generated/')
 ```
 
 ---

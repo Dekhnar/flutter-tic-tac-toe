@@ -44,7 +44,7 @@ final class InMemoryGameRepository implements LocalGameRepository {
 
   @override
   Future<void> makeMove({required GameId gameId, required PlayerId playerId, required Cell cell}) async =>
-      _update(gameId, (game) => GameChange.changed(_rules.applyMove(game: game, playerId: playerId, cell: cell)));
+      _update(gameId, (game) => _rules.applyMove(game: game, playerId: playerId, cell: cell));
 
   @override
   Future<void> leaveGame(GameId gameId) async => _stores.remove(gameId)?.close();

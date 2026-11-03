@@ -14,24 +14,35 @@ part 'ai_opponent.g.dart';
 @riverpod
 Duration aiThinkingTime(Ref ref) => const Duration(seconds: 1);
 
-/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-/// thinking, so the AI always plays on the game as it is.
+/// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+/// restarts the thinking, so the AI always plays on the game as it is.
 @riverpod
-void aiOpponent(Ref ref, GameSession session) {
-  if (!session.hasAi) return;
+class AiOpponentNotifier extends _$AiOpponentNotifier {
+  Timer? _thinking;
+  bool _stopped = false;
 
-  final thinkingTime = ref.watch(aiThinkingTimeProvider);
-  final repository = ref.watch(sessionGameRepositoryProvider(session));
-  final errorLogger = ref.watch(errorLoggerProvider);
-  Timer? thinking;
-  ref.onDispose(() => thinking?.cancel());
+  @override
+  void build(GameSession session) {
+    if (!session.hasAi) return;
 
-  ref.listen(gameProvider(session), fireImmediately: true, (_, next) {
-    thinking?.cancel();
-    if (next.value case final game? when session.isAiTurn(game)) {
-      thinking = Timer(thinkingTime, () => unawaited(_play(game, repository).onError(errorLogger.log)));
-    }
-  });
+    final thinkingTime = ref.watch(aiThinkingTimeProvider);
+    final repository = ref.watch(sessionGameRepositoryProvider(session));
+    final errorLogger = ref.watch(errorLoggerProvider);
+    ref.onDispose(() => _thinking?.cancel());
+
+    ref.listen(gameProvider(session), fireImmediately: true, (_, next) {
+      _thinking?.cancel();
+      if (next.value case final game? when session.isAiTurn(game) && !_stopped) {
+        _thinking = Timer(thinkingTime, () => unawaited(_play(game, repository).onError(errorLogger.log)));
+      }
+    });
+  }
+
+  /// The player is leaving the game: the AI makes no more move in it, even one it is thinking about.
+  void stop() {
+    _stopped = true;
+    _thinking?.cancel();
+  }
 }
 
 Future<void> _play(Game game, GameRepository repository) async {

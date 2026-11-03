@@ -54,21 +54,20 @@ final class AiThinkingTimeProvider
 
 String _$aiThinkingTimeHash() => r'8ffe49ff93c8c554b6bb4ca7776623d46f57d063';
 
-/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-/// thinking, so the AI always plays on the game as it is.
+/// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+/// restarts the thinking, so the AI always plays on the game as it is.
 
-@ProviderFor(aiOpponent)
-const aiOpponentProvider = AiOpponentFamily._();
+@ProviderFor(AiOpponentNotifier)
+const aiOpponentProvider = AiOpponentNotifierFamily._();
 
-/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-/// thinking, so the AI always plays on the game as it is.
-
-final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
-    with $Provider<void> {
-  /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-  /// thinking, so the AI always plays on the game as it is.
-  const AiOpponentProvider._({
-    required AiOpponentFamily super.from,
+/// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+/// restarts the thinking, so the AI always plays on the game as it is.
+final class AiOpponentNotifierProvider
+    extends $NotifierProvider<AiOpponentNotifier, void> {
+  /// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+  /// restarts the thinking, so the AI always plays on the game as it is.
+  const AiOpponentNotifierProvider._({
+    required AiOpponentNotifierFamily super.from,
     required GameSession super.argument,
   }) : super(
          retry: null,
@@ -79,7 +78,7 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
        );
 
   @override
-  String debugGetCreateSourceHash() => _$aiOpponentHash();
+  String debugGetCreateSourceHash() => _$aiOpponentNotifierHash();
 
   @override
   String toString() {
@@ -90,14 +89,7 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
 
   @$internal
   @override
-  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  void create(Ref ref) {
-    final argument = this.argument as GameSession;
-    return aiOpponent(ref, argument);
-  }
+  AiOpponentNotifier create() => AiOpponentNotifier();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(void value) {
@@ -109,7 +101,7 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
 
   @override
   bool operator ==(Object other) {
-    return other is AiOpponentProvider && other.argument == argument;
+    return other is AiOpponentNotifierProvider && other.argument == argument;
   }
 
   @override
@@ -118,14 +110,22 @@ final class AiOpponentProvider extends $FunctionalProvider<void, void, void>
   }
 }
 
-String _$aiOpponentHash() => r'c6868526ca10963b567c2b47397b97bcd6d02c5d';
+String _$aiOpponentNotifierHash() =>
+    r'5459324bc0a5010aa3f979973a7d95d3598a51f0';
 
-/// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-/// thinking, so the AI always plays on the game as it is.
+/// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+/// restarts the thinking, so the AI always plays on the game as it is.
 
-final class AiOpponentFamily extends $Family
-    with $FunctionalFamilyOverride<void, GameSession> {
-  const AiOpponentFamily._()
+final class AiOpponentNotifierFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AiOpponentNotifier,
+          void,
+          void,
+          void,
+          GameSession
+        > {
+  const AiOpponentNotifierFamily._()
     : super(
         retry: null,
         name: r'aiOpponentProvider',
@@ -134,12 +134,37 @@ final class AiOpponentFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Plays the AI's turns in the game of [session] for as long as it is watched. Every change of the game restarts the
-  /// thinking, so the AI always plays on the game as it is.
+  /// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+  /// restarts the thinking, so the AI always plays on the game as it is.
 
-  AiOpponentProvider call(GameSession session) =>
-      AiOpponentProvider._(argument: session, from: this);
+  AiOpponentNotifierProvider call(GameSession session) =>
+      AiOpponentNotifierProvider._(argument: session, from: this);
 
   @override
   String toString() => r'aiOpponentProvider';
+}
+
+/// Plays the AI's turns in the game of [session] for as long as it is watched, until [stop]. Every change of the game
+/// restarts the thinking, so the AI always plays on the game as it is.
+
+abstract class _$AiOpponentNotifier extends $Notifier<void> {
+  late final _$args = ref.$arg as GameSession;
+  GameSession get session => _$args;
+
+  void build(GameSession session);
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    build(_$args);
+    final ref = this.ref as $Ref<void, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<void, void>,
+              void,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, null);
+  }
 }

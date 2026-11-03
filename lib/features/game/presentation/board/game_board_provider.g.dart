@@ -8,18 +8,18 @@ part of 'game_board_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-/// One action at a time, each given [timeLimit] to complete.
+/// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+/// failed. One action at a time, each given [timeLimit] to complete.
 
 @ProviderFor(GameBoardActionsNotifier)
 const gameBoardActionsProvider = GameBoardActionsNotifierFamily._();
 
-/// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-/// One action at a time, each given [timeLimit] to complete.
+/// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+/// failed. One action at a time, each given [timeLimit] to complete.
 final class GameBoardActionsNotifierProvider
     extends $AsyncNotifierProvider<GameBoardActionsNotifier, void> {
-  /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-  /// One action at a time, each given [timeLimit] to complete.
+  /// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+  /// failed. One action at a time, each given [timeLimit] to complete.
   const GameBoardActionsNotifierProvider._({
     required GameBoardActionsNotifierFamily super.from,
     required GameSession super.argument,
@@ -58,10 +58,10 @@ final class GameBoardActionsNotifierProvider
 }
 
 String _$gameBoardActionsNotifierHash() =>
-    r'ec1a05f495c6cc392d1e5475486877cdaa66c5d7';
+    r'2385a2f03b31c049a42f6a7db08f274581811547';
 
-/// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-/// One action at a time, each given [timeLimit] to complete.
+/// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+/// failed. One action at a time, each given [timeLimit] to complete.
 
 final class GameBoardActionsNotifierFamily extends $Family
     with
@@ -81,8 +81,8 @@ final class GameBoardActionsNotifierFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-  /// One action at a time, each given [timeLimit] to complete.
+  /// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+  /// failed. One action at a time, each given [timeLimit] to complete.
 
   GameBoardActionsNotifierProvider call(GameSession session) =>
       GameBoardActionsNotifierProvider._(argument: session, from: this);
@@ -91,8 +91,8 @@ final class GameBoardActionsNotifierFamily extends $Family
   String toString() => r'gameBoardActionsProvider';
 }
 
-/// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-/// One action at a time, each given [timeLimit] to complete.
+/// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+/// failed. One action at a time, each given [timeLimit] to complete.
 
 abstract class _$GameBoardActionsNotifier extends $AsyncNotifier<void> {
   late final _$args = ref.$arg as GameSession;

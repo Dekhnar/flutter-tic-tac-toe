@@ -87,6 +87,20 @@ void main() {
     });
   });
 
+  test('the AI makes no move once the player leaves, even one it is thinking about', () {
+    withOpenBoard(vsAi: true, (time, board) {
+      board.hostPlays(const Cell(0));
+      time.flushMicrotasks();
+      time.elapse(_almostDoneThinking);
+
+      board.leave();
+      time.elapse(const Duration(minutes: 1));
+
+      expect(board.errors.errors, isEmpty);
+      expect(board.game.board.cells.nonNulls, hasLength(1));
+    });
+  });
+
   test('a move the AI could not make is reported', () {
     withOpenBoard(vsAi: true, aiMovesFail: true, (time, board) {
       board.hostPlays(const Cell(0));
@@ -115,6 +129,12 @@ final class _Board {
       unawaited(_games.makeMove(gameId: _session.gameId, playerId: InMemoryGameRepository.hostId, cell: cell));
 
   void closeAi() => _ai.close();
+
+  /// What leaving the board does, the AI first: its game is then forgotten.
+  void leave() {
+    _container.read(aiOpponentProvider(_session).notifier).stop();
+    unawaited(_games.leaveGame(_session.gameId));
+  }
 }
 
 /// Local games where the AI's moves fail.

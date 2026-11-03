@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
@@ -29,3 +31,14 @@ Duration? _noRetry(int retryCount, Object error) => null;
 @Riverpod(retry: _noRetry)
 Stream<Game> game(Ref ref, GameSession session) =>
     ref.watch(sessionGameRepositoryProvider(session)).watchGame(session.gameId).firstWithinTimeLimit(gameLoadTimeLimit);
+
+/// Completes once the game of [session] shows what [shows] looks for, or fails: online, a change comes back on the
+/// game's own stream, after the server's answer.
+Future<void> gameShowing(Ref ref, GameSession session, bool Function(Game game) shows) {
+  final shown = Completer<void>();
+  final subscription = ref.listen(gameProvider(session), fireImmediately: true, (_, next) {
+    final showsIt = next.hasError || (next.value != null && shows(next.requireValue));
+    if (showsIt && !shown.isCompleted) shown.complete();
+  });
+  return shown.future.whenComplete(subscription.close);
+}

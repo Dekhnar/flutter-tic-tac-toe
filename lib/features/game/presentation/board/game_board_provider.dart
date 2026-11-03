@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderListenableSelect;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tic_tac_toe_app/features/game/application/ai_opponent.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game.dart';
@@ -12,8 +13,8 @@ import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception
 
 part 'game_board_provider.g.dart';
 
-/// What the player does on the board: loading while the game handles it, then the error if it was refused or failed.
-/// One action at a time, each given [timeLimit] to complete.
+/// What the player does on the board: loading until the board shows the action, then the error if it was refused or
+/// failed. One action at a time, each given [timeLimit] to complete.
 @riverpod
 class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
   static const timeLimit = Duration(seconds: 10);
@@ -21,25 +22,32 @@ class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
   @override
   FutureOr<void> build(GameSession session) {}
 
-  Future<void> startGame() => _run(() => ref.read(onlineGameRepositoryProvider).startGame(gameId: session.gameId));
+  Future<void> startGame() => _run(() async {
+    await ref.read(onlineGameRepositoryProvider).startGame(gameId: session.gameId);
+    await gameShowing(ref, session, (game) => game.status != GameStatus.setup);
+  });
 
-  /// Ignores a move the game as it is now does not offer this device, like a second tap landing in the same frame. A
-  /// move ends once the board shows a game it changed: online, that game comes on its own stream, after the server's
-  /// answer.
+  /// Ignores a move the game as it is now does not offer this device, like a second tap landing in the same frame.
   Future<void> makeMove(Cell cell) async {
     final game = ref.read(gameProvider(session)).value;
     if (game == null || !session.canPlayAt(game, cell)) return;
 
     await _run(move: cell, () async {
       await _repository.makeMove(gameId: game.id, playerId: game.currentPlayerId, cell: cell);
-      await _shownAfter(game);
+      await gameShowing(ref, session, (shown) => shown != game);
     });
   }
 
-  Future<void> startNewRound() => _run(() => _repository.startNewRound(gameId: session.gameId));
+  Future<void> startNewRound() => _run(() async {
+    await _repository.startNewRound(gameId: session.gameId);
+    await gameShowing(ref, session, (game) => game.status != GameStatus.finished);
+  });
 
   /// The board closes at once: a failure to leave is logged rather than shown.
-  Future<void> leave() => _repository.leaveGame(session.gameId).onError(ref.read(errorLoggerProvider).log);
+  Future<void> leave() {
+    ref.read(aiOpponentProvider(session).notifier).stop();
+    return _repository.leaveGame(session.gameId).onError(ref.read(errorLoggerProvider).log);
+  }
 
   GameRepository get _repository => ref.read(sessionGameRepositoryProvider(session));
 
@@ -53,14 +61,6 @@ class GameBoardActionsNotifier extends _$GameBoardActionsNotifier {
 
     state = result;
     ref.read(pendingMoveProvider(session).notifier).show(null);
-  }
-
-  Future<void> _shownAfter(Game played) {
-    final shown = Completer<void>();
-    final subscription = ref.listen(gameProvider(session), fireImmediately: true, (_, next) {
-      if ((next.hasError || next.value != played) && !shown.isCompleted) shown.complete();
-    });
-    return shown.future.whenComplete(subscription.close);
   }
 }
 

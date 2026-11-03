@@ -201,19 +201,25 @@ void main() {
       expect(find.text(i18n.local1v1), findsOneWidget);
     });
 
-    testWidgets('gone from the server while the player confirms leaving: Quit closes the board all the same', (
+    testWidgets('joined, a game too slow to show offers to retry; Quit asks first, and the game shows when it comes', (
       tester,
     ) async {
-      final gameId = await openBoard(tester, joined: true);
-      await robot.goBack();
-      expect(find.text(i18n.leaveGameTitle), findsOneWidget);
+      final code = await opponent.createGame(host: _jessy, hostName: 'Jessy');
+      final device = LaggingOnlineGameRepository(FirestoreGameRepository(firestore: firestore))..lag();
+      robot = _HomeRobot(tester);
+      await robot.launch(localRepository: games, online: _onlineAs(_luigi, repository: device));
 
-      await tester.runAsync(() => firestore.collection('games').doc(gameId.value).delete());
-      await tester.pumpAndSettle();
+      await robot.joinOnlineGame(code.value, guestName: 'Luigi');
+      expect(find.text(i18n.serverNotAnswering), findsOneWidget);
       await robot.tapText(i18n.quit);
+      expect(find.text(i18n.leaveGameTitle), findsOneWidget);
+      await robot.tapText(i18n.stay);
 
-      expect(find.text(i18n.leaveGameTitle), findsNothing);
-      expect(find.text(i18n.local1v1), findsOneWidget);
+      device.catchUp();
+      await tester.pumpAndSettle();
+      expect(find.text(i18n.serverNotAnswering), findsNothing);
+      expect(find.text('Luigi (O)'), findsOneWidget);
+      expect((await seenByOpponent(tester, code))?.status, GameStatus.setup);
     });
 
     testWidgets('just joined, before the game shows, asks first: the host already sits in it', (tester) async {

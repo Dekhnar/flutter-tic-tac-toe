@@ -12,6 +12,9 @@ final class RouterGameNavigation implements GameNavigation {
       context.router.push(GameBoardScreenRoute(session: session));
 
   @override
+  Future<void> leaveBoard(BuildContext context) => context.router.maybePop();
+
+  @override
   void closeBoard(BuildContext context) =>
       context.router
         ..popUntilRouteWithName(GameBoardScreenRoute.name)

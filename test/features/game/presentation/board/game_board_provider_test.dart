@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tic_tac_toe_app/features/game/application/ai_opponent.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_dependencies.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_provider.dart';
 import 'package:tic_tac_toe_app/features/game/application/game_session.dart';
@@ -11,9 +12,11 @@ import 'package:tic_tac_toe_app/features/game/domain/game.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_exceptions.dart';
 import 'package:tic_tac_toe_app/features/game/domain/game_ids.dart';
 import 'package:tic_tac_toe_app/features/game/presentation/board/game_board_provider.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/error_logger.dart';
 import 'package:tic_tac_toe_app/shared/exceptions/server_not_answering_exception.dart';
 
 import '../../../../shared/fakes/forwarding_repositories.dart';
+import '../../../../shared/fakes/recording_error_logger.dart';
 
 const _gameId = GameId('ABCDEF');
 const _jessy = PlayerId('jessy-uid');
@@ -32,13 +35,20 @@ void main() {
     late _SlowMoves games;
     late ProviderContainer container;
     late GameSession session;
+    late RecordingErrorLogger errors;
 
     /// A started local game whose board is open; its moves land once [_SlowMoves.answer] completes.
     Future<void> openBoard({bool vsAi = false}) async {
       final memory = InMemoryGameRepository();
       addTearDown(memory.dispose);
       games = _SlowMoves(memory);
-      container = ProviderContainer(overrides: [localGameRepositoryProvider.overrideWithValue(games)]);
+      errors = RecordingErrorLogger();
+      container = ProviderContainer(
+        overrides: [
+          errorLoggerProvider.overrideWithValue(errors),
+          localGameRepositoryProvider.overrideWithValue(games),
+        ],
+      );
       addTearDown(container.dispose);
       session = GameSession.local(gameId: await games.createGame(guestName: 'Mario', hostName: 'Jessy'), vsAi: vsAi);
       container.listen(gameProvider(session), (_, _) {});
@@ -84,6 +94,23 @@ void main() {
 
       expect(state(), const AsyncData<void>(null));
       expect(games.moves, [const Cell(0)]);
+    });
+
+    test('leaving stops the AI: it makes no move in the game being left, even one it is thinking about', () {
+      fakeAsync((time) {
+        unawaited(openBoard(vsAi: true));
+        time.flushMicrotasks();
+        container.listen(aiOpponentProvider(session), (_, _) {});
+        games.answer.complete();
+        unawaited(actions().makeMove(const Cell(0)));
+        time.elapse(const Duration(milliseconds: 500));
+
+        unawaited(actions().leave());
+        time.elapse(const Duration(minutes: 1));
+
+        expect(games.moves, [const Cell(0)]);
+        expect(errors.errors, isEmpty);
+      });
     });
 
     test('a move not done in time is given up: the server is not answering', () {

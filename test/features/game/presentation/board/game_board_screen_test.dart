@@ -315,6 +315,23 @@ void main() {
       expect(find.byType(SnackBar), findsNothing);
     });
 
+    testWidgets('starting the game takes no other action until the board shows it started', (tester) async {
+      final harness = _FirestoreTestHarness();
+      final robot = _GameBoardScreenRobot(tester, harness: harness);
+      await robot.pumpOnlineGameAsHost();
+      await harness.opponentJoins();
+      await tester.pumpAndSettle();
+      harness.appRepository.lag();
+
+      await robot.tapStartGame();
+      await tester.pump();
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, i18n.startGame)).onPressed, isNull);
+
+      harness.appRepository.catchUp();
+      await tester.pumpAndSettle();
+      robot.expectText(i18n.yourTurn);
+    });
+
     testWidgets('an opponent who has not played for a minute shows as inactive, until they play', (tester) async {
       final harness = _FirestoreTestHarness();
       final robot = _GameBoardScreenRobot(tester, harness: harness);
@@ -365,7 +382,9 @@ void main() {
       robot.expectCellEmpty(0);
     });
 
-    testWidgets('a game deleted while being played shows a blocking error that only offers to leave', (tester) async {
+    testWidgets('a game deleted while being played says so in place of the board, and only offers to leave', (
+      tester,
+    ) async {
       final harness = _FirestoreTestHarness();
       final robot = _GameBoardScreenRobot(tester, harness: harness);
 
@@ -486,7 +505,7 @@ void main() {
 
     screenTestGolden(
       'The board when the game cannot load',
-      fileName: 'game_board_screen_error_dialog',
+      fileName: 'game_board_screen_unavailable',
       builder: () => _goldenBoard(() => Stream.error(GameNotFoundException())),
     );
   });

@@ -9,7 +9,11 @@ part 'game_navigation.g.dart';
 abstract interface class GameNavigation {
   Future<void> openBoard(BuildContext context, GameSession session);
 
-  /// Closes the board, and any dialog over it.
+  /// Goes back from the board as the back button does: the board asks first when leaving ends the game for an
+  /// opponent.
+  Future<void> leaveBoard(BuildContext context);
+
+  /// Closes the board, and any dialog over it, without asking: the player confirmed.
   void closeBoard(BuildContext context);
 }
 

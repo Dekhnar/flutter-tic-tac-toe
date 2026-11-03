@@ -27,31 +27,25 @@ class GameBoardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(aiOpponentProvider(session));
-    final provider = gameProvider(session);
-    ref.listen(provider, (_, next) {
-      // Invalidating the game to retry reports the error again, flagged as loading.
-      if (next case AsyncError(:final error, isLoading: false)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) unawaited(_showBlockingErrorDialog(context, ref, error));
-        });
-      }
-    });
     ref.listen(gameBoardActionsProvider(session), (_, next) {
       if (next case AsyncError(:final error)) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.of(context).gameError(error))));
       }
     });
-    final (loaded, failed) = ref.watch(provider.select((game) => (game.hasValue, game.hasError && !game.isLoading)));
+    // A retry flags the failure as loading: the board waits for the game again.
+    final (loaded, failure) = ref.watch(
+      gameProvider(session).select((game) => (game.hasValue, game.isLoading ? null : game.error)),
+    );
 
     return _LeaveGuard(
       session: session,
       child: Scaffold(
         appBar: AppBar(),
         body: SafeArea(
-          child: switch ((loaded, failed)) {
-            (false, true) => const SizedBox.shrink(),
-            (false, false) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
-            (true, _) => LayoutBuilder(
+          child: switch ((loaded, failure)) {
+            (_, final error?) => _GameUnavailable(error: error, session: session),
+            (false, null) => Center(child: CircularProgressIndicator(semanticsLabel: I18n.of(context).loading)),
+            (true, null) => LayoutBuilder(
               builder:
                   (context, constraints) => switch (_LandscapeBoard.boardSideWithin(constraints)) {
                     final boardSide? => _LandscapeBoard(session: session, boardSide: boardSide),
@@ -63,42 +57,47 @@ class GameBoardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// Blocks the board while it has no game to show; offers a retry unless the game is gone.
-  Future<void> _showBlockingErrorDialog(BuildContext context, WidgetRef ref, Object error) {
+/// Shown instead of the board while it has no game to show, until the game shows again. Offers a retry unless the game
+/// is gone.
+class _GameUnavailable extends ConsumerWidget {
+  const _GameUnavailable({required this.error, required this.session});
+
+  final Object error;
+  final GameSession session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final i18n = I18n.of(context);
-    final gameIsGone = error is GameNotFoundException;
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return PopScope(
-          canPop: false,
-          child: AlertDialog(
-            title: Text(i18n.errorTitle),
-            content: Text(switch (error) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(Dimens.standardPadding),
+        child: Column(
+          spacing: Dimens.standardSpacing,
+          children: [
+            Text(i18n.errorTitle, style: textTheme.headlineSmall),
+            Text(switch (error) {
               GameNotFoundException() => i18n.gameNotFound,
               ServerNotAnsweringException() => i18n.serverNotAnswering,
               _ => i18n.errorRetryLater,
-            }),
-            actions: [
-              if (!gameIsGone)
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    ref.invalidate(gameProvider(session));
-                  },
-                  child: Text(i18n.retry),
+            }, textAlign: TextAlign.center),
+            Wrap(
+              spacing: Dimens.standardSpacing,
+              children: [
+                OutlinedButton(
+                  onPressed: () => ref.read(gameNavigationProvider).leaveBoard(context),
+                  child: Text(i18n.quit),
                 ),
-              TextButton(
-                // Closes whatever else is open over the board too, like a confirmation to leave.
-                onPressed: () => ref.read(gameNavigationProvider).closeBoard(context),
-                child: Text(i18n.quit),
-              ),
-            ],
-          ),
-        );
-      },
+                if (error is! GameNotFoundException)
+                  FilledButton(onPressed: () => ref.invalidate(gameProvider(session)), child: Text(i18n.retry)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

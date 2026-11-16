@@ -1,16 +1,35 @@
-import 'package:flutter/foundation.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'dart:developer' as developer;
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tic_tac_toe_app/shared/exceptions/app_exception.dart';
+import 'package:tic_tac_toe_app/shared/exceptions/expected_exception.dart';
 
 part 'error_logger.g.dart';
 
-class ErrorLoggerService {
-  const ErrorLoggerService();
-
-  void logError(Object error, StackTrace? stackTrace) => debugPrint('$error, $stackTrace');
-  void logAppException(AppException exception) => debugPrint('$exception');
+abstract interface class ErrorLogger {
+  /// A [fatal] error is one nothing caught: the app may be in a broken state.
+  void log(Object error, StackTrace? stackTrace, {bool fatal = false});
 }
 
-@riverpod
-ErrorLoggerService errorLoggerService(Ref ref) => const ErrorLoggerService();
+/// Writes refusals the player was told about as warnings, anything else as severe.
+final class DeveloperErrorLogger implements ErrorLogger {
+  const DeveloperErrorLogger();
+
+  static const _name = 'tic_tac_toe';
+  static const _severe = 1000;
+  static const _warning = 900;
+
+  @override
+  void log(Object error, StackTrace? stackTrace, {bool fatal = false}) => switch (error) {
+    ExpectedException() when !fatal => developer.log('$error', name: _name, level: _warning, error: error),
+    _ => developer.log(
+      fatal ? 'Uncaught error' : 'Unexpected error',
+      name: _name,
+      level: _severe,
+      error: error,
+      stackTrace: stackTrace,
+    ),
+  };
+}
+
+@Riverpod(keepAlive: true)
+ErrorLogger errorLogger(Ref ref) => const DeveloperErrorLogger();

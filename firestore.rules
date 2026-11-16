@@ -1,0 +1,201 @@
+rules_version = '2';
+
+// Players sign in anonymously: request.auth.uid is the player id stored in the game.
+// Each kind of write the app makes has its own rule, with the exact fields it may change, and a move is checked against
+// the board: exactly one empty cell takes the player's mark, the round ends only on a real line or a full board, and
+// only the winner scores. The field names are those of `GameField` (lib/features/game/data/dto/game_document.dart), and
+// test/features/game/data/dto/game_document_rules_test.dart keeps each write's fields equal to its rule's.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{gameId} {
+      // The game id is the code players share: anyone holding it may read the game, nobody may list games.
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if isGameCode(gameId) && isCreatedByHost();
+      allow update: if isJoin() || isStart() || isMove() || isNewRound() || isLeave();
+      allow delete: if false;
+
+      function signedIn() {
+        return request.auth != null;
+      }
+
+      // The characters and length of `GameCode` (lib/features/game/domain/game_code.dart): no 0/O or 1/I.
+      function isGameCode(id) {
+        return id.matches('[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}');
+      }
+
+      function before() {
+        return resource.data;
+      }
+
+      function after() {
+        return request.resource.data;
+      }
+
+      function changedKeys() {
+        return after().diff(before()).affectedKeys();
+      }
+
+      // Every update sets `updatedAt` to the time of the write, and a move or a new round sets `lastPlayAt` too.
+      function isUpdatedNow() {
+        return after().updatedAt == request.time;
+      }
+
+      function isPlayedNow() {
+        return isUpdatedNow() && after().lastPlayAt == request.time;
+      }
+
+      function isPlayer() {
+        return request.auth.uid == before().hostId || request.auth.uid == before().guestId;
+      }
+
+      // `size()` counts UTF-16 code units, as `PlayerName` does in the app.
+      function isValidName(name) {
+        return name is string && name.trim().size() > 0 && name.size() <= 20;
+      }
+
+      // The cells, row by row: 'X', 'O', or '' when empty.
+      function emptyBoard() {
+        return ['', '', '', '', '', '', '', '', ''];
+      }
+
+      // A TTL policy deletes the game at `expiresAt` (see README). The app sets it 30 days ahead by the device's clock: the
+      // window lets a clock a month off create games, and still refuses a game that would never expire.
+      function isCreatedByHost() {
+        let game = request.resource.data;
+        return signedIn()
+          && game.keys().hasOnly([
+            'board', 'createdAt', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'expiresAt', 'hostId',
+            'hostName', 'hostWinCount', 'status', 'guestId', 'guestName', 'guestWinCount', 'updatedAt'
+          ])
+          && game.createdAt == request.time
+          && game.updatedAt == request.time
+          && game.expiresAt is timestamp
+          && game.expiresAt > request.time
+          && game.expiresAt <= request.time + duration.value(60, 'd')
+          && game.hostId == request.auth.uid
+          && isValidName(game.hostName)
+          && game.guestId == null
+          && game.guestName == null
+          && game.status == 'setup'
+          && game.currentPlayerId == game.hostId
+          && game.currentRoundIndex == 0
+          && game.currentWinnerId == null
+          && game.hostWinCount == 0
+          && game.guestWinCount == 0
+          && game.board == emptyBoard();
+      }
+
+      function isJoin() {
+        return signedIn()
+          && before().status == 'setup'
+          && before().guestId == null
+          && request.auth.uid != before().hostId
+          && after().guestId == request.auth.uid
+          && isValidName(after().guestName)
+          && changedKeys().hasOnly(['guestId', 'guestName', 'updatedAt'])
+          && isUpdatedNow();
+      }
+
+      function isStart() {
+        return signedIn()
+          && isPlayer()
+          && before().status == 'setup'
+          && before().guestId != null
+          && after().status == 'playing'
+          && changedKeys().hasOnly(['status', 'updatedAt'])
+          && isUpdatedNow();
+      }
+
+      // A player leaves for good: the game is over for both.
+      function isLeave() {
+        return signedIn()
+          && isPlayer()
+          && before().status != 'abandoned'
+          && after().status == 'abandoned'
+          && changedKeys().hasOnly(['status', 'updatedAt'])
+          && isUpdatedNow();
+      }
+
+      function isMove() {
+        let mark = before().currentPlayerId == before().hostId ? 'X' : 'O';
+        return signedIn()
+          && before().status == 'playing'
+          && request.auth.uid == before().currentPlayerId
+          && changedKeys().hasOnly([
+            'board', 'currentPlayerId', 'currentWinnerId', 'hostWinCount', 'lastPlayAt', 'status', 'guestWinCount',
+            'updatedAt'
+          ])
+          && isPlayedNow()
+          && isOneEmptyCellMarked(before().board, after().board, mark)
+          && isOutcomeOf(after().board, mark);
+      }
+
+      // Exactly one cell differs, and it went from empty to [mark]: one more [mark], one less empty cell.
+      function isOneEmptyCellMarked(b, a, mark) {
+        return a.size() == 9
+          && [
+            a[0] == b[0], a[1] == b[1], a[2] == b[2], a[3] == b[3], a[4] == b[4], a[5] == b[5], a[6] == b[6],
+            a[7] == b[7], a[8] == b[8]
+          ].removeAll([true]).size() == 1
+          && countOf(a, mark) == countOf(b, mark) + 1
+          && countOf(a, '') == countOf(b, '') - 1;
+      }
+
+      function countOf(cells, value) {
+        return cells.size() - cells.removeAll([value]).size();
+      }
+
+      function hasLine(c, m) {
+        return (c[0] == m && c[1] == m && c[2] == m) || (c[3] == m && c[4] == m && c[5] == m)
+          || (c[6] == m && c[7] == m && c[8] == m) || (c[0] == m && c[3] == m && c[6] == m)
+          || (c[1] == m && c[4] == m && c[7] == m) || (c[2] == m && c[5] == m && c[8] == m)
+          || (c[0] == m && c[4] == m && c[8] == m) || (c[2] == m && c[4] == m && c[6] == m);
+      }
+
+      function isOutcomeOf(board, mark) {
+        let mover = before().currentPlayerId;
+        let opponent = mover == before().hostId ? before().guestId : before().hostId;
+        let won = hasLine(board, mark);
+        let full = !board.hasAny(['']);
+        return (won
+            && after().status == 'finished' && after().currentPlayerId == mover
+            && after().currentWinnerId == mover && scoresWonBy(mover))
+          || (!won && full
+            && after().status == 'finished' && after().currentPlayerId == mover
+            && after().currentWinnerId == null && scoresUnchanged())
+          || (!won && !full
+            && after().status == 'playing' && after().currentPlayerId == opponent
+            && after().currentWinnerId == null && scoresUnchanged());
+      }
+
+      function scoresUnchanged() {
+        return after().hostWinCount == before().hostWinCount && after().guestWinCount == before().guestWinCount;
+      }
+
+      function scoresWonBy(winner) {
+        return winner == before().hostId
+          ? after().hostWinCount == before().hostWinCount + 1 && after().guestWinCount == before().guestWinCount
+          : after().guestWinCount == before().guestWinCount + 1 && after().hostWinCount == before().hostWinCount;
+      }
+
+      function isNewRound() {
+        let nextRound = before().currentRoundIndex + 1;
+        return signedIn()
+          && isPlayer()
+          && before().status == 'finished'
+          && after().status == 'playing'
+          && after().currentRoundIndex == nextRound
+          && after().currentPlayerId == (nextRound % 2 == 0 ? before().hostId : before().guestId)
+          && after().currentWinnerId == null
+          && after().board == emptyBoard()
+          && scoresUnchanged()
+          && isPlayedNow()
+          && changedKeys().hasOnly([
+            'board', 'currentPlayerId', 'currentRoundIndex', 'currentWinnerId', 'lastPlayAt', 'status', 'updatedAt'
+          ]);
+      }
+    }
+  }
+}

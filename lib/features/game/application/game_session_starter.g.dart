@@ -1,0 +1,62 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'game_session_starter.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
+
+@ProviderFor(gameSessionStarter)
+const gameSessionStarterProvider = GameSessionStarterProvider._();
+
+/// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
+
+final class GameSessionStarterProvider
+    extends
+        $FunctionalProvider<
+          GameSessionStarter,
+          GameSessionStarter,
+          GameSessionStarter
+        >
+    with $Provider<GameSessionStarter> {
+  /// Holds the dependencies rather than a `Ref`, which may be disposed before a creation completes.
+  const GameSessionStarterProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gameSessionStarterProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gameSessionStarterHash();
+
+  @$internal
+  @override
+  $ProviderElement<GameSessionStarter> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GameSessionStarter create(Ref ref) {
+    return gameSessionStarter(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GameSessionStarter value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GameSessionStarter>(value),
+    );
+  }
+}
+
+String _$gameSessionStarterHash() =>
+    r'72117377d01981bebbb17ff515228d9ee7730189';
